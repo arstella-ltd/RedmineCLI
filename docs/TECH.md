@@ -43,10 +43,20 @@ dotnet build
 dotnet test
 dotnet run -- --help
 
-# 発行（シングルファイル実行可能ファイル）
+# 発行（Native AOTによる最適化されたバイナリ）
+# Windows向け
+dotnet publish -c Release -r win-x64 -p:PublishAot=true -p:StripSymbols=true
+
+# macOS向け 
+dotnet publish -c Release -r osx-x64 -p:PublishAot=true -p:StripSymbols=true
+dotnet publish -c Release -r osx-arm64 -p:PublishAot=true -p:StripSymbols=true
+
+# Linux向け
+dotnet publish -c Release -r linux-x64 -p:PublishAot=true -p:StripSymbols=true
+dotnet publish -c Release -r linux-arm64 -p:PublishAot=true -p:StripSymbols=true
+
+# 従来のシングルファイル発行（互換性のため）
 dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true
-dotnet publish -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true
-dotnet publish -c Release -r osx-x64 --self-contained -p:PublishSingleFile=true
 
 # グローバルツールとしてインストール
 # 注: .csprojファイルで<PackageId>RedmineCLI</PackageId>と<ToolCommandName>redmine</ToolCommandName>を設定

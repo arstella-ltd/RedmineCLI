@@ -71,3 +71,13 @@ RedmineCLIは、Redmineのチケット管理をコマンドラインから効率
 2. WHEN `redmine config get` を実行 THEN 現在の設定値を確認できる SHALL
 3. WHEN `redmine config list` を実行 THEN すべての設定項目が表示される SHALL
 4. WHEN デフォルトプロジェクトを設定 THEN `--project` の指定を省略できる SHALL
+
+### 要求 8
+**ユーザーストーリー:** 開発者として、高速に起動する軽量なCLIツールを使いたいので、効率的に作業を進められる
+
+#### 受け入れ基準
+1. WHEN Windows/macOS/Linux環境で実行 THEN 各OSネイティブの最適化されたバイナリが動作する SHALL
+2. WHEN コマンドを実行 THEN 100ms以内に起動して応答する SHALL
+3. WHEN 配布ファイルをダウンロード THEN 単一の実行可能ファイルとして10MB以下のサイズである SHALL
+4. WHEN 実行環境にインストール THEN .NETランタイムや追加の依存関係なしに動作する SHALL
+5. WHEN Native AOTでビルド THEN メモリ使用量が従来のJITビルドより削減される SHALL
