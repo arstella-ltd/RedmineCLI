@@ -3,22 +3,25 @@
 - [ ] 1. プロジェクトのセットアップと基本構造の作成
   - .NET 9のコンソールアプリケーションプロジェクトを作成
   - ソリューションファイルの作成とプロジェクト構成
-  - 必要なNuGetパッケージのインストール（System.CommandLine、Spectre.Console、YamlDotNet等）
+  - Native AOT対応の設定（PublishAot=true、必要なアナライザーの追加）
+  - AOT互換性を考慮したNuGetパッケージの選定とインストール
   - プロジェクト構造（フォルダ階層）の作成
-  - DIコンテナの設定とProgram.csの基本実装
+  - AOT制約を考慮したDIコンテナの設定とProgram.csの基本実装
   - global.jsonによる.NET SDKバージョンの固定
   - .editorconfigによるコードスタイルの統一
-  - _要件: 全体的な基盤_
+  - Native AOTビルドの動作確認（各プラットフォーム）
+  - _要件: 8, 全体的な基盤_
 
 - [ ] 2. データモデルとインターフェースの定義
-  - Issue、Project、User等の基本モデルクラスを作成
+  - Issue、Project、User等の基本モデルクラスを作成（AOT向けにSource Generator対応）
   - IRedmineApiClient、IConfigService等のインターフェース定義
   - Config、Profile、Preferences等の設定モデルを作成
-  - APIレスポンス用のDTOクラスを定義
+  - APIレスポンス用のDTOクラスを定義（System.Text.Json Source Generator使用）
   - _要件: 全体的な基盤_
 
 - [ ] 3. 設定管理機能の実装
-  - YamlDotNetを使用したConfigServiceの実装
+  - AOT互換のYAMLライブラリ選定（YamlDotNetのAOT対応確認）
+  - ConfigServiceの実装（リフレクション最小化）
   - 設定ファイルの読み込み・保存機能
   - 複数プロファイルの管理機能
   - APIキーの暗号化/復号化処理（Data Protection API使用）
@@ -97,7 +100,7 @@
 - [ ] 14. ドキュメントとパッケージング
   - README.mdの作成（インストール手順、使用方法）
   - dotnet toolとしてのパッケージング設定
-  - Native AOTによる各プラットフォーム向けネイティブバイナリのビルド
-  - 実行ファイルサイズと起動時間の最適化
+  - 各プラットフォーム向けネイティブバイナリのリリースビルド
+  - 実行ファイルサイズの最終最適化
   - リリースノートの作成
-  - _要件: 8, 全体的な基盤_
+  - _要件: 全体的な基盤_

@@ -27,11 +27,13 @@ RedmineCLIは、Redmine REST APIと通信するコマンドラインインター
 - **インフラストラクチャ層**: HttpClientFactoryによるAPI通信、YamlDotNetによる設定管理
 
 ### .NET固有の設計
-- **依存性注入（DI）**: Microsoft.Extensions.DependencyInjectionを使用
-- **設定管理**: IConfiguration + YamlConfigurationProvider
+- **依存性注入（DI）**: Microsoft.Extensions.DependencyInjectionを使用（AOT向け最適化）
+- **設定管理**: IConfiguration + YamlConfigurationProvider（AOT対応）
 - **ログ**: Microsoft.Extensions.Loggingによる統一的なログ出力
 - **HTTPクライアント**: HttpClientFactory + Pollyによるリトライポリシー
 - **非同期処理**: async/awaitパターンの全面採用
+- **JSON処理**: System.Text.Json Source Generatorによるコンパイル時生成
+- **AOT制約**: リフレクションの最小化、動的コード生成の回避
 
 ## コンポーネントとインターフェース
 
