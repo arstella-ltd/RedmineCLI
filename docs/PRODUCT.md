@@ -19,4 +19,4 @@ RedmineCLIは、開発者がターミナルから直接Redmineのチケット管
 
 ## 技術的アプローチ
 
-.NET 8を基盤として、クロスプラットフォーム対応のシングルファイル実行可能ファイルとして配布します。Redmine REST API v3.0以上との通信にはHttpClientFactoryを使用し、Pollyによるリトライポリシーで安定性を確保します。設定ファイルはYAML形式で管理し、`gh`コマンドと同様の使用感を実現します。System.CommandLineによる洗練されたコマンドライン解析と、Spectre.Consoleによる美しいコンソール出力を提供します。
+.NET 9を基盤として、クロスプラットフォーム対応のシングルファイル実行可能ファイルとして配布します。Redmine REST API v3.0以上との通信にはHttpClientFactoryを使用し、Pollyによるリトライポリシーで安定性を確保します。設定ファイルはYAML形式で管理し、`gh`コマンドと同様の使用感を実現します。System.CommandLineによる洗練されたコマンドライン解析と、Spectre.Consoleによる美しいコンソール出力を提供します。
