@@ -1,0 +1,30 @@
+using RedmineCLI.Models;
+
+namespace RedmineCLI.ApiClient;
+
+public interface IRedmineApiClient
+{
+    Task<IssuesResponse> GetIssuesAsync(
+        int? assignedToId = null,
+        int? projectId = null,
+        string? status = null,
+        int? limit = null,
+        int? offset = null,
+        CancellationToken cancellationToken = default);
+
+    Task<Issue> GetIssueAsync(int id, CancellationToken cancellationToken = default);
+
+    Task<Issue> CreateIssueAsync(Issue issue, CancellationToken cancellationToken = default);
+
+    Task<Issue> UpdateIssueAsync(int id, Issue issue, CancellationToken cancellationToken = default);
+
+    Task AddCommentAsync(int issueId, string comment, CancellationToken cancellationToken = default);
+
+    Task<List<Project>> GetProjectsAsync(CancellationToken cancellationToken = default);
+
+    Task<List<User>> GetUsersAsync(CancellationToken cancellationToken = default);
+
+    Task<List<IssueStatus>> GetIssueStatusesAsync(CancellationToken cancellationToken = default);
+
+    Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default);
+}
