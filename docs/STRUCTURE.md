@@ -11,6 +11,7 @@ RedmineCLI/
 ├── .editorconfig                     # エディタ設定
 ├── global.json                       # .NET SDKバージョン指定
 ├── Directory.Build.props             # 共通ビルド設定
+├── CLAUDE.md                         # Claude Code向けガイドライン
 ├── RedmineCLI/                       # メインプロジェクト
 ├── RedmineCLI.Tests/                 # 単体テストプロジェクト
 ├── RedmineCLI.IntegrationTests/      # 統合テストプロジェクト

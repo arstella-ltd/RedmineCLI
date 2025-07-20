@@ -2,14 +2,27 @@
 
 ## コア技術
 
-- **.NET 9**: 最新版を使用、クロスプラットフォーム対応
+- **.NET 9**: 最新版を使用、クロスプラットフォーム対応、Native AOT対応
 - **C# 13**: 最新の言語機能を活用（record型、パターンマッチング等）
-- **System.CommandLine**: Microsoftが提供する最新のCLIフレームワーク
-- **Spectre.Console**: 美しいコンソール出力のためのライブラリ
+- **Native AOT**: 高速起動（実測7ms）と小サイズバイナリ（実測4.9MB）を実現
+- **System.CommandLine** v2.0.0-beta5: Microsoftが提供する最新のCLIフレームワーク
+- **Spectre.Console** v0.49.1: 美しいコンソール出力のためのライブラリ（AOT対応）
+- **YamlDotNet** v16.2.0: YAML設定ファイルの読み書き（AOT対応）
 - **Redmine REST API v3.0+**: チケット情報の取得・更新に使用するAPIインターフェース
 - **APIキー認証**: Redmineサーバーへの安全な認証方式として採用
 - **設定ファイル形式**: YAML形式（ghコマンドと同様）で設定情報を管理
 - **出力形式**: 人間が読みやすいテーブル形式とプログラムが処理しやすいJSON形式をサポート
+
+## 主要NuGetパッケージ
+
+- **System.CommandLine** v2.0.0-beta5.25277.114
+- **Spectre.Console** v0.49.1
+- **YamlDotNet** v16.2.0
+- **Microsoft.Extensions.DependencyInjection** v9.0.0
+- **Microsoft.Extensions.Http** v9.0.0
+- **Microsoft.Extensions.Logging** v9.0.0
+- **Polly.Extensions.Http** v3.0.0
+- **System.Text.Json** v9.0.0（Source Generator対応）
 
 ## 開発ツール
 
