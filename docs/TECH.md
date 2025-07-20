@@ -24,7 +24,7 @@
 
 ## データ＆状態管理
 
-- **設定ファイル**: `~/.config/redmine-cli/config.yml` に認証情報と設定を保存
+- **設定ファイル**: `~/.config/redmine/config.yml` に認証情報と設定を保存
 - **認証情報**: APIキーは設定ファイルに暗号化または適切な権限で保存
 - **キャッシュ**: 頻繁にアクセスするデータ（プロジェクト一覧など）の一時保存
 - **エラーログ**: デバッグ用のログファイル（オプション）
@@ -33,7 +33,7 @@
 
 ```bash
 # 開発環境のセットアップ
-dotnet new console -n RedmineCli
+dotnet new console -n RedmineCLI
 dotnet add package System.CommandLine --prerelease
 dotnet add package Spectre.Console
 dotnet add package YamlDotNet
@@ -49,8 +49,9 @@ dotnet publish -c Release -r linux-x64 --self-contained -p:PublishSingleFile=tru
 dotnet publish -c Release -r osx-x64 --self-contained -p:PublishSingleFile=true
 
 # グローバルツールとしてインストール
+# 注: .csprojファイルで<PackageId>RedmineCLI</PackageId>と<ToolCommandName>redmine</ToolCommandName>を設定
 dotnet pack
-dotnet tool install --global RedmineCli
+dotnet tool install --global RedmineCLI
 
 # 使用例
 redmine auth login

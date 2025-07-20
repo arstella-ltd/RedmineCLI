@@ -3,8 +3,8 @@
 ## ルートディレクトリ構成
 
 ```
-RedmineCli/
-├── RedmineCli.sln          # ソリューションファイル
+RedmineCLI/
+├── RedmineCLI.sln          # ソリューションファイル
 ├── README.md               # プロジェクトの概要とクイックスタート
 ├── LICENSE                 # ライセンスファイル
 ├── .gitignore             # Git除外設定
@@ -21,8 +21,8 @@ RedmineCli/
 
 ```
 src/
-├── RedmineCli/                    # メインプロジェクト
-│   ├── RedmineCli.csproj         # プロジェクトファイル
+├── RedmineCLI/                    # メインプロジェクト
+│   ├── RedmineCLI.csproj         # プロジェクトファイル
 │   ├── Program.cs                # エントリーポイント
 │   ├── Commands/                 # コマンド実装
 │   │   ├── AuthCommand.cs        # 認証コマンド
@@ -52,13 +52,13 @@ src/
 │       └── CryptoHelper.cs      # 暗号化処理
 
 tests/
-├── RedmineCli.Tests/             # 単体テスト
-│   ├── RedmineCli.Tests.csproj
+├── RedmineCLI.Tests/             # 単体テスト
+│   ├── RedmineCLI.Tests.csproj
 │   ├── Commands/
 │   ├── Services/
 │   └── ApiClient/
-└── RedmineCli.IntegrationTests/  # 統合テスト
-    ├── RedmineCli.IntegrationTests.csproj
+└── RedmineCLI.IntegrationTests/  # 統合テスト
+    ├── RedmineCLI.IntegrationTests.csproj
     └── Scenarios/
 ```
 
@@ -122,8 +122,8 @@ config.yml              # デフォルト設定
 config.example.yml      # サンプル設定
 
 # プロジェクトファイル
-RedmineCli.csproj       # メインプロジェクト
-RedmineCli.Tests.csproj # テストプロジェクト
+RedmineCLI.csproj       # メインプロジェクト
+RedmineCLI.Tests.csproj # テストプロジェクト
 ```
 
 ## インポート構成
@@ -152,9 +152,9 @@ using Spectre.Console;
 using YamlDotNet.Serialization;
 
 // 自プロジェクトの名前空間
-using RedmineCli.Commands;
-using RedmineCli.Models;
-using RedmineCli.Services;
+using RedmineCLI.Commands;
+using RedmineCLI.Models;
+using RedmineCLI.Services;
 ```
 
 ## テスト構造
@@ -162,12 +162,12 @@ using RedmineCli.Services;
 ### テストファイル配置
 ```
 # 単体テストは別プロジェクトで同じ構造
-src/RedmineCli/Commands/IssueCommand.cs
-tests/RedmineCli.Tests/Commands/IssueCommandTests.cs
+src/RedmineCLI/Commands/IssueCommand.cs
+tests/RedmineCLI.Tests/Commands/IssueCommandTests.cs
 
 # テストプロジェクト構造
 tests/
-├── RedmineCli.Tests/
+├── RedmineCLI.Tests/
 │   ├── Commands/
 │   │   ├── AuthCommandTests.cs
 │   │   └── IssueCommandTests.cs
@@ -175,7 +175,7 @@ tests/
 │   │   └── RedmineServiceTests.cs
 │   └── ApiClient/
 │       └── RedmineApiClientTests.cs
-└── RedmineCli.IntegrationTests/
+└── RedmineCLI.IntegrationTests/
     ├── Scenarios/
     │   ├── AuthenticationScenarios.cs
     │   └── IssueManagementScenarios.cs
