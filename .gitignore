@@ -1,0 +1,86 @@
+# .claude settings
+.claude/settings.local.json
+
+# .NET
+bin/
+obj/
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Visual Studio
+.vs/
+*.suo
+*.cache
+*.ilk
+*.log
+*.dll
+*.lib
+*.sbr
+
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Rider
+.idea/
+*.sln.iml
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# NuGet
+*.nupkg
+*.snupkg
+**/packages/*
+!**/packages/build/
+*.nuget.props
+*.nuget.targets
+
+# Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+coverage.cobertura.xml
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Backup files
+*.bak
+*.tmp
+*.temp
+*~
+
+# Configuration files with sensitive data
+appsettings.Development.json
+appsettings.Local.json
+*.local.json
+!.claude/settings.local.json
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
