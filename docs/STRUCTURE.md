@@ -4,62 +4,71 @@
 
 ```
 RedmineCLI/
-├── RedmineCLI.sln          # ソリューションファイル
-├── README.md               # プロジェクトの概要とクイックスタート
-├── LICENSE                 # ライセンスファイル
-├── .gitignore             # Git除外設定
-├── global.json            # .NET SDKバージョン指定
-├── Directory.Build.props   # 共通ビルド設定
-├── src/                   # ソースコード
-├── tests/                 # テストプロジェクト
-├── scripts/               # ビルドやリリース用スクリプト
-├── docs/                  # 詳細なドキュメント
-└── samples/               # 使用例とサンプル設定
+├── RedmineCLI.sln                    # ソリューションファイル
+├── README.md                         # プロジェクトの概要とクイックスタート
+├── LICENSE                           # ライセンスファイル
+├── .gitignore                        # Git除外設定
+├── .editorconfig                     # エディタ設定
+├── global.json                       # .NET SDKバージョン指定
+├── Directory.Build.props             # 共通ビルド設定
+├── RedmineCLI/                       # メインプロジェクト
+├── RedmineCLI.Tests/                 # 単体テストプロジェクト
+├── RedmineCLI.IntegrationTests/      # 統合テストプロジェクト
+├── scripts/                          # ビルドやリリース用スクリプト
+├── docs/                             # 詳細なドキュメント
+└── samples/                          # 使用例とサンプル設定
 ```
 
-## ソースコード構成
+## プロジェクト構成
 
 ```
-src/
-├── RedmineCLI/                    # メインプロジェクト
-│   ├── RedmineCLI.csproj         # プロジェクトファイル
-│   ├── Program.cs                # エントリーポイント
-│   ├── Commands/                 # コマンド実装
-│   │   ├── AuthCommand.cs        # 認証コマンド
-│   │   ├── IssueCommand.cs       # チケットコマンド
-│   │   ├── ConfigCommand.cs      # 設定コマンド
-│   │   └── RootCommand.cs        # ルートコマンド
-│   ├── Services/                 # サービス層
-│   │   ├── IRedmineService.cs    # Redmineサービスインターフェース
-│   │   ├── RedmineService.cs     # Redmineサービス実装
-│   │   ├── IConfigService.cs     # 設定サービスインターフェース
-│   │   └── ConfigService.cs      # 設定サービス実装
-│   ├── Models/                   # データモデル
-│   │   ├── Issue.cs             # チケットモデル
-│   │   ├── Project.cs           # プロジェクトモデル
-│   │   ├── User.cs              # ユーザーモデル
-│   │   └── Config.cs            # 設定モデル
-│   ├── ApiClient/               # API通信
-│   │   ├── IRedmineApiClient.cs # APIクライアントインターフェース
-│   │   ├── RedmineApiClient.cs  # APIクライアント実装
-│   │   └── ApiException.cs      # API例外定義
-│   ├── Formatters/              # 出力フォーマッター
-│   │   ├── IOutputFormatter.cs   # フォーマッターインターフェース
-│   │   ├── TableFormatter.cs     # テーブル形式
-│   │   └── JsonFormatter.cs      # JSON形式
-│   └── Utils/                   # ユーティリティ
-│       ├── ConsoleHelper.cs     # コンソール補助
-│       └── CryptoHelper.cs      # 暗号化処理
+RedmineCLI/                           # メインプロジェクトディレクトリ
+├── RedmineCLI.csproj                 # プロジェクトファイル
+├── Program.cs                        # エントリーポイント
+├── Commands/                         # コマンド実装
+│   ├── AuthCommand.cs                # 認証コマンド
+│   ├── IssueCommand.cs               # チケットコマンド
+│   ├── ConfigCommand.cs              # 設定コマンド
+│   └── RootCommand.cs                # ルートコマンド
+├── Services/                         # サービス層
+│   ├── IRedmineService.cs            # Redmineサービスインターフェース
+│   ├── RedmineService.cs             # Redmineサービス実装
+│   ├── IConfigService.cs             # 設定サービスインターフェース
+│   └── ConfigService.cs              # 設定サービス実装
+├── Models/                           # データモデル
+│   ├── Issue.cs                      # チケットモデル
+│   ├── Project.cs                    # プロジェクトモデル
+│   ├── User.cs                       # ユーザーモデル
+│   └── Config.cs                     # 設定モデル
+├── ApiClient/                        # API通信
+│   ├── IRedmineApiClient.cs          # APIクライアントインターフェース
+│   ├── RedmineApiClient.cs           # APIクライアント実装
+│   └── ApiException.cs               # API例外定義
+├── Formatters/                       # 出力フォーマッター
+│   ├── IOutputFormatter.cs           # フォーマッターインターフェース
+│   ├── TableFormatter.cs             # テーブル形式
+│   └── JsonFormatter.cs              # JSON形式
+└── Utils/                            # ユーティリティ
+    ├── ConsoleHelper.cs              # コンソール補助
+    └── CryptoHelper.cs               # 暗号化処理
 
-tests/
-├── RedmineCLI.Tests/             # 単体テスト
-│   ├── RedmineCLI.Tests.csproj
-│   ├── Commands/
-│   ├── Services/
-│   └── ApiClient/
-└── RedmineCLI.IntegrationTests/  # 統合テスト
-    ├── RedmineCLI.IntegrationTests.csproj
-    └── Scenarios/
+RedmineCLI.Tests/                     # 単体テストプロジェクト
+├── RedmineCLI.Tests.csproj
+├── Commands/
+│   ├── AuthCommandTests.cs
+│   └── IssueCommandTests.cs
+├── Services/
+│   └── RedmineServiceTests.cs
+└── ApiClient/
+    └── RedmineApiClientTests.cs
+
+RedmineCLI.IntegrationTests/          # 統合テストプロジェクト
+├── RedmineCLI.IntegrationTests.csproj
+├── Scenarios/
+│   ├── AuthenticationScenarios.cs
+│   └── IssueManagementScenarios.cs
+└── Fixtures/
+    └── TestDataFixture.cs
 ```
 
 ## コンポーネントアーキテクチャ
@@ -161,38 +170,29 @@ using RedmineCLI.Services;
 
 ### テストファイル配置
 ```
-# 単体テストは別プロジェクトで同じ構造
-src/RedmineCLI/Commands/IssueCommand.cs
-tests/RedmineCLI.Tests/Commands/IssueCommandTests.cs
+# 単体テストは同じ階層の別プロジェクトで同じ構造を維持
+RedmineCLI/Commands/IssueCommand.cs
+RedmineCLI.Tests/Commands/IssueCommandTests.cs
 
-# テストプロジェクト構造
-tests/
-├── RedmineCLI.Tests/
-│   ├── Commands/
-│   │   ├── AuthCommandTests.cs
-│   │   └── IssueCommandTests.cs
-│   ├── Services/
-│   │   └── RedmineServiceTests.cs
-│   └── ApiClient/
-│       └── RedmineApiClientTests.cs
-└── RedmineCLI.IntegrationTests/
-    ├── Scenarios/
-    │   ├── AuthenticationScenarios.cs
-    │   └── IssueManagementScenarios.cs
-    └── Fixtures/
-        └── TestDataFixture.cs
-```
+# テストデータ配置
+RedmineCLI.Tests/
+├── TestData/
+│   ├── ApiResponses/       # APIレスポンスのモックJSON
+│   │   ├── issues.json
+│   │   └── projects.json
+│   ├── Configs/            # テスト用設定ファイル
+│   │   └── test-config.yml
+│   └── Expected/           # 期待される出力データ
+│       └── formatted-output.txt
+└── Fixtures/
+    └── TestDataFixture.cs
 
-### テストデータ
-```
-tests/TestData/
-├── ApiResponses/       # APIレスポンスのモックJSON
-│   ├── issues.json
-│   └── projects.json
-├── Configs/            # テスト用設定ファイル
-│   └── test-config.yml
-└── Expected/           # 期待される出力データ
-    └── formatted-output.txt
+RedmineCLI.IntegrationTests/
+├── TestData/
+│   └── IntegrationConfigs/
+│       └── integration-test-config.yml
+└── Fixtures/
+    └── IntegrationTestFixture.cs
 ```
 
 ### 命名規則
