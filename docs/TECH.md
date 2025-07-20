@@ -7,7 +7,7 @@
 - **Native AOT**: 高速起動（実測7ms）と小サイズバイナリ（実測4.9MB）を実現
 - **System.CommandLine** v2.0.0-beta5: Microsoftが提供する最新のCLIフレームワーク
 - **Spectre.Console** v0.49.1: 美しいコンソール出力のためのライブラリ（AOT対応）
-- **YamlDotNet** v16.2.0: YAML設定ファイルの読み書き（AOT対応）
+- **VYaml** v0.29.0: Native AOT対応の高速YAMLライブラリ（Source Generator使用）
 - **Redmine REST API v3.0+**: チケット情報の取得・更新に使用するAPIインターフェース
 - **APIキー認証**: Redmineサーバーへの安全な認証方式として採用
 - **設定ファイル形式**: YAML形式（ghコマンドと同様）で設定情報を管理
@@ -17,7 +17,7 @@
 
 - **System.CommandLine** v2.0.0-beta5.25277.114
 - **Spectre.Console** v0.49.1
-- **YamlDotNet** v16.2.0
+- **VYaml** v0.29.0（Native AOT対応）
 - **Microsoft.Extensions.DependencyInjection** v9.0.0
 - **Microsoft.Extensions.Http** v9.0.0
 - **Microsoft.Extensions.Logging** v9.0.0
@@ -28,12 +28,14 @@
 
 - **Visual Studio 2022 / VS Code**: 推奨IDE
 - **dotnet CLI**: プロジェクト管理とビルドツール
-- **xUnit**: 単体テストフレームワーク
-- **Moq**: モッキングライブラリ
+- **xUnit** v2.9.2: 単体テストフレームワーク
+- **FluentAssertions** v6.12.0: 読みやすいアサーションライブラリ
+- **NSubstitute** v5.1.0: シンプルで使いやすいモッキングライブラリ（AOT対応）
+- **coverlet.collector** v6.0.2: コードカバレッジ収集ツール
 - **dotnet-format**: コードフォーマッター
 - **SonarAnalyzer.CSharp**: 静的解析ツール
-- **YamlDotNet**: YAML設定ファイルの読み書き
-- **System.Text.Json**: 高速なJSON処理
+- **VYaml**: Native AOT対応のYAMLライブラリ（設定ファイル用）
+- **System.Text.Json**: 高速なJSON処理（Source Generator使用）
 
 ## データ＆状態管理
 
@@ -49,7 +51,7 @@
 dotnet new console -n RedmineCLI
 dotnet add package System.CommandLine --prerelease
 dotnet add package Spectre.Console
-dotnet add package YamlDotNet
+dotnet add package VYaml
 
 # ビルドとテスト
 dotnet build

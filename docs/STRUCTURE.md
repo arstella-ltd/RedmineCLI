@@ -38,13 +38,21 @@ RedmineCLI/                           # メインプロジェクトディレク�
 │   └── ConfigService.cs              # 設定サービス実装
 ├── Models/                           # データモデル
 │   ├── Issue.cs                      # チケットモデル
+│   ├── IssueStatus.cs                # チケットステータスモデル
+│   ├── Priority.cs                   # 優先度モデル
 │   ├── Project.cs                    # プロジェクトモデル
 │   ├── User.cs                       # ユーザーモデル
-│   └── Config.cs                     # 設定モデル
+│   ├── Config.cs                     # 設定モデル
+│   ├── Profile.cs                    # プロファイルモデル
+│   └── Preferences.cs                # ユーザー設定モデル
 ├── ApiClient/                        # API通信
 │   ├── IRedmineApiClient.cs          # APIクライアントインターフェース
-│   ├── RedmineApiClient.cs           # APIクライアント実装
-│   └── ApiException.cs               # API例外定義
+│   ├── RedmineApiClient.cs           # APIクライアント実装（今後実装）
+│   ├── ApiResponses.cs               # APIレスポンスラッパー
+│   ├── JsonSerializerContext.cs      # AOT対応JSONコンテキスト
+│   └── DateTimeConverter.cs          # 日時変換カスタムコンバーター
+├── Exceptions/                       # カスタム例外
+│   └── ValidationException.cs        # バリデーション例外
 ├── Formatters/                       # 出力フォーマッター
 │   ├── IOutputFormatter.cs           # フォーマッターインターフェース
 │   ├── TableFormatter.cs             # テーブル形式
@@ -55,13 +63,16 @@ RedmineCLI/                           # メインプロジェクトディレク�
 
 RedmineCLI.Tests/                     # 単体テストプロジェクト
 ├── RedmineCLI.Tests.csproj
-├── Commands/
+├── ApiClient/
+│   └── SerializationTests.cs         # JSONシリアライゼーションテスト
+├── Models/
+│   ├── ConfigTests.cs                # 設定モデルのテスト
+│   └── IssueTests.cs                 # Issueモデルのテスト
+├── Commands/                         # (今後実装予定)
 │   ├── AuthCommandTests.cs
 │   └── IssueCommandTests.cs
-├── Services/
-│   └── RedmineServiceTests.cs
-└── ApiClient/
-    └── RedmineApiClientTests.cs
+└── Services/                         # (今後実装予定)
+    └── RedmineServiceTests.cs
 
 RedmineCLI.IntegrationTests/          # 統合テストプロジェクト
 ├── RedmineCLI.IntegrationTests.csproj
@@ -159,7 +170,8 @@ using Microsoft.Extensions.Logging;
 
 // サードパーティライブラリ
 using Spectre.Console;
-using YamlDotNet.Serialization;
+using VYaml.Annotations;
+using VYaml.Serialization;
 
 // 自プロジェクトの名前空間
 using RedmineCLI.Commands;

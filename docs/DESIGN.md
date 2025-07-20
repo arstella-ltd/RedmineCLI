@@ -2,7 +2,9 @@
 
 ## 概要
 
-RedmineCLIは、Redmine REST APIと通信するコマンドラインインターフェースツールです。ghコマンドと同様の設計思想を採用し、直感的で一貫性のあるコマンド体系を提供します。APIキーベースの認証により安全な通信を実現し、設定はYAML形式のファイルで永続化されます。
+RedmineCLIは、Redmine REST APIと通信するコマンドラインインターフェースツールです。
+ghコマンドと同様の設計思想を採用し、直感的で一貫性のあるコマンド体系を提供します。
+APIキーベースの認証により安全な通信を実現し、設定はYAML形式のファイルで永続化されます。
 
 ## アーキテクチャ
 
@@ -17,18 +19,18 @@ RedmineCLIは、Redmine REST APIと通信するコマンドラインインター
 ├─────────────────┤
 │   API Client    │  ← HttpClient + Polly
 ├─────────────────┤
-│ Config Manager  │  ← YamlDotNet
+│ Config Manager  │  ← VYaml (AOT対応)
 └─────────────────┘
 ```
 
 ### レイヤー構成
 - **プレゼンテーション層**: System.CommandLineによるコマンド解析、Spectre.Consoleによる出力
 - **アプリケーション層**: サービス層によるビジネスロジック、DIコンテナによる依存性注入
-- **インフラストラクチャ層**: HttpClientFactoryによるAPI通信、YamlDotNetによる設定管理
+- **インフラストラクチャ層**: HttpClientFactoryによるAPI通信、VYamlによる設定管理、System.Text.Json Source Generatorによるシリアライゼーション
 
 ### .NET固有の設計
 - **依存性注入（DI）**: Microsoft.Extensions.DependencyInjectionを使用（AOT向け最適化）
-- **設定管理**: IConfiguration + YamlConfigurationProvider（AOT対応）
+- **設定管理**: VYaml + カスタムシリアライザー（AOT対応、Source Generator使用）
 - **ログ**: Microsoft.Extensions.Loggingによる統一的なログ出力
 - **HTTPクライアント**: HttpClientFactory + Pollyによるリトライポリシー
 - **非同期処理**: async/awaitパターンの全面採用
@@ -39,7 +41,7 @@ RedmineCLIは、Redmine REST APIと通信するコマンドラインインター
 
 ### CLI Interface
 - **責任**: ユーザー入力の受付と結果の表示
-- **主要機能**:
+- **主要機能**
   - コマンドライン引数のパース
   - テーブル形式/JSON形式での出力
   - 対話的入力の処理
@@ -47,7 +49,7 @@ RedmineCLIは、Redmine REST APIと通信するコマンドラインインター
 
 ### Command Parser
 - **責任**: コマンドの解析と適切なハンドラーへのルーティング
-- **主要機能**:
+- **主要機能**
   - サブコマンドの識別（auth, issue, config）
   - オプションとフラグの解析
   - バリデーション
@@ -55,7 +57,7 @@ RedmineCLIは、Redmine REST APIと通信するコマンドラインインター
 
 ### API Client
 - **責任**: Redmine REST APIとの通信
-- **主要機能**:
+- **主要機能**
   - HTTP リクエストの送信（GET, POST, PUT）
   - APIキーによる認証ヘッダーの付与
   - レスポンスのパース
@@ -64,7 +66,7 @@ RedmineCLIは、Redmine REST APIと通信するコマンドラインインター
 
 ### Config Manager
 - **責任**: 設定ファイルの読み書きと管理
-- **主要機能**:
+- **主要機能**
   - YAML形式での設定の永続化
   - 複数プロファイルの管理
   - デフォルト値の提供
@@ -91,33 +93,129 @@ preferences:
 ### C#モデル定義
 ```csharp
 // Issue.cs
-public record Issue
+public class Issue : IEquatable<Issue>
 {
-    public int Id { get; init; }
-    public NamedResource Project { get; init; }
-    public NamedResource Tracker { get; init; }
-    public NamedResource Status { get; init; }
-    public NamedResource Priority { get; init; }
-    public NamedResource Author { get; init; }
-    public NamedResource? AssignedTo { get; init; }
-    public string Subject { get; init; }
-    public string Description { get; init; }
-    public int DoneRatio { get; init; }
-    public DateTime CreatedOn { get; init; }
-    public DateTime UpdatedOn { get; init; }
-    public List<Journal>? Journals { get; init; }
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+    
+    [JsonPropertyName("subject")]
+    public string Subject { get; set; } = string.Empty;
+    
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+    
+    [JsonPropertyName("project")]
+    public Project? Project { get; set; }
+    
+    [JsonPropertyName("status")]
+    public IssueStatus? Status { get; set; }
+    
+    [JsonPropertyName("priority")]
+    public Priority? Priority { get; set; }
+    
+    [JsonPropertyName("assigned_to")]
+    public User? AssignedTo { get; set; }
+    
+    [JsonPropertyName("created_on")]
+    public DateTime CreatedOn { get; set; }
+    
+    [JsonPropertyName("updated_on")]
+    public DateTime UpdatedOn { get; set; }
+    
+    [JsonPropertyName("done_ratio")]
+    public int? DoneRatio { get; set; }
 }
 
-// NamedResource.cs
-public record NamedResource(int Id, string Name);
+// 基本エンティティ
+public class Project { public int Id { get; set; } public string Name { get; set; } }
+public class IssueStatus { public int Id { get; set; } public string Name { get; set; } }
+public class Priority { public int Id { get; set; } public string Name { get; set; } }
+public class User { public int Id { get; set; } public string Name { get; set; } }
 
-// Config.cs
-public class Config
+// Config.cs (VYaml対応)
+[YamlObject]
+public partial class Config
 {
     public string CurrentProfile { get; set; } = "default";
     public Dictionary<string, Profile> Profiles { get; set; } = new();
     public Preferences Preferences { get; set; } = new();
+    
+    // APIキーの暗号化・復号化メソッド
+    private static string EncryptApiKey(string apiKey);
+    private static string DecryptApiKey(string encryptedApiKey);
 }
+```
+
+### JSONシリアライゼーション設計
+
+Native AOT対応のため、System.Text.Json Source Generatorを使用します。
+
+```csharp
+// JsonSerializerContext.cs
+[JsonSerializable(typeof(Issue))]
+[JsonSerializable(typeof(IssueResponse))]
+[JsonSerializable(typeof(IssuesResponse))]
+[JsonSerializable(typeof(Project))]
+[JsonSerializable(typeof(User))]
+[JsonSourceGenerationOptions(
+    PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
+    WriteIndented = true,
+    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+public partial class RedmineJsonContext : JsonSerializerContext { }
+
+// APIレスポンスラッパー
+public class IssuesResponse
+{
+    [JsonPropertyName("issues")]
+    public List<Issue> Issues { get; set; } = new();
+    
+    [JsonPropertyName("total_count")]
+    public int TotalCount { get; set; }
+    
+    [JsonPropertyName("offset")]
+    public int Offset { get; set; }
+    
+    [JsonPropertyName("limit")]
+    public int Limit { get; set; }
+}
+```
+
+### APIクライアントインターフェース
+
+```csharp
+public interface IRedmineApiClient
+{
+    Task<IssuesResponse> GetIssuesAsync(
+        int? assignedToId = null,
+        int? projectId = null,
+        string? status = null,
+        int? limit = null,
+        int? offset = null,
+        CancellationToken cancellationToken = default);
+        
+    Task<Issue> GetIssueAsync(int id, CancellationToken cancellationToken = default);
+    
+    Task<Issue> CreateIssueAsync(Issue issue, CancellationToken cancellationToken = default);
+    
+    Task<Issue> UpdateIssueAsync(int id, Issue issue, CancellationToken cancellationToken = default);
+    
+    Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default);
+}
+```
+
+### 設定管理の暗号化
+
+APIキーの保護のため、プラットフォーム固有の暗号化を実装します。
+
+- **Windows**: Data Protection API (DPAPI) を使用
+- **macOS/Linux**: Base64エンコーディング（将来的にKeychain/Secret Serviceに対応予定）
+
+```csharp
+// Windows環境での暗号化例
+var encrypted = ProtectedData.Protect(
+    Encoding.UTF8.GetBytes(apiKey), 
+    _entropy, 
+    DataProtectionScope.CurrentUser);
 ```
 
 ## エラーハンドリング
@@ -174,7 +272,7 @@ services.AddHttpClient<IRedmineApiClient, RedmineApiClient>()
 
 ### .NETテストツール
 - **xUnit**: 単体テストフレームワーク
-- **Moq**: モッキングライブラリ
+- **NSubstitute**: シンプルで使いやすいモッキングライブラリ（AOT対応）
 - **FluentAssertions**: 読みやすいアサーション
 - **WireMock.Net**: HTTPモックサーバー（統合テスト用）
 - **Coverlet**: コードカバレッジ測定
