@@ -219,7 +219,7 @@
   - **Refactor**: エディタ統合ロジックの改善
   - _要件: 6_
 
-- [ ] 11. ライセンス情報管理機能の実装（TDD）
+- [x] 11. ライセンス情報管理機能の実装（TDD）
   - **Red（〜30分）**: ライセンス管理のテストを先に作成
     - ライセンス表示テスト（以下のテストケースを作成）
       - `ShowLicenses_Should_DisplayAllLicenses_When_LicensesOptionProvided`
@@ -436,6 +436,21 @@
 - すべてのテスト（100件）が成功
 - Native AOTビルド成功：バイナリサイズ15MB
 - 要件6（コメント追加機能）の完全実装
+
+### タスク11完了（2025-07-21）
+- TDD手法（Red→Green→Refactor）に従って実装
+- テストケース4件を作成（ライセンス表示、バージョン情報、ファイル生成、埋め込み）
+- `redmine --licenses`オプションの実装（Spectre.Console美化表示）
+- THIRD-PARTY-NOTICES.txtファイルの生成と管理
+- ライセンス情報のキャッシュ機能と動的依存関係検出
+- 正しい権利者情報の調査と修正
+  - RedmineCLI: Arstella ltd.
+  - System.CommandLine: .NET Foundation and Contributors
+  - Spectre.Console: Patrik Svensson, Phil Scott, Nils Andresen, Cédric Luthi, Frank Ray
+  - VYaml: hadashiA（URL修正：github.com/hadashiA/VYaml）
+- Program.csにILicenseHelperのDI登録とライセンスオプション処理
+- すべてのテスト（104件）が成功
+- 要件9（ライセンス情報管理機能）の完全実装
 
 ## 使用方法
 
