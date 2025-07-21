@@ -1,6 +1,8 @@
 using FluentAssertions;
+
 using RedmineCLI.Formatters;
 using RedmineCLI.Models;
+
 using Xunit;
 
 namespace RedmineCLI.Tests.Formatters;

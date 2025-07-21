@@ -19,26 +19,26 @@ public class LicenseHelperTests
     {
         // Arrange
         var licenseHelper = new LicenseHelper();
-        
+
         // Act
         var result = await licenseHelper.GetLicenseInfoAsync();
-        
+
         // Assert
         result.Should().NotBeNull();
         result.Should().ContainKey("RedmineCLI");
         result["RedmineCLI"].Name.Should().Be("RedmineCLI");
         result["RedmineCLI"].License.Should().Contain("MIT");
     }
-    
+
     [Fact]
     public async Task ShowVersion_Should_IncludeLicenseInfo_When_VersionOptionProvided()
     {
         // Arrange
         var licenseHelper = new LicenseHelper();
-        
+
         // Act
         var versionInfo = await licenseHelper.GetVersionInfoAsync();
-        
+
         // Assert
         versionInfo.Should().NotBeNull();
         versionInfo.Version.Should().NotBeNullOrEmpty();
@@ -46,19 +46,19 @@ public class LicenseHelperTests
         versionInfo.Dependencies.Should().ContainKey("System.CommandLine");
         versionInfo.Dependencies["System.CommandLine"].Should().Contain("MIT");
     }
-    
+
     [Fact]
     public async Task GenerateNotices_Should_CreateFile_When_BuildExecuted()
     {
         // Arrange
         var licenseHelper = new LicenseHelper();
         var tempPath = Path.GetTempFileName();
-        
+
         try
         {
             // Act
             await licenseHelper.GenerateThirdPartyNoticesAsync(tempPath);
-            
+
             // Assert
             File.Exists(tempPath).Should().BeTrue();
             var content = await File.ReadAllTextAsync(tempPath);
@@ -74,16 +74,16 @@ public class LicenseHelperTests
             }
         }
     }
-    
+
     [Fact]
     public async Task EmbedLicenses_Should_IncludeInBinary_When_AotBuild()
     {
         // Arrange
         var licenseHelper = new LicenseHelper();
-        
+
         // Act
         var embeddedLicenses = await licenseHelper.GetEmbeddedLicensesAsync();
-        
+
         // Assert
         embeddedLicenses.Should().NotBeNull();
         embeddedLicenses.Should().NotBeEmpty();

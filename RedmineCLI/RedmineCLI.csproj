@@ -16,13 +16,10 @@
     <StripSymbols>true</StripSymbols>
     <!-- Suppress AOT/Trimming warnings for third-party libraries -->
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
-    <NoWarn>$(NoWarn);IL2104;IL3053</NoWarn>
-    
-    <!-- Package settings for dotnet tool -->
-    <PackageId>RedmineCLI</PackageId>
-    <ToolCommandName>redmine</ToolCommandName>
-    <PackAsTool>true</PackAsTool>
-    <IsPackable>true</IsPackable>
+    <!-- IL2104,IL3053: General trimming warnings -->
+    <!-- IL2055,IL2057,IL2067,IL2070,IL2072,IL2090: VYaml trimming warnings -->
+    <!-- IL3050: VYaml and Spectre.Console AOT warnings -->
+    <NoWarn>$(NoWarn);IL2104;IL3053;IL2055;IL2057;IL2067;IL2070;IL2072;IL2090;IL3050</NoWarn>
     
     <!-- Versioning -->
     <Version>0.8.0</Version>

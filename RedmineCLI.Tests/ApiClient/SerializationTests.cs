@@ -1,7 +1,9 @@
+using System.Text.Json;
+
 using FluentAssertions;
+
 using RedmineCLI.ApiClient;
 using RedmineCLI.Models;
-using System.Text.Json;
 
 namespace RedmineCLI.Tests.ApiClient;
 

@@ -15,7 +15,7 @@
     <PackageReference Include="Spectre.Console.Testing" Version="0.50.0" />
     <PackageReference Include="System.IO.Abstractions" Version="22.0.15" />
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" Version="22.0.15" />
-    <PackageReference Include="WireMock.Net" Version="1.6.6" />
+    <PackageReference Include="WireMock.Net" Version="1.8.16" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
   </ItemGroup>

@@ -344,14 +344,14 @@ public class IssueCommand
         {
             // Check if running under test runner
             var isRunningInTest = AppDomain.CurrentDomain.GetAssemblies()
-                .Any(a => a.FullName?.Contains("testhost") == true || 
+                .Any(a => a.FullName?.Contains("testhost") == true ||
                          a.FullName?.Contains("Microsoft.TestPlatform") == true);
-            
+
             // Check if browser opening is disabled (for testing)
             var disableBrowser = Environment.GetEnvironmentVariable("REDMINE_CLI_DISABLE_BROWSER");
-            if (isRunningInTest || 
-                (!string.IsNullOrEmpty(disableBrowser) && 
-                (disableBrowser.Equals("true", StringComparison.OrdinalIgnoreCase) || 
+            if (isRunningInTest ||
+                (!string.IsNullOrEmpty(disableBrowser) &&
+                (disableBrowser.Equals("true", StringComparison.OrdinalIgnoreCase) ||
                  disableBrowser.Equals("1", StringComparison.OrdinalIgnoreCase))))
             {
                 // Just log the URL instead of opening browser
@@ -773,9 +773,9 @@ public class IssueCommand
                 {
                     // Resolve status name to ID
                     var statuses = await _apiClient.GetIssueStatusesAsync(cancellationToken);
-                    var matchedStatus = statuses.FirstOrDefault(s => 
+                    var matchedStatus = statuses.FirstOrDefault(s =>
                         s.Name.Equals(status, StringComparison.OrdinalIgnoreCase));
-                    
+
                     if (matchedStatus != null)
                     {
                         updateIssue.Status = matchedStatus;
@@ -991,9 +991,15 @@ public class IssueCommand
             string commentText;
 
             // If message is provided via command line, use it directly
-            if (!string.IsNullOrEmpty(message))
+            if (message != null)
             {
-                commentText = message;
+                // Check if the provided message is empty or whitespace
+                if (string.IsNullOrWhiteSpace(message))
+                {
+                    AnsiConsole.MarkupLine("[yellow]Comment cancelled: No text entered[/]");
+                    return 1;
+                }
+                commentText = message.Trim();
             }
             else
             {
@@ -1002,12 +1008,11 @@ public class IssueCommand
                 if (string.IsNullOrWhiteSpace(commentText))
                 {
                     AnsiConsole.MarkupLine("[yellow]Comment cancelled: No text entered[/]");
-                    return 0;
+                    return 1;
                 }
             }
 
-            // Validate comment is not empty after trimming
-            commentText = commentText.Trim();
+            // Final validation to ensure comment is not empty
             if (string.IsNullOrEmpty(commentText))
             {
                 AnsiConsole.MarkupLine("[red]Error:[/] Comment cannot be empty");
@@ -1103,7 +1108,7 @@ public class IssueCommand
     private static async Task<string> ReadAndParseCommentAsync(string filePath)
     {
         var content = await File.ReadAllTextAsync(filePath);
-        
+
         // Remove comment lines and instruction lines
         var lines = content.Split('\n')
             .Where(line => !line.TrimStart().StartsWith("#"))

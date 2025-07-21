@@ -1,12 +1,16 @@
 using FluentAssertions;
+
 using Microsoft.Extensions.Logging;
+
 using NSubstitute;
+
 using RedmineCLI.ApiClient;
 using RedmineCLI.Commands;
 using RedmineCLI.Exceptions;
 using RedmineCLI.Formatters;
 using RedmineCLI.Models;
 using RedmineCLI.Services;
+
 using Xunit;
 
 namespace RedmineCLI.Tests.Commands;
@@ -27,7 +31,7 @@ public class IssueCommentCommandTests
         _tableFormatter = Substitute.For<ITableFormatter>();
         _jsonFormatter = Substitute.For<IJsonFormatter>();
         _logger = Substitute.For<ILogger<IssueCommand>>();
-        
+
         _issueCommand = new IssueCommand(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
     }
 
@@ -62,7 +66,7 @@ public class IssueCommentCommandTests
     {
         // Arrange
         const int issueId = 123;
-        
+
         // Set up EDITOR environment variable to simulate editor behavior
         Environment.SetEnvironmentVariable("EDITOR", "echo");
 

@@ -1,14 +1,21 @@
 using System.CommandLine;
+
 using FluentAssertions;
+
 using Microsoft.Extensions.Logging;
+
 using NSubstitute;
+
 using RedmineCLI.ApiClient;
 using RedmineCLI.Commands;
 using RedmineCLI.Models;
 using RedmineCLI.Services;
+
 using Spectre.Console;
 using Spectre.Console.Testing;
+
 using Xunit;
+
 using Profile = RedmineCLI.Models.Profile;
 
 namespace RedmineCLI.Tests.Commands;
@@ -28,7 +35,7 @@ public class AuthCommandTests
         _apiClient = Substitute.For<IRedmineApiClient>();
         _logger = Substitute.For<ILogger<AuthCommand>>();
         _console = new TestConsole();
-        
+
         _authCommand = new AuthCommand(_configService, _apiClient, _logger);
     }
 
@@ -58,7 +65,7 @@ public class AuthCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _configService.Received(1).SaveConfigAsync(Arg.Is<Config>(c => 
+        await _configService.Received(1).SaveConfigAsync(Arg.Is<Config>(c =>
             c.Profiles.ContainsKey(testProfileName) &&
             c.Profiles[testProfileName].Url == testUrl &&
             c.Profiles[testProfileName].ApiKey == testApiKey));
@@ -148,7 +155,7 @@ public class AuthCommandTests
         var apiClient = Substitute.For<IRedmineApiClient>();
         var logger = Substitute.For<ILogger<AuthCommand>>();
         var authCommand = new AuthCommand(configService, apiClient, logger);
-        
+
         var testProfile = new Profile
         {
             Name = "default",
@@ -317,7 +324,7 @@ public class AuthCommandTests
         // このテストは対話的UIが実装された後に完全なテストを追加
         // 現在は基本的な構造のみテスト
         var result = await _authCommand.LoginInteractiveAsync();
-        
+
         // 対話的入力のモックが複雑なため、実装後にテストを拡張
         result.Should().BeOneOf(0, 1); // 成功または失敗
     }
@@ -336,7 +343,7 @@ public class AuthCommandTests
         command.Should().NotBeNull();
         command.Name.Should().Be("auth");
         command.Subcommands.Should().HaveCount(3); // login, status, logout
-        
+
         var subcommandNames = command.Subcommands.Select(sc => sc.Name).ToList();
         subcommandNames.Should().Contain("login");
         subcommandNames.Should().Contain("status");
@@ -356,6 +363,107 @@ public class AuthCommandTests
         optionNames.Should().Contain("--url");
         optionNames.Should().Contain("--api-key");
         optionNames.Should().Contain("--profile");
+    }
+
+    #endregion
+
+    #region Error Handling Tests
+
+    [Fact]
+    public async Task Login_Should_ReturnError_When_ApiKeyIsEmpty()
+    {
+        // Arrange
+        var testUrl = "https://redmine.example.com";
+        var emptyApiKey = "";
+        var testProfileName = "default";
+
+        // Act
+        var result = await _authCommand.LoginAsync(testUrl, emptyApiKey, testProfileName);
+
+        // Assert
+        result.Should().Be(1);
+        await _configService.DidNotReceive().SaveConfigAsync(Arg.Any<Config>());
+    }
+
+    [Fact]
+    public async Task Login_Should_ReturnError_When_UrlIsEmpty()
+    {
+        // Arrange
+        var emptyUrl = "";
+        var testApiKey = "test-api-key";
+        var testProfileName = "default";
+
+        // Act
+        var result = await _authCommand.LoginAsync(emptyUrl, testApiKey, testProfileName);
+
+        // Assert
+        result.Should().Be(1);
+        await _configService.DidNotReceive().SaveConfigAsync(Arg.Any<Config>());
+    }
+
+    [Fact]
+    public async Task Status_Should_HandleNull_When_NoActiveProfile()
+    {
+        // Arrange
+        _configService.GetActiveProfileAsync()
+            .Returns(Task.FromResult<Profile?>(null));
+
+        // Act
+        var result = await _authCommand.StatusAsync();
+
+        // Assert
+        result.Should().Be(1);
+        await _configService.Received(1).GetActiveProfileAsync();
+        await _apiClient.DidNotReceive().TestConnectionAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Logout_Should_ReturnError_When_NoActiveProfile()
+    {
+        // Arrange
+        _configService.GetActiveProfileAsync()
+            .Returns(Task.FromResult<Profile?>(null));
+
+        // Act
+        var result = await _authCommand.LogoutAsync();
+
+        // Assert
+        result.Should().Be(1);
+        await _configService.DidNotReceive().SaveConfigAsync(Arg.Any<Config>());
+    }
+
+    [Fact]
+    public async Task Logout_Should_ClearApiKey_When_ProfileExists()
+    {
+        // Arrange
+        var testProfile = new Profile
+        {
+            Name = "default",
+            Url = "https://redmine.example.com",
+            ApiKey = "test-api-key"
+        };
+
+        var config = new Config
+        {
+            CurrentProfile = "default",
+            Profiles = new Dictionary<string, Profile>
+            {
+                ["default"] = testProfile
+            }
+        };
+
+        _configService.GetActiveProfileAsync()
+            .Returns(Task.FromResult<Profile?>(testProfile));
+        _configService.LoadConfigAsync()
+            .Returns(Task.FromResult(config));
+
+        // Act
+        var result = await _authCommand.LogoutAsync();
+
+        // Assert
+        result.Should().Be(0);
+        await _configService.Received(1).SaveConfigAsync(Arg.Is<Config>(c =>
+            c.Profiles["default"].ApiKey == string.Empty));
     }
 
     #endregion
