@@ -194,6 +194,43 @@ public class Issue : IEquatable<Issue>
     
     [JsonPropertyName("done_ratio")]
     public int? DoneRatio { get; set; }
+    
+    [JsonPropertyName("journals")]
+    public List<Journal>? Journals { get; set; }
+}
+
+// Journal.cs
+public class Journal
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("user")]
+    public User? User { get; set; }
+
+    [JsonPropertyName("notes")]
+    public string? Notes { get; set; }
+
+    [JsonPropertyName("created_on")]
+    public DateTime CreatedOn { get; set; }
+
+    [JsonPropertyName("details")]
+    public List<JournalDetail>? Details { get; set; }
+}
+
+public class JournalDetail
+{
+    [JsonPropertyName("property")]
+    public string Property { get; set; } = string.Empty;
+
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("old_value")]
+    public string? OldValue { get; set; }
+
+    [JsonPropertyName("new_value")]
+    public string? NewValue { get; set; }
 }
 
 // 基本エンティティ
@@ -251,6 +288,10 @@ VYamlについては、[YamlObject]属性による自動生成フォーマッタ
 [JsonSerializable(typeof(IssuesResponse))]
 [JsonSerializable(typeof(Project))]
 [JsonSerializable(typeof(User))]
+[JsonSerializable(typeof(Journal))]
+[JsonSerializable(typeof(List<Journal>))]
+[JsonSerializable(typeof(JournalDetail))]
+[JsonSerializable(typeof(List<JournalDetail>))]
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     WriteIndented = true,
@@ -306,6 +347,8 @@ public interface IRedmineApiClient
         
     Task<Issue> GetIssueAsync(int id, CancellationToken cancellationToken = default);
     
+    Task<Issue> GetIssueAsync(int id, bool includeJournals, CancellationToken cancellationToken = default);
+    
     Task<Issue> CreateIssueAsync(Issue issue, CancellationToken cancellationToken = default);
     
     Task<Issue> UpdateIssueAsync(int id, Issue issue, CancellationToken cancellationToken = default);
@@ -319,12 +362,14 @@ public interface IRedmineApiClient
 public interface ITableFormatter
 {
     void FormatIssues(List<Issue> issues);
+    void FormatIssueDetails(Issue issue);
 }
 
 // IJsonFormatter.cs
 public interface IJsonFormatter
 {
     void FormatIssues(List<Issue> issues);
+    void FormatIssueDetails(Issue issue);
 }
 ```
 
@@ -456,6 +501,27 @@ ID     STATUS        SUBJECT                           ASSIGNEE      UPDATED
 # 成功メッセージ
 ✓ Issue #1234 created successfully
 View it at: https://redmine.example.com/issues/1234
+
+# チケット詳細表示の例（issue view）
+╭────────────── Issue #1234 ──────────────╮
+│ Implement login functionality           │
+╰─────────────────────────────────────────╯
+
+Status:     New
+Priority:   Normal
+Assignee:   John Doe
+Project:    Test Project
+Progress:   50%
+Created:    2024-01-01 10:00
+Updated:    2024-01-02 15:30
+
+Description:
+This is a detailed description of the issue...
+
+History:
+#1 - Jane Smith - 2024-01-02 14:00
+  Changed status_id from 'New' to 'In Progress'
+  Updated the status
 
 # エラーメッセージ
 ✗ Error: Authentication failed
