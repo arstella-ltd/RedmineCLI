@@ -1,4 +1,4 @@
-namespace RedmineCLI;
+namespace RedmineCLI.Exceptions;
 
 public class ValidationException : Exception
 {

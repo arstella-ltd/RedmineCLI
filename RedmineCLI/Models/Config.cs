@@ -2,6 +2,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using RedmineCLI.Exceptions;
 using VYaml.Annotations;
 using VYaml.Serialization;
 
