@@ -124,10 +124,48 @@ public class RedmineApiClient : IRedmineApiClient
             _logger.LogDebug("Testing connection: {Path}", path);
 
             var response = await _httpClient.GetAsync(path, cancellationToken);
+            _logger.LogDebug("Response status: {StatusCode}", response.StatusCode);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogDebug("Response content: {Content}", content);
+            }
+            
             return response.IsSuccessStatusCode;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Connection test failed");
+            return false;
+        }
+    }
+    
+    public async Task<bool> TestConnectionAsync(string url, string apiKey, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Create a temporary HttpClient for testing
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add("X-Redmine-API-Key", apiKey);
+            
+            var testUrl = new Uri(new Uri(url), "/users/current.json").ToString();
+            _logger.LogDebug("Testing connection to {Url}", testUrl);
+
+            var response = await httpClient.GetAsync(testUrl, cancellationToken);
+            _logger.LogDebug("Response status: {StatusCode}", response.StatusCode);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogDebug("Response content: {Content}", content);
+            }
+            
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Connection test failed for URL: {Url}", url);
             return false;
         }
     }

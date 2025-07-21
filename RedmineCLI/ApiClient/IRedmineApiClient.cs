@@ -27,4 +27,6 @@ public interface IRedmineApiClient
     Task<List<IssueStatus>> GetIssueStatusesAsync(CancellationToken cancellationToken = default);
 
     Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default);
+    
+    Task<bool> TestConnectionAsync(string url, string apiKey, CancellationToken cancellationToken = default);
 }

@@ -55,7 +55,10 @@ public class Program
         services.AddLogging(builder =>
         {
             builder.AddConsole();
-            builder.SetMinimumLevel(LogLevel.Information);
+            builder.SetMinimumLevel(LogLevel.Warning);
+            
+            // Suppress HttpClient logs
+            builder.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
         });
         
         // Configuration services

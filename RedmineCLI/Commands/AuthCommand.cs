@@ -88,11 +88,8 @@ public class AuthCommand
 
             _logger.LogDebug("Testing connection to {Url}", url);
             
-            // Test connection first before saving anything
-            // Note: In a real implementation, we'd need to configure the API client with the new credentials
-            // For testing purposes, we'll assume the API client can test connection with provided URL and API key
-            
-            var connectionTest = await _apiClient.TestConnectionAsync();
+            // Test connection with provided credentials
+            var connectionTest = await _apiClient.TestConnectionAsync(url, apiKey);
             if (!connectionTest)
             {
                 DisplayError("Failed to connect to Redmine server. Please check your URL and API key.");
@@ -210,29 +207,41 @@ public class AuthCommand
             }
 
             AnsiConsole.Write(table);
-            AnsiConsole.WriteLine();
 
-            // Test connection
-            var connectionSuccess = await AnsiConsole.Status()
-                .StartAsync<bool>("Testing connection...", async ctx =>
-                {
-                    ctx.Spinner(Spinner.Known.Dots);
-                    var connectionTest = await _apiClient.TestConnectionAsync();
-                    
-                    if (connectionTest)
+            // Only test connection if API key is set
+            if (!string.IsNullOrEmpty(activeProfile.ApiKey))
+            {
+                AnsiConsole.WriteLine();
+                
+                // Test connection
+                var connectionSuccess = await AnsiConsole.Status()
+                    .StartAsync<bool>("Testing connection...", async ctx =>
                     {
-                        AnsiConsole.MarkupLine("[green]✓ Connection successful[/]");
-                        return true;
-                    }
-                    else
-                    {
-                        AnsiConsole.MarkupLine("[red]✗ Connection failed[/]");
-                        AnsiConsole.MarkupLine("Please check your credentials or run [cyan]redmine auth login[/] again");
-                        return false;
-                    }
-                });
+                        ctx.Spinner(Spinner.Known.Dots);
+                        var connectionTest = await _apiClient.TestConnectionAsync();
+                        
+                        if (connectionTest)
+                        {
+                            AnsiConsole.MarkupLine("[green]✓ Connection successful[/]");
+                            return true;
+                        }
+                        else
+                        {
+                            AnsiConsole.MarkupLine("[red]✗ Connection failed[/]");
+                            AnsiConsole.MarkupLine("Please check your credentials or run [cyan]redmine auth login[/] again");
+                            return false;
+                        }
+                    });
 
-            return connectionSuccess ? 0 : 1;
+                return connectionSuccess ? 0 : 1;
+            }
+            else
+            {
+                AnsiConsole.WriteLine();
+                AnsiConsole.MarkupLine("[yellow]No API key configured[/]");
+                AnsiConsole.MarkupLine("Run [cyan]redmine auth login[/] to authenticate");
+                return 1;
+            }
         }
         catch (Exception ex)
         {
