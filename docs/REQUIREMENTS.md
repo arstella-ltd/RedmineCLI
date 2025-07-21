@@ -18,15 +18,20 @@ RedmineCLIは、Redmineのチケット管理をコマンドラインから効率
 4. WHEN `redmine auth status` を実行 THEN 現在の接続状態を確認できる SHALL
 
 ### 要求 2
-**ユーザーストーリー:** 開発者として、様々な条件でフィルタリングして一覧表示したいので、担当チケットを素早く確認できる
+**ユーザーストーリー:** 開発者として、プロジェクト全体のチケット状況を把握し、必要に応じて様々な条件でフィルタリングしたいので、効率的にチケット管理ができる
 
 #### 受け入れ基準
-1. WHEN `redmine issue list` を実行 THEN 自分が担当のオープンなチケット一覧が表示される SHALL
-2. WHEN `--assignee` オプションを指定 THEN 特定のユーザーのチケットが表示される SHALL
-3. WHEN `--status` オプションを指定 THEN 特定のステータスのチケットが表示される SHALL
-4. WHEN `--project` オプションを指定 THEN 特定のプロジェクトのチケットが表示される SHALL
-5. WHEN `--limit` オプションを指定 THEN 表示件数を制限できる SHALL
-6. WHEN `--json` オプションを指定 THEN JSON形式で出力される SHALL
+1. WHEN `redmine issue list` を実行 THEN プロジェクトのオープンなチケット一覧が表示される（デフォルト30件） SHALL
+2. WHEN `--assignee <user>` または `-a <user>` オプションを指定 THEN 特定のユーザーのチケットが表示される SHALL
+3. WHEN `--assignee @me` または `-a @me` を指定 THEN 現在の認証ユーザーのチケットが表示される SHALL
+4. WHEN `--status <status>` または `-s <status>` オプションを指定 THEN 特定のステータスのチケットが表示される SHALL
+5. WHEN `--project <project>` または `-p <project>` オプションを指定 THEN 特定のプロジェクトのチケットが表示される SHALL
+6. WHEN `--limit <number>` または `-L <number>` オプションを指定 THEN 表示件数を制限できる SHALL
+7. WHEN `--json` オプションを指定 THEN JSON形式で出力される SHALL
+8. WHEN 複数のフィルタオプションを組み合わせる THEN AND条件で絞り込まれる SHALL
+9. WHEN `--status all` を指定 THEN 全てのステータスのチケットが表示される SHALL
+10. WHEN `--web` または `-w` オプションを指定 THEN 指定された条件でRedmineのチケット一覧ページをWebブラウザで開く SHALL
+11. WHEN `--web` と他のフィルタオプションを組み合わせる THEN URLにクエリパラメータとして条件が反映される SHALL
 
 ### 要求 3
 **ユーザーストーリー:** 開発者として、IDを指定して全情報を表示したいので、チケットの詳細情報を確認できる
@@ -36,32 +41,38 @@ RedmineCLIは、Redmineのチケット管理をコマンドラインから効率
 2. WHEN チケットにコメントがある THEN 履歴も含めて表示される SHALL
 3. WHEN `--json` オプションを指定 THEN JSON形式で出力される SHALL
 4. WHEN 存在しないIDを指定 THEN エラーメッセージが表示される SHALL
+5. WHEN `--web` または `-w` オプションを指定 THEN 該当チケットの詳細ページをWebブラウザで開く SHALL
 
 ### 要求 4
 **ユーザーストーリー:** 開発者として、必要な情報を入力して登録したいので、新しいチケットを作成できる
 
 #### 受け入れ基準
 1. WHEN `redmine issue create` を実行 THEN 対話的にチケット情報を入力できる SHALL
-2. WHEN `--project` オプションを指定 THEN プロジェクトを事前に選択できる SHALL
-3. WHEN `--title` と `--description` を指定 THEN 非対話的に作成できる SHALL
+2. WHEN `--project <project>` または `-p <project>` オプションを指定 THEN プロジェクトを事前に選択できる SHALL
+3. WHEN `--title <title>` または `-t <title>` と `--description <desc>` を指定 THEN 非対話的に作成できる SHALL
 4. WHEN チケットが作成される THEN 作成されたチケットのIDとURLが表示される SHALL
+5. WHEN `--assignee <user>` または `-a <user>` を指定 THEN 担当者を事前に設定できる SHALL
+6. WHEN `--web` または `-w` オプションを指定 THEN 新規チケット作成ページをWebブラウザで開く SHALL
+7. WHEN `--web` と `--project` を組み合わせる THEN 指定プロジェクトの新規チケット作成ページを開く SHALL
 
 ### 要求 5
 **ユーザーストーリー:** 開発者として、ステータスや担当者を変更したいので、チケットの状態を更新できる
 
 #### 受け入れ基準
 1. WHEN `redmine issue edit <ID>` を実行 THEN 対話的に更新内容を選択できる SHALL
-2. WHEN `--status` オプションを指定 THEN ステータスを直接更新できる SHALL
-3. WHEN `--assignee` オプションを指定 THEN 担当者を変更できる SHALL
-4. WHEN `--done-ratio` オプションを指定 THEN 進捗率を更新できる SHALL
-5. WHEN 更新が成功 THEN 確認メッセージが表示される SHALL
+2. WHEN `--status <status>` または `-s <status>` オプションを指定 THEN ステータスを直接更新できる SHALL
+3. WHEN `--assignee <user>` または `-a <user>` オプションを指定 THEN 担当者を変更できる SHALL
+4. WHEN `--assignee @me` または `-a @me` を指定 THEN 現在の認証ユーザーに担当者を変更できる SHALL
+5. WHEN `--done-ratio <percent>` オプションを指定 THEN 進捗率を更新できる SHALL
+6. WHEN 更新が成功 THEN 確認メッセージが表示される SHALL
+7. WHEN `--web` または `-w` オプションを指定 THEN 該当チケットの編集ページをWebブラウザで開く SHALL
 
 ### 要求 6
 **ユーザーストーリー:** 開発者として、コメントを追加したいので、チケットに進捗を記録できる
 
 #### 受け入れ基準
 1. WHEN `redmine issue comment <ID>` を実行 THEN コメントを入力できる SHALL
-2. WHEN `--message` オプションを指定 THEN 直接コメントを追加できる SHALL
+2. WHEN `--message <text>` または `-m <text>` オプションを指定 THEN 直接コメントを追加できる SHALL
 3. WHEN エディタが設定されている THEN エディタでコメントを編集できる SHALL
 4. WHEN コメントが追加される THEN 確認メッセージが表示される SHALL
 
