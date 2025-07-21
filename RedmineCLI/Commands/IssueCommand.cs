@@ -342,6 +342,23 @@ public class IssueCommand
     {
         try
         {
+            // Check if running under test runner
+            var isRunningInTest = AppDomain.CurrentDomain.GetAssemblies()
+                .Any(a => a.FullName?.Contains("testhost") == true || 
+                         a.FullName?.Contains("Microsoft.TestPlatform") == true);
+            
+            // Check if browser opening is disabled (for testing)
+            var disableBrowser = Environment.GetEnvironmentVariable("REDMINE_CLI_DISABLE_BROWSER");
+            if (isRunningInTest || 
+                (!string.IsNullOrEmpty(disableBrowser) && 
+                (disableBrowser.Equals("true", StringComparison.OrdinalIgnoreCase) || 
+                 disableBrowser.Equals("1", StringComparison.OrdinalIgnoreCase))))
+            {
+                // Just log the URL instead of opening browser
+                Console.WriteLine($"Browser opening disabled. URL: {url}");
+                return;
+            }
+
             // First, check if BROWSER environment variable is set
             var browserCommand = Environment.GetEnvironmentVariable("BROWSER");
             if (!string.IsNullOrEmpty(browserCommand))
