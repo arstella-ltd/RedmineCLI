@@ -174,6 +174,11 @@ RedmineCLI issue edit <ID> [-s STATUS] [-a USER/@me] [--done-ratio N] [--web]  #
 RedmineCLI issue edit <ID>                                                     # 対話的編集モード
 RedmineCLI issue comment <ID> [-m MESSAGE]
 
+# チケットコメント追加の詳細例
+RedmineCLI issue comment 123                           # エディタで長文コメント作成
+RedmineCLI issue comment 123 -m "作業完了しました"      # 直接コメント入力
+RedmineCLI issue comment 456 --message "テスト結果OK"   # --messageでも指定可能
+
 # 設定管理
 RedmineCLI config set <KEY> <VALUE>
 RedmineCLI config get <KEY>

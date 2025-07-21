@@ -211,6 +211,44 @@ APIキーベースの認証により安全な通信を実現し、設定はYAML�
   - API応答のエラーメッセージを適切に表示
   - ValidationExceptionとRedmineApiExceptionの使い分け
 
+#### Issue Comment Command 詳細設計
+- **実行モード**
+  - エディタモード：メッセージオプション無しで起動した場合
+  - 直接入力モード：-m/--messageオプションを指定した場合
+- **エディタ統合フロー**
+  ```
+  1. 一時ファイル作成とコメントテンプレート書き込み
+     ↓
+  2. $EDITOR環境変数またはプラットフォーム規定エディタ起動
+     - Windows: notepad
+     - Unix系: nano
+     ↓
+  3. エディタでのコメント編集
+     ↓
+  4. ファイル読み込みと#で始まる行の除外
+     ↓
+  5. 一時ファイルの削除
+  ```
+- **エラー処理とフォールバック**
+  - エディタ起動失敗時：コンソール入力フォールバック
+  - 空コメント検証：トリム後の文字数チェック
+  - テンポラリファイル管理：finally句での確実な削除
+- **APIリクエスト形式**
+  ```
+  CommentRequest {
+    issue: CommentData {
+      notes: string  // コメント内容
+    }
+  }
+  ```
+- **成功時の表示**
+  - 確認メッセージ：「Comment added to issue #123」
+  - チケットURL表示：プロファイルURL + /issues/{id}
+- **エラーハンドリング**
+  - 404エラー：「Issue #{id} not found」
+  - 空コメントエラー：「Comment cannot be empty」
+  - その他APIエラー：レスポンスメッセージをそのまま表示
+
 ### API Client
 - **責任**: Redmine REST APIとの通信
 - **主要機能**
