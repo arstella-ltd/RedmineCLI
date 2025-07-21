@@ -31,15 +31,28 @@
 
 - **Visual Studio 2022 / VS Code**: 推奨IDE
 - **dotnet CLI**: プロジェクト管理とビルドツール
-- **xUnit** v2.9.2: 単体テストフレームワーク
-- **FluentAssertions** v6.12.0: 読みやすいアサーションライブラリ
+
+### テスト駆動開発（TDD）ツール
+- **xUnit** v2.9.2: 単体テストフレームワーク（Native AOT対応）
+- **FluentAssertions** v6.12.0: 読みやすいアサーションライブラリ（Should()構文）
 - **NSubstitute** v5.1.0: シンプルで使いやすいモッキングライブラリ（AOT対応）
 - **System.IO.Abstractions.TestingHelpers** v22.0.15: ファイルシステムのモック
-- **WireMock.Net** v1.6.6: HTTP APIのモックサーバー
+- **WireMock.Net** v1.6.6: HTTP APIのモックサーバー（統合テスト用）
 - **Spectre.Console.Testing** v0.50.0: Spectre.Consoleの出力テスト用ライブラリ
+
+### 品質管理ツール
 - **coverlet.collector** v6.0.2: コードカバレッジ収集ツール
 - **dotnet-format**: コードフォーマッター
 - **SonarAnalyzer.CSharp**: 静的解析ツール
+
+### TDD開発プロセス
+本プロジェクトでは和田卓人（t-wada）氏が推奨するテスト駆動開発手法を採用しています。
+1. **Red**: 失敗するテストを先に作成
+2. **Green**: テストを通す最小限の実装
+3. **Refactor**: コードの改善と最適化
+- テスト命名規則: `{Method}_Should_{ExpectedBehavior}_When_{Condition}`
+- AAA（Arrange-Act-Assert）パターンの徹底
+- テストピラミッド（単体テスト70%、統合テスト20%、E2Eテスト10%）
 
 ## System.CommandLineの使用方法
 
@@ -157,7 +170,8 @@ RedmineCLI issue list -a @me --web                # 条件付きでブラウザ�
 
 RedmineCLI issue view <ID> [--json] [--web]
 RedmineCLI issue create [-p PROJECT] [-t TITLE] [--description DESC] [-a USER] [--web]
-RedmineCLI issue edit <ID> [-s STATUS] [-a USER/@me] [--done-ratio N] [--web]
+RedmineCLI issue edit <ID> [-s STATUS] [-a USER/@me] [--done-ratio N] [--web]  # オプション指定時
+RedmineCLI issue edit <ID>                                                     # 対話的編集モード
 RedmineCLI issue comment <ID> [-m MESSAGE]
 
 # 設定管理

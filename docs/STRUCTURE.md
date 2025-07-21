@@ -39,6 +39,7 @@ RedmineCLI/                           # メインプロジェクトディレク�
 │   └── ConfigService.cs              # 設定サービス実装
 ├── Models/                           # データモデル
 │   ├── Issue.cs                      # チケットモデル
+│   ├── IssueFilter.cs                # チケット検索フィルタモデル
 │   ├── IssueStatus.cs                # チケットステータスモデル
 │   ├── Priority.cs                   # 優先度モデル
 │   ├── Project.cs                    # プロジェクトモデル
@@ -57,9 +58,10 @@ RedmineCLI/                           # メインプロジェクトディレク�
 │   ├── ValidationException.cs        # バリデーション例外
 │   └── RedmineApiException.cs        # Redmine API例外
 ├── Formatters/                       # 出力フォーマッター
-│   ├── IOutputFormatter.cs           # フォーマッターインターフェース
-│   ├── TableFormatter.cs             # テーブル形式
-│   └── JsonFormatter.cs              # JSON形式
+│   ├── ITableFormatter.cs            # テーブルフォーマッターインターフェース
+│   ├── IJsonFormatter.cs             # JSONフォーマッターインターフェース
+│   ├── TableFormatter.cs             # テーブル形式出力実装
+│   └── JsonFormatter.cs              # JSON形式出力実装
 ├── Utils/                            # ユーティリティ
 │   ├── ConsoleHelper.cs              # コンソール補助
 │   ├── CryptoHelper.cs               # 暗号化処理
@@ -77,7 +79,8 @@ RedmineCLI.Tests/                     # 単体テストプロジェクト
 │   └── IssueTests.cs                 # Issueモデルのテスト
 ├── Commands/
 │   ├── AuthCommandTests.cs           # 認証コマンドのテスト
-│   └── IssueCommandTests.cs          # チケット管理コマンドのテスト
+│   ├── IssueCommandTests.cs          # チケット一覧・詳細・作成コマンドのテスト
+│   └── IssueEditCommandTests.cs      # チケット編集コマンドのテスト（12テストケース）
 ├── Formatters/
 │   └── TableFormatterTests.cs        # テーブルフォーマッターのテスト
 └── Services/
@@ -99,7 +102,7 @@ RedmineCLI.IntegrationTests/          # 統合テストプロジェクト
 1. **Program.cs**: アプリケーションのエントリーポイント、DIコンテナ設定
 2. **Commands層**: System.CommandLineを使用したコマンド定義
    - AuthCommand: 認証コマンド（実装済み）
-   - IssueCommand: チケット管理（list、view実装済み）
+   - IssueCommand: チケット管理（list、view、create、edit実装済み）
    - ConfigCommand: 設定管理（今後実装）
 3. **Services層**: ビジネスロジックの実装
    - ConfigService: 設定管理（実装済み）

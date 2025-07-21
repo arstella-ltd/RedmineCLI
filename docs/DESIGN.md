@@ -117,6 +117,61 @@ APIキーベースの認証により安全な通信を実現し、設定はYAML�
     2. プラットフォーム固有コマンド（Windows: start、macOS: open、Linux: xdg-open）
   - 例: `/issues?set_filter=1&assigned_to_id=me&status_id=o`
 
+#### Issue Edit Command 詳細設計
+- **実行モード**
+  - 対話的モード：オプション無しで起動した場合
+  - 非対話的モード：更新するオプションを指定した場合
+- **対話的編集フロー**
+  ```
+  1. 現在のチケット情報の取得・表示
+     ↓
+  2. 編集項目選択（SelectionPrompt）
+     - Status / Assignee / Progress / Done (save changes) / Cancel
+     ↓
+  3. 選択された項目の編集
+     - Status: 利用可能ステータス一覧から選択
+     - Assignee: 現在ユーザーに割り当て or ユーザー選択
+     - Progress: 0-100の数値入力（バリデーション付き）
+     ↓
+  4. 変更内容の確認・ループ継続
+     ↓
+  5. チケット更新API呼び出し（部分更新）
+     ↓
+  6. 成功時：更新サマリー/URL表示
+  ```
+- **部分更新（PATCH）設計**
+  ```
+  IssueUpdateData {
+    subject: string?      // 必須（現在値を設定）
+    status_id: int?       // ステータス更新時のみ
+    assigned_to_id: int?  // 担当者更新時のみ
+    done_ratio: int?      // 進捗率更新時のみ
+  }
+  ```
+- **Redmine API制約への対応**
+  - 部分更新でもsubjectフィールドが必須
+  - 更新前に現在のissueを取得してsubjectを設定
+  - 空レスポンス対応：レスポンスが空の場合は更新後のissueを再取得
+- **ステータス名解決フロー**
+  - `/issue_statuses.json`エンドポイントから利用可能ステータスを取得
+  - 名前による大文字小文字を無視した検索でIDに解決
+  - 数値の場合はIDとして直接使用
+- **@me処理フロー**（共通処理）
+  - 担当者に`@me`が指定された場合、現在のユーザー情報を取得
+  - `/users/current.json`エンドポイントを使用
+  - 取得したユーザーIDを`assigned_to_id`に設定
+- **進捗率バリデーション**
+  - 0-100の範囲チェック
+  - 数値以外の入力に対するエラーハンドリング
+- **更新サマリー表示**
+  - 何のフィールドを何に変更したかを明確に表示
+  - 例：`status → In Progress, assignee → John Doe, progress → 75%`
+- **エラーハンドリング**
+  - 存在しないチケットID（404エラー）
+  - 無効なステータス名
+  - API応答のエラーメッセージを適切に表示
+  - 空レスポンス時の自動再取得処理
+
 #### Issue Create Command 詳細設計
 - **実行モード**
   - 対話的モード：オプション無しで起動した場合
@@ -353,6 +408,32 @@ public class IssuesResponse
     [JsonPropertyName("limit")]
     public int Limit { get; set; }
 }
+
+// 部分更新用リクエスト（チケット編集）
+public class IssueUpdateRequest
+{
+    [JsonPropertyName("issue")]
+    public IssueUpdateData Issue { get; set; } = new();
+}
+
+public class IssueUpdateData
+{
+    [JsonPropertyName("subject")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Subject { get; set; }
+
+    [JsonPropertyName("status_id")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? StatusId { get; set; }
+
+    [JsonPropertyName("assigned_to_id")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? AssignedToId { get; set; }
+
+    [JsonPropertyName("done_ratio")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? DoneRatio { get; set; }
+}
 ```
 
 ### サービスインターフェース
@@ -392,6 +473,14 @@ public interface IRedmineApiClient
     Task<Issue> CreateIssueAsync(Issue issue, CancellationToken cancellationToken = default);
     
     Task<Issue> UpdateIssueAsync(int id, Issue issue, CancellationToken cancellationToken = default);
+    
+    Task<List<Project>> GetProjectsAsync(CancellationToken cancellationToken = default);
+    
+    Task<List<User>> GetUsersAsync(CancellationToken cancellationToken = default);
+    
+    Task<List<IssueStatus>> GetIssueStatusesAsync(CancellationToken cancellationToken = default);
+    
+    Task AddCommentAsync(int issueId, string comment, CancellationToken cancellationToken = default);
     
     Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default);
     
