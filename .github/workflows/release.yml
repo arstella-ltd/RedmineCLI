@@ -44,12 +44,6 @@ jobs:
         echo "" >> $GITHUB_OUTPUT
         echo "## 📥 Installation" >> $GITHUB_OUTPUT
         echo "" >> $GITHUB_OUTPUT
-        echo "### As dotnet tool:" >> $GITHUB_OUTPUT
-        echo "\`\`\`bash" >> $GITHUB_OUTPUT
-        echo "dotnet tool install -g RedmineCLI --version ${{ steps.extract_version.outputs.version }}" >> $GITHUB_OUTPUT
-        echo "\`\`\`" >> $GITHUB_OUTPUT
-        echo "" >> $GITHUB_OUTPUT
-        echo "### As standalone binary:" >> $GITHUB_OUTPUT
         echo "Download the appropriate binary for your platform from the assets below." >> $GITHUB_OUTPUT
         echo "" >> $GITHUB_OUTPUT
         echo "## 🛠️ Usage" >> $GITHUB_OUTPUT
@@ -180,33 +174,6 @@ jobs:
         asset_path: ./${{ matrix.config.asset_name }}.zip
         asset_name: ${{ matrix.config.asset_name }}.zip
         asset_content_type: application/zip
-
-  publish-nuget:
-    name: Publish to NuGet
-    runs-on: ubuntu-latest
-    needs: create-release
-    if: "!contains(github.ref_name, '-')" # Only for stable releases
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
-
-    - name: Restore dependencies
-      run: dotnet restore
-
-    - name: Run tests
-      run: dotnet test --configuration Release
-
-    - name: Pack as dotnet tool
-      run: dotnet pack RedmineCLI/RedmineCLI.csproj --configuration Release --no-restore -o packages/
-
-    - name: Publish to NuGet
-      run: dotnet nuget push packages/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
   update-homebrew:
     name: Update Homebrew Formula

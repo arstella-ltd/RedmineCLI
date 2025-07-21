@@ -18,12 +18,6 @@
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <NoWarn>$(NoWarn);IL2104;IL3053</NoWarn>
     
-    <!-- Package settings for dotnet tool -->
-    <PackageId>RedmineCLI</PackageId>
-    <ToolCommandName>redmine</ToolCommandName>
-    <PackAsTool>true</PackAsTool>
-    <IsPackable>true</IsPackable>
-    
     <!-- Versioning -->
     <Version>0.8.0</Version>
     <Authors>RedmineCLI Contributors</Authors>
