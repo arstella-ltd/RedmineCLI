@@ -1,13 +1,18 @@
 using System.CommandLine;
+
 using FluentAssertions;
+
 using Microsoft.Extensions.Logging;
+
 using NSubstitute;
+
 using RedmineCLI.ApiClient;
 using RedmineCLI.Commands;
 using RedmineCLI.Exceptions;
 using RedmineCLI.Formatters;
 using RedmineCLI.Models;
 using RedmineCLI.Services;
+
 using Xunit;
 
 namespace RedmineCLI.Tests.Commands;
@@ -28,7 +33,7 @@ public class IssueEditCommandTests
         _tableFormatter = Substitute.For<ITableFormatter>();
         _jsonFormatter = Substitute.For<IJsonFormatter>();
         _logger = Substitute.For<ILogger<IssueCommand>>();
-        
+
         _issueCommand = new IssueCommand(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
     }
 
@@ -59,13 +64,13 @@ public class IssueEditCommandTests
             Status = new IssueStatus { Id = 1, Name = "New" },
             Project = new Project { Id = 1, Name = "Test Project" }
         };
-        
+
         _apiClient.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
         _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(statusList));
         _apiClient.UpdateIssueAsync(
-            issueId, 
+            issueId,
             Arg.Is<Issue>(i => i.Status != null && i.Status.Id == 2 && i.Subject == "Test Issue"),
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
@@ -78,7 +83,7 @@ public class IssueEditCommandTests
         await _apiClient.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
         await _apiClient.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
         await _apiClient.Received(1).UpdateIssueAsync(
-            issueId, 
+            issueId,
             Arg.Is<Issue>(i => i.Status != null && i.Status.Id == 2 && i.Subject == "Test Issue"),
             Arg.Any<CancellationToken>());
     }
@@ -107,7 +112,7 @@ public class IssueEditCommandTests
         _apiClient.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
         _apiClient.UpdateIssueAsync(
-            issueId, 
+            issueId,
             Arg.Is<Issue>(i => i.AssignedTo != null && i.AssignedTo.Name == newAssignee && i.Subject == "Test Issue"),
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
@@ -119,7 +124,7 @@ public class IssueEditCommandTests
         result.Should().Be(0);
         await _apiClient.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
         await _apiClient.Received(1).UpdateIssueAsync(
-            issueId, 
+            issueId,
             Arg.Is<Issue>(i => i.AssignedTo != null && i.AssignedTo.Name == newAssignee && i.Subject == "Test Issue"),
             Arg.Any<CancellationToken>());
     }
@@ -149,7 +154,7 @@ public class IssueEditCommandTests
         _apiClient.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
         _apiClient.UpdateIssueAsync(
-            issueId, 
+            issueId,
             Arg.Is<Issue>(i => i.DoneRatio == doneRatio && i.Subject == "Test Issue"),
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
@@ -161,7 +166,7 @@ public class IssueEditCommandTests
         result.Should().Be(0);
         await _apiClient.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
         await _apiClient.Received(1).UpdateIssueAsync(
-            issueId, 
+            issueId,
             Arg.Is<Issue>(i => i.DoneRatio == doneRatio && i.Subject == "Test Issue"),
             Arg.Any<CancellationToken>());
     }
@@ -193,14 +198,14 @@ public class IssueEditCommandTests
             Status = new IssueStatus { Id = 1, Name = "New" },
             Project = new Project { Id = 1, Name = "Test Project" }
         };
-        
+
         _apiClient.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
         _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(statusList));
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
         _apiClient.UpdateIssueAsync(
-            issueId, 
+            issueId,
             Arg.Any<Issue>(),
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
@@ -258,7 +263,7 @@ public class IssueEditCommandTests
         _apiClient.GetCurrentUserAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentUser));
         _apiClient.UpdateIssueAsync(
-            issueId, 
+            issueId,
             Arg.Is<Issue>(i => i.AssignedTo != null && i.AssignedTo.Id == currentUser.Id && i.Subject == "Test Issue"),
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
@@ -271,7 +276,7 @@ public class IssueEditCommandTests
         await _apiClient.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
         await _apiClient.Received(1).GetCurrentUserAsync(Arg.Any<CancellationToken>());
         await _apiClient.Received(1).UpdateIssueAsync(
-            issueId, 
+            issueId,
             Arg.Is<Issue>(i => i.AssignedTo != null && i.AssignedTo.Id == currentUser.Id && i.Subject == "Test Issue"),
             Arg.Any<CancellationToken>());
     }
@@ -306,14 +311,14 @@ public class IssueEditCommandTests
             Status = new IssueStatus { Id = 1, Name = "New" },
             Project = new Project { Id = 1, Name = "Test Project" }
         };
-        
+
         _apiClient.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
         _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(statusList));
         _apiClient.UpdateIssueAsync(
-            issueId, 
-            Arg.Is<Issue>(i => 
+            issueId,
+            Arg.Is<Issue>(i =>
                 i.Status != null && i.Status.Id == 3 &&
                 i.AssignedTo != null && i.AssignedTo.Name == newAssignee &&
                 i.DoneRatio == doneRatio &&
@@ -328,8 +333,8 @@ public class IssueEditCommandTests
         result.Should().Be(0);
         await _apiClient.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
         await _apiClient.Received(1).UpdateIssueAsync(
-            issueId, 
-            Arg.Is<Issue>(i => 
+            issueId,
+            Arg.Is<Issue>(i =>
                 i.Status != null && i.Status.Id == 3 &&
                 i.AssignedTo != null && i.AssignedTo.Name == newAssignee &&
                 i.DoneRatio == doneRatio &&
@@ -347,7 +352,7 @@ public class IssueEditCommandTests
             new IssueStatus { Id = 1, Name = "New" },
             new IssueStatus { Id = 5, Name = "Closed" }
         };
-        
+
         var currentIssue = new Issue
         {
             Id = issueId,
@@ -355,7 +360,7 @@ public class IssueEditCommandTests
             Status = new IssueStatus { Id = 1, Name = "New" },
             Project = new Project { Id = 1, Name = "Test Project" }
         };
-        
+
         _apiClient.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
         _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
@@ -423,13 +428,13 @@ public class IssueEditCommandTests
 
         // Assert
         editCommand.Should().NotBeNull();
-        
+
         var optionNames = editCommand!.Options.Select(o => o.Name).ToList();
         optionNames.Should().Contain("--status");
         optionNames.Should().Contain("--assignee");
         optionNames.Should().Contain("--done-ratio");
         optionNames.Should().Contain("--web");
-        
+
         var argNames = editCommand.Arguments.Select(a => a.Name).ToList();
         argNames.Should().Contain("ID");
     }

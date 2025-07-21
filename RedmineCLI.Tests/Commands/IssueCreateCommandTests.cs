@@ -1,13 +1,18 @@
 using System.CommandLine;
+
 using FluentAssertions;
+
 using Microsoft.Extensions.Logging;
+
 using NSubstitute;
+
 using RedmineCLI.ApiClient;
 using RedmineCLI.Commands;
 using RedmineCLI.Exceptions;
 using RedmineCLI.Formatters;
 using RedmineCLI.Models;
 using RedmineCLI.Services;
+
 using Xunit;
 
 namespace RedmineCLI.Tests.Commands;
@@ -28,7 +33,7 @@ public class IssueCreateCommandTests
         _tableFormatter = Substitute.For<ITableFormatter>();
         _jsonFormatter = Substitute.For<IJsonFormatter>();
         _logger = Substitute.For<ILogger<IssueCommand>>();
-        
+
         _issueCommand = new IssueCommand(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
     }
 
@@ -54,8 +59,8 @@ public class IssueCreateCommandTests
         _apiClient.GetProjectsAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(projects));
 
-        _apiClient.CreateIssueAsync(Arg.Is<Issue>(i => 
-            i.Subject == "Test Issue" && 
+        _apiClient.CreateIssueAsync(Arg.Is<Issue>(i =>
+            i.Subject == "Test Issue" &&
             i.Description == "Test Description" &&
             i.Project!.Id == 1), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(createdIssue));
@@ -91,8 +96,8 @@ public class IssueCreateCommandTests
             Status = new IssueStatus { Id = 1, Name = "New" }
         };
 
-        _apiClient.CreateIssueAsync(Arg.Is<Issue>(i => 
-            i.Subject == title && 
+        _apiClient.CreateIssueAsync(Arg.Is<Issue>(i =>
+            i.Subject == title &&
             i.Description == description &&
             i.Project!.Identifier == projectId &&
             i.AssignedTo!.Name == assignee), Arg.Any<CancellationToken>())
@@ -187,7 +192,7 @@ public class IssueCreateCommandTests
         _apiClient.GetCurrentUserAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentUser));
 
-        _apiClient.CreateIssueAsync(Arg.Is<Issue>(i => 
+        _apiClient.CreateIssueAsync(Arg.Is<Issue>(i =>
             i.AssignedTo != null && i.AssignedTo.Id == currentUser.Id), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(createdIssue));
 

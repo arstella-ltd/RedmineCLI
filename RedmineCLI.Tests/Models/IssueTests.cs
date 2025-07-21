@@ -1,4 +1,5 @@
 using FluentAssertions;
+
 using RedmineCLI.Exceptions;
 using RedmineCLI.Models;
 

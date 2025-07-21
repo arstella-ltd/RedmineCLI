@@ -12,7 +12,7 @@ public class LicenseHelper : ILicenseHelper
 {
     private static Dictionary<string, LicenseData>? _cachedLicenses;
     private static LicenseInfo? _cachedVersionInfo;
-    
+
     private static readonly Dictionary<string, LicenseData> _embeddedLicenses = new()
     {
         ["RedmineCLI"] = new LicenseData

@@ -1,7 +1,9 @@
+using System.IO;
+
 using FluentAssertions;
+
 using RedmineCLI.Exceptions;
 using RedmineCLI.Models;
-using System.IO;
 
 namespace RedmineCLI.Tests.Models;
 
@@ -42,7 +44,7 @@ public class ConfigTests
 
         // Assert
         File.Exists(_testConfigPath).Should().BeTrue();
-        
+
         var loadedConfig = Config.Load(_testConfigPath);
         loadedConfig.CurrentProfile.Should().Be("default");
         loadedConfig.Profiles.Should().ContainKey("default");
@@ -97,7 +99,7 @@ public class ConfigTests
         // Assert
         var fileContent = File.ReadAllText(_testConfigPath);
         fileContent.Should().NotContain("plain-text-api-key");
-        
+
         // Verify decryption works
         var loadedConfig = Config.Load(_testConfigPath);
         loadedConfig.Profiles["default"].ApiKey.Should().Be("plain-text-api-key");

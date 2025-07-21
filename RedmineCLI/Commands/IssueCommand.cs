@@ -344,14 +344,14 @@ public class IssueCommand
         {
             // Check if running under test runner
             var isRunningInTest = AppDomain.CurrentDomain.GetAssemblies()
-                .Any(a => a.FullName?.Contains("testhost") == true || 
+                .Any(a => a.FullName?.Contains("testhost") == true ||
                          a.FullName?.Contains("Microsoft.TestPlatform") == true);
-            
+
             // Check if browser opening is disabled (for testing)
             var disableBrowser = Environment.GetEnvironmentVariable("REDMINE_CLI_DISABLE_BROWSER");
-            if (isRunningInTest || 
-                (!string.IsNullOrEmpty(disableBrowser) && 
-                (disableBrowser.Equals("true", StringComparison.OrdinalIgnoreCase) || 
+            if (isRunningInTest ||
+                (!string.IsNullOrEmpty(disableBrowser) &&
+                (disableBrowser.Equals("true", StringComparison.OrdinalIgnoreCase) ||
                  disableBrowser.Equals("1", StringComparison.OrdinalIgnoreCase))))
             {
                 // Just log the URL instead of opening browser
@@ -773,9 +773,9 @@ public class IssueCommand
                 {
                     // Resolve status name to ID
                     var statuses = await _apiClient.GetIssueStatusesAsync(cancellationToken);
-                    var matchedStatus = statuses.FirstOrDefault(s => 
+                    var matchedStatus = statuses.FirstOrDefault(s =>
                         s.Name.Equals(status, StringComparison.OrdinalIgnoreCase));
-                    
+
                     if (matchedStatus != null)
                     {
                         updateIssue.Status = matchedStatus;
@@ -1108,7 +1108,7 @@ public class IssueCommand
     private static async Task<string> ReadAndParseCommentAsync(string filePath)
     {
         var content = await File.ReadAllTextAsync(filePath);
-        
+
         // Remove comment lines and instruction lines
         var lines = content.Split('\n')
             .Where(line => !line.TrimStart().StartsWith("#"))

@@ -1,17 +1,23 @@
 using System.Net;
 using System.Text.Json;
+
 using FluentAssertions;
+
 using Microsoft.Extensions.Logging;
+
 using NSubstitute;
+
 using RedmineCLI.ApiClient;
 using RedmineCLI.Exceptions;
 using RedmineCLI.Models;
 using RedmineCLI.Services;
+
+using WireMock;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
 using WireMock.Types;
-using WireMock;
+
 using Xunit;
 
 namespace RedmineCLI.Tests.ApiClient;
@@ -30,7 +36,7 @@ public class RedmineApiClientTests : IDisposable
         _mockServer = WireMockServer.Start();
         _configService = Substitute.For<IConfigService>();
         _logger = Substitute.For<ILogger<RedmineApiClient>>();
-        
+
         // 設定サービスのモック
         var profile = new Profile
         {

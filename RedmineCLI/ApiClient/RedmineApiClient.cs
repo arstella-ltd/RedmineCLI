@@ -101,17 +101,17 @@ public class RedmineApiClient : IRedmineApiClient
     public async Task<Issue> UpdateIssueAsync(int id, Issue issue, CancellationToken cancellationToken = default)
     {
         var path = $"/issues/{id}.json";
-        
+
         // Convert Issue to IssueUpdateData for partial updates
         var updateData = new IssueUpdateData();
-        
+
         // Only set fields that are not null in the input Issue
         if (issue.Subject != null)
             updateData.Subject = issue.Subject;
-            
+
         if (issue.Description != null)
             updateData.Description = issue.Description;
-            
+
         if (issue.Status != null)
         {
             // Use the ID if available, otherwise try to parse the name as an ID
@@ -130,22 +130,22 @@ public class RedmineApiClient : IRedmineApiClient
                 throw new ValidationException($"Status '{issue.Status.Name}' needs to be resolved to an ID");
             }
         }
-        
+
         if (issue.AssignedTo != null)
         {
             updateData.AssignedToId = issue.AssignedTo.Id;
         }
-        
+
         if (issue.DoneRatio.HasValue)
         {
             updateData.DoneRatio = issue.DoneRatio.Value;
         }
-        
+
         if (issue.Priority != null && issue.Priority.Id > 0)
         {
             updateData.PriorityId = issue.Priority.Id;
         }
-        
+
         var requestBody = new IssueUpdateRequest { Issue = updateData };
         var issueResponse = await PutAsync(path, requestBody, RedmineJsonContext.Default.IssueUpdateRequest, RedmineJsonContext.Default.IssueResponse, $"update issue {id}", cancellationToken);
 
@@ -382,13 +382,13 @@ public class RedmineApiClient : IRedmineApiClient
             await EnsureSuccessStatusCodeAsync(response);
 
             var jsonContent = await response.Content.ReadAsStringAsync(cancellationToken);
-            
+
             // Handle empty responses (204 No Content or empty 200 OK)
             if (string.IsNullOrWhiteSpace(jsonContent))
             {
                 return default(TResponse);
             }
-            
+
             return JsonSerializer.Deserialize(jsonContent, responseTypeInfo);
         }
         catch (HttpRequestException ex)

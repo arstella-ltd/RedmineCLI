@@ -67,26 +67,26 @@ public class Program
             if (parseResult.GetValue(licensesOption))
             {
                 var licenses = await licenseHelper.GetLicenseInfoAsync();
-                
+
                 // Display main license info with Spectre.Console styling
                 var mainPanel = new Panel($"[bold green]{licenses["RedmineCLI"].Name}[/] - [cyan]{licenses["RedmineCLI"].License.Split('\n')[0]}[/]\n\n[dim]Copyright (c) 2025 Arstella ltd.[/]")
                     .Header("[bold yellow]License Information[/]")
                     .Border(BoxBorder.Rounded);
-                
+
                 AnsiConsole.Write(mainPanel);
                 AnsiConsole.WriteLine();
-                
+
                 // Display third-party licenses in a table
                 var table = new Table()
                     .Title("[bold blue]Third-party Dependencies[/]")
                     .Border(TableBorder.Rounded)
                     .BorderColor(Color.Grey);
-                
+
                 table.AddColumn("[bold]Library[/]");
                 table.AddColumn("[bold]Version[/]");
                 table.AddColumn("[bold]License[/]");
                 table.AddColumn("[bold]Project URL[/]");
-                
+
                 foreach (var license in licenses.Where(l => l.Key != "RedmineCLI"))
                 {
                     table.AddRow(
@@ -96,11 +96,11 @@ public class Program
                         $"[link]{license.Value.ProjectUrl}[/]"
                     );
                 }
-                
+
                 AnsiConsole.Write(table);
                 AnsiConsole.WriteLine();
                 AnsiConsole.MarkupLine("[dim]See THIRD-PARTY-NOTICES.txt for full license texts.[/]");
-                
+
                 Environment.ExitCode = 0;
                 return;
             }

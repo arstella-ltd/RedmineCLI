@@ -1,9 +1,12 @@
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
+
 using FluentAssertions;
+
 using RedmineCLI.Exceptions;
 using RedmineCLI.Models;
 using RedmineCLI.Services;
+
 using VYaml.Serialization;
 
 namespace RedmineCLI.Tests.Services;
@@ -18,7 +21,7 @@ public class ConfigServiceTests
     {
         _fileSystem = new MockFileSystem();
         _configService = new ConfigService(_fileSystem);
-        
+
         // Setup config path based on OS
         _configPath = Environment.OSVersion.Platform == PlatformID.Win32NT
             ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "redmine", "config.yml")
@@ -68,7 +71,7 @@ public class ConfigServiceTests
         _fileSystem.File.Exists(_configPath).Should().BeTrue();
         var savedContent = await _fileSystem.File.ReadAllTextAsync(_configPath);
         savedContent.Should().NotBeNullOrEmpty();
-        
+
         // Verify the file contains expected content (YAML format)
         savedContent.Should().Contain("currentProfile: default");
         savedContent.Should().Contain("profiles:");
@@ -185,11 +188,11 @@ public class ConfigServiceTests
             CurrentProfile = "secure",
             Profiles = new Dictionary<string, Profile>
             {
-                ["secure"] = new Profile 
-                { 
-                    Name = "secure", 
-                    Url = "https://secure.redmine.com", 
-                    ApiKey = plainApiKey 
+                ["secure"] = new Profile
+                {
+                    Name = "secure",
+                    Url = "https://secure.redmine.com",
+                    ApiKey = plainApiKey
                 }
             }
         };
@@ -199,7 +202,7 @@ public class ConfigServiceTests
 
         // Assert
         var savedContent = await _fileSystem.File.ReadAllTextAsync(_configPath);
-        
+
         if (Environment.OSVersion.Platform == PlatformID.Win32NT)
         {
             // On Windows, API key should be encrypted
@@ -225,11 +228,11 @@ public class ConfigServiceTests
             CurrentProfile = "secure",
             Profiles = new Dictionary<string, Profile>
             {
-                ["secure"] = new Profile 
-                { 
-                    Name = "secure", 
-                    Url = "https://secure.redmine.com", 
-                    ApiKey = originalApiKey 
+                ["secure"] = new Profile
+                {
+                    Name = "secure",
+                    Url = "https://secure.redmine.com",
+                    ApiKey = originalApiKey
                 }
             }
         };

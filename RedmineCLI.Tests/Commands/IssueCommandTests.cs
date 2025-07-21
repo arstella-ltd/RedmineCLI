@@ -1,13 +1,18 @@
 using System.CommandLine;
+
 using FluentAssertions;
+
 using Microsoft.Extensions.Logging;
+
 using NSubstitute;
+
 using RedmineCLI.ApiClient;
 using RedmineCLI.Commands;
 using RedmineCLI.Exceptions;
 using RedmineCLI.Formatters;
 using RedmineCLI.Models;
 using RedmineCLI.Services;
+
 using Xunit;
 
 namespace RedmineCLI.Tests.Commands;
@@ -28,7 +33,7 @@ public class IssueCommandTests
         _tableFormatter = Substitute.For<ITableFormatter>();
         _jsonFormatter = Substitute.For<IJsonFormatter>();
         _logger = Substitute.For<ILogger<IssueCommand>>();
-        
+
         _issueCommand = new IssueCommand(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
     }
 
@@ -40,26 +45,26 @@ public class IssueCommandTests
         // Arrange
         var issues = new List<Issue>
         {
-            new Issue 
-            { 
-                Id = 1, 
-                Subject = "Test Issue 1", 
+            new Issue
+            {
+                Id = 1,
+                Subject = "Test Issue 1",
                 Status = new IssueStatus { Id = 1, Name = "New" },
                 AssignedTo = new User { Id = 1, Name = "User 1" },
                 Project = new Project { Id = 1, Name = "Test Project" }
             },
-            new Issue 
-            { 
-                Id = 2, 
-                Subject = "Test Issue 2", 
+            new Issue
+            {
+                Id = 2,
+                Subject = "Test Issue 2",
                 Status = new IssueStatus { Id = 2, Name = "In Progress" },
                 AssignedTo = new User { Id = 2, Name = "User 2" },
                 Project = new Project { Id = 1, Name = "Test Project" }
             },
-            new Issue 
-            { 
-                Id = 3, 
-                Subject = "Test Issue 3", 
+            new Issue
+            {
+                Id = 3,
+                Subject = "Test Issue 3",
                 Status = new IssueStatus { Id = 1, Name = "New" },
                 AssignedTo = null,
                 Project = new Project { Id = 2, Name = "Another Project" }
@@ -76,7 +81,7 @@ public class IssueCommandTests
         result.Should().Be(0);
         await _apiClient.DidNotReceive().GetCurrentUserAsync(Arg.Any<CancellationToken>());
         await _apiClient.Received(1).GetIssuesAsync(
-            Arg.Is<IssueFilter>(f => f.StatusId == "open" && f.AssignedToId == null && f.ProjectId == null && f.Limit == 30), 
+            Arg.Is<IssueFilter>(f => f.StatusId == "open" && f.AssignedToId == null && f.ProjectId == null && f.Limit == 30),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
     }
@@ -88,17 +93,17 @@ public class IssueCommandTests
         var status = "open";
         var issues = new List<Issue>
         {
-            new Issue 
-            { 
-                Id = 1, 
-                Subject = "Open Issue 1", 
+            new Issue
+            {
+                Id = 1,
+                Subject = "Open Issue 1",
                 Status = new IssueStatus { Id = 1, Name = "New" },
                 Project = new Project { Id = 1, Name = "Test Project" }
             },
-            new Issue 
-            { 
-                Id = 2, 
-                Subject = "Open Issue 2", 
+            new Issue
+            {
+                Id = 2,
+                Subject = "Open Issue 2",
                 Status = new IssueStatus { Id = 2, Name = "In Progress" },
                 Project = new Project { Id = 1, Name = "Test Project" }
             }
@@ -113,7 +118,7 @@ public class IssueCommandTests
         // Assert
         result.Should().Be(0);
         await _apiClient.Received(1).GetIssuesAsync(
-            Arg.Is<IssueFilter>(f => f.StatusId == status && f.AssignedToId == null), 
+            Arg.Is<IssueFilter>(f => f.StatusId == status && f.AssignedToId == null),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
     }
@@ -126,17 +131,17 @@ public class IssueCommandTests
         var offset = 5;
         var issues = new List<Issue>
         {
-            new Issue 
-            { 
-                Id = 1, 
-                Subject = "Test Issue", 
+            new Issue
+            {
+                Id = 1,
+                Subject = "Test Issue",
                 Status = new IssueStatus { Id = 1, Name = "New" },
                 Project = new Project { Id = 1, Name = "Test Project" }
             }
         };
 
         _apiClient.GetIssuesAsync(
-            Arg.Is<IssueFilter>(f => f.Limit == limit && f.Offset == offset && f.StatusId == "open" && f.AssignedToId == null), 
+            Arg.Is<IssueFilter>(f => f.Limit == limit && f.Offset == offset && f.StatusId == "open" && f.AssignedToId == null),
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
@@ -147,7 +152,7 @@ public class IssueCommandTests
         result.Should().Be(0);
         await _apiClient.DidNotReceive().GetCurrentUserAsync(Arg.Any<CancellationToken>());
         await _apiClient.Received(1).GetIssuesAsync(
-            Arg.Is<IssueFilter>(f => f.Limit == limit && f.Offset == offset && f.StatusId == "open" && f.AssignedToId == null), 
+            Arg.Is<IssueFilter>(f => f.Limit == limit && f.Offset == offset && f.StatusId == "open" && f.AssignedToId == null),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
     }
@@ -158,10 +163,10 @@ public class IssueCommandTests
         // Arrange
         var issues = new List<Issue>
         {
-            new Issue 
-            { 
-                Id = 1, 
-                Subject = "Test Issue", 
+            new Issue
+            {
+                Id = 1,
+                Subject = "Test Issue",
                 Status = new IssueStatus { Id = 1, Name = "New" },
                 Project = new Project { Id = 1, Name = "Test Project" }
             }
@@ -188,10 +193,10 @@ public class IssueCommandTests
         var assignee = "john.doe";
         var issues = new List<Issue>
         {
-            new Issue 
-            { 
-                Id = 1, 
-                Subject = "John's Issue", 
+            new Issue
+            {
+                Id = 1,
+                Subject = "John's Issue",
                 Status = new IssueStatus { Id = 1, Name = "New" },
                 AssignedTo = new User { Id = 5, Name = "John Doe" },
                 Project = new Project { Id = 1, Name = "Test Project" }
@@ -207,7 +212,7 @@ public class IssueCommandTests
         // Assert
         result.Should().Be(0);
         await _apiClient.Received(1).GetIssuesAsync(
-            Arg.Is<IssueFilter>(f => f.AssignedToId == assignee), 
+            Arg.Is<IssueFilter>(f => f.AssignedToId == assignee),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
     }
@@ -219,10 +224,10 @@ public class IssueCommandTests
         var project = "my-project";
         var issues = new List<Issue>
         {
-            new Issue 
-            { 
-                Id = 1, 
-                Subject = "Project Issue", 
+            new Issue
+            {
+                Id = 1,
+                Subject = "Project Issue",
                 Status = new IssueStatus { Id = 1, Name = "New" },
                 Project = new Project { Id = 10, Name = "My Project" }
             }
@@ -237,7 +242,7 @@ public class IssueCommandTests
         // Assert
         result.Should().Be(0);
         await _apiClient.Received(1).GetIssuesAsync(
-            Arg.Is<IssueFilter>(f => f.ProjectId == project), 
+            Arg.Is<IssueFilter>(f => f.ProjectId == project),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
     }
@@ -252,10 +257,10 @@ public class IssueCommandTests
         var limit = 20;
         var issues = new List<Issue>
         {
-            new Issue 
-            { 
-                Id = 1, 
-                Subject = "Filtered Issue", 
+            new Issue
+            {
+                Id = 1,
+                Subject = "Filtered Issue",
                 Status = new IssueStatus { Id = 1, Name = "New" },
                 AssignedTo = new User { Id = 5, Name = "John Doe" },
                 Project = new Project { Id = 10, Name = "My Project" }
@@ -263,11 +268,11 @@ public class IssueCommandTests
         };
 
         _apiClient.GetIssuesAsync(
-            Arg.Is<IssueFilter>(f => 
-                f.AssignedToId == assignee && 
-                f.StatusId == status && 
-                f.ProjectId == project && 
-                f.Limit == limit), 
+            Arg.Is<IssueFilter>(f =>
+                f.AssignedToId == assignee &&
+                f.StatusId == status &&
+                f.ProjectId == project &&
+                f.Limit == limit),
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
@@ -277,11 +282,11 @@ public class IssueCommandTests
         // Assert
         result.Should().Be(0);
         await _apiClient.Received(1).GetIssuesAsync(
-            Arg.Is<IssueFilter>(f => 
-                f.AssignedToId == assignee && 
-                f.StatusId == status && 
-                f.ProjectId == project && 
-                f.Limit == limit), 
+            Arg.Is<IssueFilter>(f =>
+                f.AssignedToId == assignee &&
+                f.StatusId == status &&
+                f.ProjectId == project &&
+                f.Limit == limit),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
     }
@@ -343,10 +348,10 @@ public class IssueCommandTests
         var currentUser = new User { Id = 1, Name = "Test User" };
         var issues = new List<Issue>
         {
-            new Issue 
-            { 
-                Id = 1, 
-                Subject = "My Issue", 
+            new Issue
+            {
+                Id = 1,
+                Subject = "My Issue",
                 Status = new IssueStatus { Id = 1, Name = "New" },
                 AssignedTo = currentUser,
                 Project = new Project { Id = 1, Name = "Test Project" }
@@ -365,7 +370,7 @@ public class IssueCommandTests
         result.Should().Be(0);
         await _apiClient.Received(1).GetCurrentUserAsync(Arg.Any<CancellationToken>());
         await _apiClient.Received(1).GetIssuesAsync(
-            Arg.Is<IssueFilter>(f => f.AssignedToId == currentUser.Id.ToString()), 
+            Arg.Is<IssueFilter>(f => f.AssignedToId == currentUser.Id.ToString()),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
     }
@@ -376,17 +381,17 @@ public class IssueCommandTests
         // Arrange
         var issues = new List<Issue>
         {
-            new Issue 
-            { 
-                Id = 1, 
-                Subject = "Open Issue", 
+            new Issue
+            {
+                Id = 1,
+                Subject = "Open Issue",
                 Status = new IssueStatus { Id = 1, Name = "New" },
                 Project = new Project { Id = 1, Name = "Test Project" }
             },
-            new Issue 
-            { 
-                Id = 2, 
-                Subject = "Closed Issue", 
+            new Issue
+            {
+                Id = 2,
+                Subject = "Closed Issue",
                 Status = new IssueStatus { Id = 5, Name = "Closed" },
                 Project = new Project { Id = 1, Name = "Test Project" }
             }
@@ -401,7 +406,7 @@ public class IssueCommandTests
         // Assert
         result.Should().Be(0);
         await _apiClient.Received(1).GetIssuesAsync(
-            Arg.Is<IssueFilter>(f => f.StatusId == null && f.Limit == 30), 
+            Arg.Is<IssueFilter>(f => f.StatusId == null && f.Limit == 30),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
     }
@@ -621,7 +626,7 @@ public class IssueCommandTests
         var optionNames = viewCommand!.Options.Select(o => o.Name).ToList();
         optionNames.Should().Contain("--json");
         optionNames.Should().Contain("--web");
-        
+
         var argNames = viewCommand.Arguments.Select(a => a.Name).ToList();
         argNames.Should().Contain("ID");
     }
