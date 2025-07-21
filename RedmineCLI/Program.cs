@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Extensions.Http;
 using RedmineCLI.ApiClient;
+using RedmineCLI.Commands;
 using RedmineCLI.Services;
 
 namespace RedmineCLI;
@@ -23,8 +24,11 @@ public class Program
         var rootCommand = new RootCommand("A GitHub CLI-like tool for managing Redmine tickets");
         
         // Configure commands
-        // TODO: Add commands here
-        var authCommand = new Command("auth", "Authenticate with Redmine server");
+        var configService = serviceProvider.GetRequiredService<IConfigService>();
+        var apiClient = serviceProvider.GetRequiredService<IRedmineApiClient>();
+        var logger = serviceProvider.GetRequiredService<ILogger<AuthCommand>>();
+        
+        var authCommand = AuthCommand.Create(configService, apiClient, logger);
         var issueCommand = new Command("issue", "Manage Redmine issues");
         var configCommand = new Command("config", "Manage configuration");
         

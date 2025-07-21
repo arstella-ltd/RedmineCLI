@@ -125,7 +125,7 @@
   - **Refactor**: 共通処理の抽出とコードの最適化
   - _要件: 1_
 
-- [ ] 5. 認証コマンドの実装（TDD）
+- [x] 5. 認証コマンドの実装（TDD）
   - **Red**: AuthCommandのテストを先に作成
     - Login_Should_SaveCredentials_When_ValidInput
     - Status_Should_ShowConnectionState_When_Authenticated
@@ -323,6 +323,25 @@
 - Native AOT対応のJSONシリアライゼーション（Source Generator使用）
 - 共通HTTPリクエストメソッドの抽出によるコード品質向上
 - すべてのテスト（37件）が成功
+
+### タスク5完了（2025-07-21）
+- TDD手法（Red→Green→Refactor）に従って実装
+- System.CommandLine v2.0.0-beta6を使用したコマンド実装
+- AuthCommandのテスト13件を作成（ログイン、ステータス、ログアウト）
+- Spectre.Consoleを使用した対話的UI実装
+- ヘルパーメソッド抽出によるコードの重複排除
+- すべてのテスト（50件）が成功
     - テストレビューチェックリストの作成
     - 「テストが書けない設計は悪い設計」の原則の徹底
   - _要件: 全体的な基盤_
+
+## 使用方法
+
+### 実行可能ファイル名
+- 実行可能ファイル名は `RedmineCLI` （プロジェクト名と同じ）
+- Native AOTビルド後の実行例
+  ```bash
+  ./bin/Release/net9.0/linux-x64/publish/RedmineCLI auth login
+  ./bin/Release/net9.0/linux-x64/publish/RedmineCLI auth status
+  ./bin/Release/net9.0/linux-x64/publish/RedmineCLI auth logout
+  ```

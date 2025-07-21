@@ -12,6 +12,7 @@
     <PackageReference Include="FluentAssertions" Version="6.12.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="NSubstitute" Version="5.1.0" />
+    <PackageReference Include="Spectre.Console.Testing" Version="0.50.0" />
     <PackageReference Include="System.IO.Abstractions" Version="22.0.15" />
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" Version="22.0.15" />
     <PackageReference Include="WireMock.Net" Version="1.6.6" />
