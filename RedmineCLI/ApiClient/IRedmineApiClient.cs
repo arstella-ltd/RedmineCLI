@@ -12,6 +12,10 @@ public interface IRedmineApiClient
         int? offset = null,
         CancellationToken cancellationToken = default);
 
+    Task<List<Issue>> GetIssuesAsync(IssueFilter filter, CancellationToken cancellationToken = default);
+
+    Task<User> GetCurrentUserAsync(CancellationToken cancellationToken = default);
+
     Task<Issue> GetIssueAsync(int id, CancellationToken cancellationToken = default);
 
     Task<Issue> CreateIssueAsync(Issue issue, CancellationToken cancellationToken = default);

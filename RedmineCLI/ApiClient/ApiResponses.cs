@@ -83,3 +83,9 @@ public class CommentData
     [JsonPropertyName("notes")]
     public string Notes { get; set; } = string.Empty;
 }
+
+public class UserResponse
+{
+    [JsonPropertyName("user")]
+    public User? User { get; set; }
+}

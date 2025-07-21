@@ -170,6 +170,29 @@ public class RedmineApiClient : IRedmineApiClient
         }
     }
 
+    public async Task<List<Issue>> GetIssuesAsync(IssueFilter filter, CancellationToken cancellationToken = default)
+    {
+        var queryString = BuildQueryString(new Dictionary<string, string?>
+        {
+            ["assigned_to_id"] = filter.AssignedToId,
+            ["project_id"] = filter.ProjectId,
+            ["status_id"] = filter.StatusId,
+            ["limit"] = filter.Limit?.ToString(),
+            ["offset"] = filter.Offset?.ToString()
+        });
+
+        var path = $"/issues.json{queryString}";
+        var response = await GetAsync(path, RedmineJsonContext.Default.IssuesResponse, "issues", cancellationToken);
+        return response?.Issues ?? new List<Issue>();
+    }
+
+    public async Task<User> GetCurrentUserAsync(CancellationToken cancellationToken = default)
+    {
+        var path = "/users/current.json";
+        var response = await GetAsync(path, RedmineJsonContext.Default.UserResponse, "current user", cancellationToken);
+        return response?.User ?? throw new InvalidOperationException("Failed to get current user");
+    }
+
     private async Task EnsureAuthenticatedAsync()
     {
         var profile = await _configService.GetActiveProfileAsync();

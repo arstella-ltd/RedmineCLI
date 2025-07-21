@@ -25,6 +25,7 @@ namespace RedmineCLI.ApiClient;
 [JsonSerializable(typeof(IssueRequest))]
 [JsonSerializable(typeof(CommentRequest))]
 [JsonSerializable(typeof(CommentData))]
+[JsonSerializable(typeof(UserResponse))]
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     WriteIndented = true,

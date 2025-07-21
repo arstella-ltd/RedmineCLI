@@ -6,6 +6,7 @@ using Polly;
 using Polly.Extensions.Http;
 using RedmineCLI.ApiClient;
 using RedmineCLI.Commands;
+using RedmineCLI.Formatters;
 using RedmineCLI.Services;
 
 namespace RedmineCLI;
@@ -26,10 +27,13 @@ public class Program
         // Configure commands
         var configService = serviceProvider.GetRequiredService<IConfigService>();
         var apiClient = serviceProvider.GetRequiredService<IRedmineApiClient>();
-        var logger = serviceProvider.GetRequiredService<ILogger<AuthCommand>>();
+        var authLogger = serviceProvider.GetRequiredService<ILogger<AuthCommand>>();
+        var issueLogger = serviceProvider.GetRequiredService<ILogger<IssueCommand>>();
+        var tableFormatter = serviceProvider.GetRequiredService<ITableFormatter>();
+        var jsonFormatter = serviceProvider.GetRequiredService<IJsonFormatter>();
         
-        var authCommand = AuthCommand.Create(configService, apiClient, logger);
-        var issueCommand = new Command("issue", "Manage Redmine issues");
+        var authCommand = AuthCommand.Create(configService, apiClient, authLogger);
+        var issueCommand = IssueCommand.Create(apiClient, configService, tableFormatter, jsonFormatter, issueLogger);
         var configCommand = new Command("config", "Manage configuration");
         
         rootCommand.Add(authCommand);
@@ -70,5 +74,9 @@ public class Program
         
         // Redmine API Client
         services.AddScoped<IRedmineApiClient, RedmineApiClient>();
+        
+        // Formatters
+        services.AddSingleton<ITableFormatter, TableFormatter>();
+        services.AddSingleton<IJsonFormatter, JsonFormatter>();
     }
 }
