@@ -1,0 +1,26 @@
+<linker>
+  <assembly fullname="RedmineCLI">
+    <!-- Preserve all model types with their members -->
+    <type fullname="RedmineCLI.Models.Config" preserve="all" />
+    <type fullname="RedmineCLI.Models.Profile" preserve="all" />
+    <type fullname="RedmineCLI.Models.Preferences" preserve="all" />
+    
+    <!-- Preserve generated formatters if they exist -->
+    <type fullname="RedmineCLI.Models.Config*" preserve="all" />
+    <type fullname="RedmineCLI.Models.Profile*" preserve="all" />
+    <type fullname="RedmineCLI.Models.Preferences*" preserve="all" />
+  </assembly>
+  
+  <assembly fullname="VYaml">
+    <!-- Preserve VYaml serialization infrastructure -->
+    <type fullname="VYaml.Serialization.*" preserve="all" />
+    <type fullname="VYaml.Serialization.BuiltinResolver*" preserve="all" />
+    <type fullname="VYaml.Serialization.StandardResolver*" preserve="all" />
+    <type fullname="VYaml.Serialization.DictionaryFormatter*" preserve="all" />
+  </assembly>
+  
+  <assembly fullname="System.Collections">
+    <!-- Preserve Dictionary types -->
+    <type fullname="System.Collections.Generic.Dictionary`2" preserve="all" />
+  </assembly>
+</linker>

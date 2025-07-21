@@ -14,6 +14,9 @@
     <OptimizationPreference>Size</OptimizationPreference>
     <IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
     <StripSymbols>true</StripSymbols>
+    <!-- Suppress AOT/Trimming warnings for third-party libraries -->
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <NoWarn>$(NoWarn);IL2104;IL3053</NoWarn>
     
     <!-- Package settings for dotnet tool -->
     <PackageId>RedmineCLI</PackageId>
@@ -54,7 +57,13 @@
   <!-- AOT warning suppressions for known safe usages -->
   <ItemGroup>
     <TrimmerRootAssembly Include="RedmineCLI" />
-    <RdXmlFile Include="ILLink.Descriptors.xml" Condition="Exists('ILLink.Descriptors.xml')" />
+    <!-- Preserve VYaml for serialization -->
+    <TrimmerRootAssembly Include="VYaml" />
+  </ItemGroup>
+  
+  <!-- Tell trimmer to preserve specific types -->
+  <ItemGroup>
+    <TrimmerRootDescriptor Include="ILLink.Descriptors.xml" />
   </ItemGroup>
 
 </Project>
