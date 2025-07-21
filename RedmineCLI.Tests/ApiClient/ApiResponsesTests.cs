@@ -118,7 +118,7 @@ public class ApiResponsesTests
         // Assert
         response.Should().NotBeNull();
         response!.User.Should().NotBeNull();
-        response.User.Id.Should().Be(100);
+        response.User!.Id.Should().Be(100);
         response.User.Login.Should().Be("current.user");
         response.User.FirstName.Should().Be("Current");
         response.User.LastName.Should().Be("User");
