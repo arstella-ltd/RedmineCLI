@@ -124,6 +124,12 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
+    - name: Install cross-compilation tools for ARM64
+      if: matrix.config.rid == 'linux-arm64'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+
     - name: Restore dependencies
       run: dotnet restore
 
