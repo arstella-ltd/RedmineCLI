@@ -172,6 +172,26 @@ public class IssueCommand
 
         command.Add(editCommand);
 
+        // Comment command
+        var commentCommand = new Command("comment", "Add a comment to an issue");
+        var commentIdArgument = new Argument<int>("ID");
+        commentIdArgument.Description = "Issue ID";
+        var commentMessageOption = new Option<string?>("--message") { Description = "Comment text" };
+        commentMessageOption.Aliases.Add("-m");
+
+        commentCommand.Add(commentIdArgument);
+        commentCommand.Add(commentMessageOption);
+
+        commentCommand.SetAction(async (parseResult) =>
+        {
+            var id = parseResult.GetValue(commentIdArgument);
+            var message = parseResult.GetValue(commentMessageOption);
+
+            Environment.ExitCode = await issueCommand.CommentAsync(id, message, CancellationToken.None);
+        });
+
+        command.Add(commentCommand);
+
         return command;
     }
 
@@ -942,6 +962,175 @@ public class IssueCommand
             _logger.LogError(ex, "Error during interactive issue edit");
             AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
             return 1;
+        }
+    }
+
+    public async Task<int> CommentAsync(int issueId, string? message, CancellationToken cancellationToken)
+    {
+        try
+        {
+            _logger.LogDebug("Adding comment to issue {IssueId} - Message provided: {HasMessage}", issueId, !string.IsNullOrEmpty(message));
+
+            string commentText;
+
+            // If message is provided via command line, use it directly
+            if (!string.IsNullOrEmpty(message))
+            {
+                commentText = message;
+            }
+            else
+            {
+                // Open editor to get comment text
+                commentText = await OpenEditorForCommentAsync();
+                if (string.IsNullOrWhiteSpace(commentText))
+                {
+                    AnsiConsole.MarkupLine("[yellow]Comment cancelled: No text entered[/]");
+                    return 0;
+                }
+            }
+
+            // Validate comment is not empty after trimming
+            commentText = commentText.Trim();
+            if (string.IsNullOrEmpty(commentText))
+            {
+                AnsiConsole.MarkupLine("[red]Error:[/] Comment cannot be empty");
+                return 1;
+            }
+
+            // Add comment via API
+            await _apiClient.AddCommentAsync(issueId, commentText, cancellationToken);
+
+            // Show success message with issue URL
+            await ShowSuccessMessageWithUrlAsync(issueId, "Comment added");
+
+            return 0;
+        }
+        catch (RedmineApiException ex)
+        {
+            _logger.LogError(ex, "API error while adding comment to issue {IssueId}", issueId);
+
+            if (ex.StatusCode == 404)
+            {
+                AnsiConsole.MarkupLine($"[red]Error:[/] Issue #{issueId} not found.");
+            }
+            else
+            {
+                AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+            }
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while adding comment to issue {IssueId}", issueId);
+            AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+            return 1;
+        }
+    }
+
+    private async Task<string> OpenEditorForCommentAsync()
+    {
+        var tempFilePath = Path.GetTempFileName();
+        try
+        {
+            var editor = GetDefaultEditor();
+            await WriteCommentTemplateAsync(tempFilePath);
+            await LaunchEditorAsync(editor, tempFilePath);
+            var content = await ReadAndParseCommentAsync(tempFilePath);
+            return content;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to open editor, falling back to console input");
+            return await GetCommentFromConsoleAsync();
+        }
+        finally
+        {
+            DeleteTempFile(tempFilePath);
+        }
+    }
+
+    private static string GetDefaultEditor()
+    {
+        var editor = Environment.GetEnvironmentVariable("EDITOR");
+        if (!string.IsNullOrEmpty(editor))
+        {
+            return editor;
+        }
+
+        // Default editors based on platform
+        return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "notepad" : "nano";
+    }
+
+    private static async Task WriteCommentTemplateAsync(string filePath)
+    {
+        const string template = "# Enter your comment above this line\n# Lines starting with # are ignored\n";
+        await File.WriteAllTextAsync(filePath, template);
+    }
+
+    private static async Task LaunchEditorAsync(string editor, string filePath)
+    {
+        var processInfo = new ProcessStartInfo
+        {
+            FileName = editor,
+            Arguments = filePath,
+            UseShellExecute = false
+        };
+
+        var process = Process.Start(processInfo);
+        if (process != null)
+        {
+            await process.WaitForExitAsync();
+        }
+    }
+
+    private static async Task<string> ReadAndParseCommentAsync(string filePath)
+    {
+        var content = await File.ReadAllTextAsync(filePath);
+        
+        // Remove comment lines and instruction lines
+        var lines = content.Split('\n')
+            .Where(line => !line.TrimStart().StartsWith("#"))
+            .Select(line => line.TrimEnd('\r', '\n'));
+
+        return string.Join('\n', lines).Trim();
+    }
+
+    private static async Task<string> GetCommentFromConsoleAsync()
+    {
+        AnsiConsole.MarkupLine("[yellow]Could not open editor. Please enter comment text:[/]");
+        var input = AnsiConsole.Prompt(
+            new TextPrompt<string>("Comment:")
+                .AllowEmpty());
+        return await Task.FromResult(input);
+    }
+
+    private static void DeleteTempFile(string filePath)
+    {
+        try
+        {
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+        }
+        catch
+        {
+            // Ignore cleanup errors
+        }
+    }
+
+    private async Task ShowSuccessMessageWithUrlAsync(int issueId, string action)
+    {
+        var profile = await _configService.GetActiveProfileAsync();
+        if (profile != null)
+        {
+            var issueUrl = $"{profile.Url.TrimEnd('/')}/issues/{issueId}";
+            AnsiConsole.MarkupLine($"[green]✓[/] {action} to issue #{issueId}");
+            AnsiConsole.MarkupLine($"[dim]View at: {Markup.Escape(issueUrl)}[/]");
+        }
+        else
+        {
+            AnsiConsole.MarkupLine($"[green]✓[/] {action} to issue #{issueId}");
         }
     }
 }

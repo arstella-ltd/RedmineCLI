@@ -205,7 +205,7 @@
   - **Refactor**: 更新ロジックの統合と最適化、@me処理の共通化
   - _要件: 5_
 
-- [ ] 10. コメント追加コマンドの実装（TDD）
+- [x] 10. コメント追加コマンドの実装（TDD）
   - **Red**: IssueCommentCommandのテストを先に作成
     - Comment_Should_AddComment_When_MessageProvided
     - Comment_Should_OpenEditor_When_NoMessageOption
@@ -418,6 +418,24 @@
 - --web/-wオプションによる編集ページのブラウザ起動
 - リファクタリング：更新フィールドの追跡と表示ロジックの改善
 - すべてのテスト（93件）が成功
+
+### タスク10完了（2025-07-21）
+- TDD手法（Red→Green→Refactor）に従って実装
+- テストケース6件を作成（メッセージ提供、エディタ起動、確認表示、空コメント処理、APIエラー処理、チケット未発見エラー）
+- `issue comment <ID>`コマンドの完全実装
+- -m/--messageオプションによる直接コメント入力
+- $EDITOR環境変数を使用したエディタ統合（Windows: notepad、Unix: nano）
+- エディタ失敗時のフォールバック：コンソール入力
+- テンポラリファイル管理とクリーンアップ処理
+- コメントテンプレート：指示行（#で始まる行を除外）
+- 空コメント検証とエラー処理
+- APIエラーの適切な処理（404 Issue not found等）
+- 成功時の確認メッセージとIssue URLの表示
+- コードリファクタリング：エディタ統合ロジックの分割とメソッド抽出
+- 成功メッセージ表示の共通化（ShowSuccessMessageWithUrlAsyncメソッド）
+- すべてのテスト（100件）が成功
+- Native AOTビルド成功：バイナリサイズ15MB
+- 要件6（コメント追加機能）の完全実装
 
 ## 使用方法
 
