@@ -1,6 +1,11 @@
 using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Logging;
+using Polly;
+using Polly.Extensions.Http;
+using RedmineCLI.ApiClient;
+using RedmineCLI.Services;
 
 namespace RedmineCLI;
 
@@ -49,12 +54,14 @@ public class Program
             builder.SetMinimumLevel(LogLevel.Information);
         });
         
-        // TODO: Register services
-        // services.AddSingleton<IConfigService, ConfigService>();
-        // services.AddSingleton<IRedmineApiClient, RedmineApiClient>();
-        // services.AddSingleton<IRedmineService, RedmineService>();
+        // Configuration services
+        services.AddSingleton<IConfigService, ConfigService>();
         
-        // HTTP Client
-        services.AddHttpClient();
+        // HTTP Client (Polly retry policy to be added later)
+        services.AddHttpClient<IRedmineApiClient, RedmineApiClient>();
+        // TODO: Add Polly retry policy after resolving dependencies
+        
+        // Redmine API Client
+        services.AddScoped<IRedmineApiClient, RedmineApiClient>();
     }
 }

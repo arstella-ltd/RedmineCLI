@@ -23,3 +23,63 @@ public class IssuesResponse
     [JsonPropertyName("limit")]
     public int Limit { get; set; }
 }
+
+public class ProjectsResponse
+{
+    [JsonPropertyName("projects")]
+    public List<Project> Projects { get; set; } = new();
+
+    [JsonPropertyName("total_count")]
+    public int TotalCount { get; set; }
+
+    [JsonPropertyName("offset")]
+    public int Offset { get; set; }
+
+    [JsonPropertyName("limit")]
+    public int Limit { get; set; }
+}
+
+public class UsersResponse
+{
+    [JsonPropertyName("users")]
+    public List<User> Users { get; set; } = new();
+
+    [JsonPropertyName("total_count")]
+    public int TotalCount { get; set; }
+
+    [JsonPropertyName("offset")]
+    public int Offset { get; set; }
+
+    [JsonPropertyName("limit")]
+    public int Limit { get; set; }
+}
+
+public class IssueStatusesResponse
+{
+    [JsonPropertyName("issue_statuses")]
+    public List<IssueStatus> IssueStatuses { get; set; } = new();
+}
+
+public class ErrorResponse
+{
+    [JsonPropertyName("errors")]
+    public string[]? Errors { get; set; }
+}
+
+public class IssueRequest
+{
+    [JsonPropertyName("issue")]
+    public Issue Issue { get; set; } = new();
+}
+
+public class CommentRequest
+{
+    [JsonPropertyName("issue")]
+    public CommentData Issue { get; set; } = new();
+}
+
+public class CommentData
+{
+    [JsonPropertyName("notes")]
+    public string Notes { get; set; } = string.Empty;
+}
