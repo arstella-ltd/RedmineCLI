@@ -991,9 +991,15 @@ public class IssueCommand
             string commentText;
 
             // If message is provided via command line, use it directly
-            if (!string.IsNullOrEmpty(message))
+            if (message != null)
             {
-                commentText = message;
+                // Check if the provided message is empty or whitespace
+                if (string.IsNullOrWhiteSpace(message))
+                {
+                    AnsiConsole.MarkupLine("[yellow]Comment cancelled: No text entered[/]");
+                    return 1;
+                }
+                commentText = message.Trim();
             }
             else
             {
@@ -1002,12 +1008,11 @@ public class IssueCommand
                 if (string.IsNullOrWhiteSpace(commentText))
                 {
                     AnsiConsole.MarkupLine("[yellow]Comment cancelled: No text entered[/]");
-                    return 0;
+                    return 1;
                 }
             }
 
-            // Validate comment is not empty after trimming
-            commentText = commentText.Trim();
+            // Final validation to ensure comment is not empty
             if (string.IsNullOrEmpty(commentText))
             {
                 AnsiConsole.MarkupLine("[red]Error:[/] Comment cannot be empty");
