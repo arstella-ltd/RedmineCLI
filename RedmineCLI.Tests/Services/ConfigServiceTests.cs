@@ -413,10 +413,10 @@ public class ConfigServiceTests
             CurrentProfile = "default",
             Profiles = new Dictionary<string, Profile>
             {
-                ["default"] = new Profile 
-                { 
-                    Name = "default", 
-                    Url = "https://default.redmine.com", 
+                ["default"] = new Profile
+                {
+                    Name = "default",
+                    Url = "https://default.redmine.com",
                     ApiKey = "default-key",
                     Preferences = new Preferences()
                 }
@@ -441,10 +441,10 @@ public class ConfigServiceTests
             CurrentProfile = "default",
             Profiles = new Dictionary<string, Profile>
             {
-                ["default"] = new Profile 
-                { 
-                    Name = "default", 
-                    Url = "https://default.redmine.com", 
+                ["default"] = new Profile
+                {
+                    Name = "default",
+                    Url = "https://default.redmine.com",
                     ApiKey = "default-key",
                     Preferences = new Preferences()
                 }
@@ -469,10 +469,10 @@ public class ConfigServiceTests
             CurrentProfile = "default",
             Profiles = new Dictionary<string, Profile>
             {
-                ["default"] = new Profile 
-                { 
-                    Name = "default", 
-                    Url = "https://default.redmine.com", 
+                ["default"] = new Profile
+                {
+                    Name = "default",
+                    Url = "https://default.redmine.com",
                     ApiKey = "default-key",
                     Preferences = new Preferences()
                 }
@@ -497,10 +497,10 @@ public class ConfigServiceTests
             CurrentProfile = "default",
             Profiles = new Dictionary<string, Profile>
             {
-                ["default"] = new Profile 
-                { 
-                    Name = "default", 
-                    Url = "https://default.redmine.com", 
+                ["default"] = new Profile
+                {
+                    Name = "default",
+                    Url = "https://default.redmine.com",
                     ApiKey = "default-key",
                     Preferences = new Preferences()
                 }
@@ -525,10 +525,10 @@ public class ConfigServiceTests
             CurrentProfile = "default",
             Profiles = new Dictionary<string, Profile>
             {
-                ["default"] = new Profile 
-                { 
-                    Name = "default", 
-                    Url = "https://default.redmine.com", 
+                ["default"] = new Profile
+                {
+                    Name = "default",
+                    Url = "https://default.redmine.com",
                     ApiKey = "default-key",
                     Preferences = new Preferences()
                 }
@@ -553,10 +553,10 @@ public class ConfigServiceTests
             CurrentProfile = "default",
             Profiles = new Dictionary<string, Profile>
             {
-                ["default"] = new Profile 
-                { 
-                    Name = "default", 
-                    Url = "https://default.redmine.com", 
+                ["default"] = new Profile
+                {
+                    Name = "default",
+                    Url = "https://default.redmine.com",
                     ApiKey = "default-key",
                     Preferences = new Preferences()
                 }
@@ -581,10 +581,10 @@ public class ConfigServiceTests
             CurrentProfile = "default",
             Profiles = new Dictionary<string, Profile>
             {
-                ["default"] = new Profile 
-                { 
-                    Name = "default", 
-                    Url = "https://default.redmine.com", 
+                ["default"] = new Profile
+                {
+                    Name = "default",
+                    Url = "https://default.redmine.com",
                     ApiKey = "default-key",
                     Preferences = new Preferences()
                 }
@@ -628,10 +628,10 @@ public class ConfigServiceTests
             CurrentProfile = "default",
             Profiles = new Dictionary<string, Profile>
             {
-                ["default"] = new Profile 
-                { 
-                    Name = "default", 
-                    Url = "https://default.redmine.com", 
+                ["default"] = new Profile
+                {
+                    Name = "default",
+                    Url = "https://default.redmine.com",
                     ApiKey = "default-key",
                     Preferences = null
                 }

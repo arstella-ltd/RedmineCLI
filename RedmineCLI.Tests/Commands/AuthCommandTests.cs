@@ -462,7 +462,7 @@ public class AuthCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _configService.Received(1).SaveConfigAsync(Arg.Is<Config>(c => 
+        await _configService.Received(1).SaveConfigAsync(Arg.Is<Config>(c =>
             c.Profiles["default"].ApiKey == string.Empty));
     }
 

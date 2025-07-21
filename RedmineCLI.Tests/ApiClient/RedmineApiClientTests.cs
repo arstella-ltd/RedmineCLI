@@ -405,7 +405,7 @@ public class RedmineApiClientTests : IDisposable
     {
         // Arrange
         var testApiKey = "test-key-456";
-        
+
         _mockServer
             .Given(Request.Create()
                 .WithPath("/users/current.json")
@@ -427,7 +427,7 @@ public class RedmineApiClientTests : IDisposable
     {
         // Arrange
         var testApiKey = "invalid-key";
-        
+
         _mockServer
             .Given(Request.Create()
                 .WithPath("/users/current.json")
@@ -638,8 +638,8 @@ public class RedmineApiClientTests : IDisposable
         // Assert
         // Verify that the PUT request was made by checking the mock server received a request
         _mockServer.LogEntries.Should().NotBeEmpty();
-        var putRequest = _mockServer.LogEntries.FirstOrDefault(entry => 
-            entry.RequestMessage.Method == "PUT" && 
+        var putRequest = _mockServer.LogEntries.FirstOrDefault(entry =>
+            entry.RequestMessage.Method == "PUT" &&
             entry.RequestMessage.Path == $"/issues/{issueId}.json");
         putRequest.Should().NotBeNull();
     }

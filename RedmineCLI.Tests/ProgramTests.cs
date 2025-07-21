@@ -122,9 +122,9 @@ public class ProgramTests
         var configureServicesMethod = typeof(Program).GetMethod(
             "ConfigureServices",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-        
+
         configureServicesMethod!.Invoke(null, new object[] { services });
-        
+
         var serviceProvider = services.BuildServiceProvider();
 
         // Assert
