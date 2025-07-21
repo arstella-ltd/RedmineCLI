@@ -1,0 +1,227 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+
+jobs:
+  lint-and-format:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Check format
+      run: dotnet format --verify-no-changes --verbosity diagnostic
+
+    - name: Build with warnings as errors
+      run: dotnet build --configuration Release --no-restore -p:TreatWarningsAsErrors=true
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  test-coverage:
+    name: Test Coverage
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Run tests with coverage
+      run: dotnet test --configuration Release --collect:"XPlat Code Coverage" --results-directory ./coverage
+
+    - name: Generate coverage report
+      run: |
+        dotnet tool install -g dotnet-reportgenerator-globaltool
+        reportgenerator -reports:"./coverage/**/coverage.cobertura.xml" -targetdir:"./coverage/report" -reporttypes:"Html;TextSummary"
+
+    - name: Check coverage threshold
+      run: |
+        COVERAGE=$(grep -oP 'Line coverage: \K[0-9.]+' ./coverage/report/Summary.txt)
+        echo "Current coverage: ${COVERAGE}%"
+        THRESHOLD=80
+        if (( $(echo "$COVERAGE < $THRESHOLD" | bc -l) )); then
+          echo "Error: Coverage ${COVERAGE}% is below threshold ${THRESHOLD}%"
+          exit 1
+        fi
+        echo "Coverage ${COVERAGE}% meets threshold ${THRESHOLD}%"
+
+    - name: Comment coverage on PR
+      if: github.event_name == 'pull_request'
+      uses: marocchino/sticky-pull-request-comment@v2
+      with:
+        header: coverage
+        message: |
+          ## 📊 Test Coverage Report
+          
+          ```
+          $(cat ./coverage/report/Summary.txt)
+          ```
+          
+          [View detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+  aot-compatibility:
+    name: AOT Compatibility Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Test AOT publish (dry run)
+      run: |
+        dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r linux-x64 -p:PublishAot=true --dry-run
+
+    - name: Check for AOT warnings
+      run: |
+        dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r linux-x64 -p:PublishAot=true -o aot-test 2>&1 | tee aot-build.log
+        
+        # Check for critical AOT warnings (excluding suppressed ones)
+        CRITICAL_WARNINGS=$(grep -E "(IL[0-9]{4}|AOT)" aot-build.log | grep -v "IL2104\|IL3053" | wc -l)
+        if [ $CRITICAL_WARNINGS -gt 0 ]; then
+          echo "Found $CRITICAL_WARNINGS critical AOT warnings:"
+          grep -E "(IL[0-9]{4}|AOT)" aot-build.log | grep -v "IL2104\|IL3053"
+          echo "Please review and fix AOT compatibility issues"
+          exit 1
+        fi
+        echo "AOT compatibility check passed"
+
+  performance-regression:
+    name: Performance Regression Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Build AOT binary
+      run: |
+        dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r linux-x64 -p:PublishAot=true -o ./bin
+
+    - name: Check binary size
+      run: |
+        BINARY_SIZE=$(stat -c%s "./bin/RedmineCLI")
+        BINARY_SIZE_MB=$((BINARY_SIZE / 1024 / 1024))
+        echo "Binary size: ${BINARY_SIZE_MB}MB"
+        
+        # Check size threshold (20MB max)
+        if [ $BINARY_SIZE_MB -gt 20 ]; then
+          echo "Error: Binary size ${BINARY_SIZE_MB}MB exceeds 20MB threshold"
+          exit 1
+        fi
+        echo "Binary size check passed"
+
+    - name: Measure startup time
+      run: |
+        chmod +x ./bin/RedmineCLI
+        
+        # Warm up
+        ./bin/RedmineCLI --version > /dev/null
+        
+        # Measure startup time (5 iterations)
+        TOTAL_TIME=0
+        for i in {1..5}; do
+          START_TIME=$(date +%s%N)
+          ./bin/RedmineCLI --version > /dev/null
+          END_TIME=$(date +%s%N)
+          TIME_MS=$(((END_TIME - START_TIME) / 1000000))
+          TOTAL_TIME=$((TOTAL_TIME + TIME_MS))
+          echo "Run $i: ${TIME_MS}ms"
+        done
+        
+        AVG_TIME=$((TOTAL_TIME / 5))
+        echo "Average startup time: ${AVG_TIME}ms"
+        
+        # Check startup time threshold (500ms max for CI environment)
+        if [ $AVG_TIME -gt 500 ]; then
+          echo "Error: Average startup time ${AVG_TIME}ms exceeds 500ms threshold"
+          exit 1
+        fi
+        echo "Startup time check passed"
+
+  dependency-check:
+    name: Dependency Vulnerability Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: List package vulnerabilities
+      run: dotnet list package --vulnerable --include-transitive --verbosity normal
+
+    - name: Check for high severity vulnerabilities
+      run: |
+        # This will fail if high severity vulnerabilities are found
+        dotnet list package --vulnerable --include-transitive --verbosity normal > vulns.txt
+        if grep -q "High\|Critical" vulns.txt; then
+          echo "High or Critical severity vulnerabilities found:"
+          cat vulns.txt
+          exit 1
+        fi
+        echo "No high or critical vulnerabilities found"

@@ -1,0 +1,180 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main ]
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build solution
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Run tests
+      run: dotnet test --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage"
+
+    - name: Upload coverage reports to Codecov
+      if: matrix.os == 'ubuntu-latest'
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: '**/coverage.cobertura.xml'
+        fail_ci_if_error: false
+
+  build-native:
+    name: Native AOT Build - ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    needs: test
+    strategy:
+      matrix:
+        config:
+          - name: "Windows x64"
+            os: windows-latest
+            rid: win-x64
+            output: RedmineCLI.exe
+          - name: "macOS x64"
+            os: macos-latest
+            rid: osx-x64
+            output: RedmineCLI
+          - name: "macOS ARM64"
+            os: macos-latest
+            rid: osx-arm64
+            output: RedmineCLI
+          - name: "Linux x64"
+            os: ubuntu-latest
+            rid: linux-x64
+            output: RedmineCLI
+          - name: "Linux ARM64"
+            os: ubuntu-latest
+            rid: linux-arm64
+            output: RedmineCLI
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Publish Native AOT
+      run: dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r ${{ matrix.config.rid }} -p:PublishAot=true -p:StripSymbols=true --self-contained -o publish/${{ matrix.config.rid }}
+
+    - name: Check binary size (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        BINARY_SIZE=$(stat -c%s "publish/${{ matrix.config.rid }}/${{ matrix.config.output }}")
+        BINARY_SIZE_MB=$((BINARY_SIZE / 1024 / 1024))
+        echo "Binary size: ${BINARY_SIZE_MB}MB"
+        if [ $BINARY_SIZE_MB -gt 20 ]; then
+          echo "Warning: Binary size exceeds 20MB target"
+        fi
+
+    - name: Check binary size (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        $BinarySize = (Get-Item "publish/${{ matrix.config.rid }}/${{ matrix.config.output }}").Length
+        $BinarySizeMB = [math]::Round($BinarySize / 1024 / 1024, 2)
+        Write-Output "Binary size: ${BinarySizeMB}MB"
+        if ($BinarySizeMB -gt 20) {
+          Write-Output "Warning: Binary size exceeds 20MB target"
+        }
+
+    - name: Test binary execution
+      run: publish/${{ matrix.config.rid }}/${{ matrix.config.output }} --version
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: redmine-cli-${{ matrix.config.rid }}
+        path: publish/${{ matrix.config.rid }}/${{ matrix.config.output }}
+        retention-days: 30
+
+  package:
+    name: Package for NuGet
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Pack as dotnet tool
+      run: dotnet pack RedmineCLI/RedmineCLI.csproj --configuration Release --no-restore -o packages/
+
+    - name: Upload NuGet package
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-package
+        path: packages/*.nupkg
+        retention-days: 30
+
+  benchmark:
+    name: Performance Benchmark
+    runs-on: ubuntu-latest
+    needs: build-native
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download Linux binary
+      uses: actions/download-artifact@v4
+      with:
+        name: redmine-cli-linux-x64
+        path: ./bin
+
+    - name: Make binary executable
+      run: chmod +x ./bin/RedmineCLI
+
+    - name: Benchmark startup time
+      run: |
+        echo "Measuring startup time..."
+        for i in {1..10}; do
+          time timeout 5s ./bin/RedmineCLI --version || true
+        done | grep real | awk '{print $2}' > startup_times.txt
+        
+        # Calculate average
+        awk '{sum+=$1; count++} END {print "Average startup time: " sum/count "s"}' startup_times.txt
+
+    - name: Check binary startup time
+      run: |
+        # Quick startup time check (should be under 1 second for CI)
+        timeout 2s time ./bin/RedmineCLI --version
+        echo "Startup time check passed"
