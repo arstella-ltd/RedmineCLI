@@ -161,12 +161,19 @@ jobs:
     - name: Benchmark startup time
       run: |
         echo "Measuring startup time..."
+        > startup_times.txt
         for i in {1..10}; do
-          time timeout 5s ./bin/RedmineCLI --version || true
-        done | grep real | awk '{print $2}' > startup_times.txt
+          START=$(date +%s.%N)
+          ./bin/RedmineCLI --version > /dev/null 2>&1
+          END=$(date +%s.%N)
+          DURATION=$(echo "$END - $START" | bc)
+          echo "$DURATION" >> startup_times.txt
+          echo "Run $i: ${DURATION}s"
+        done
         
         # Calculate average
-        awk '{sum+=$1; count++} END {print "Average startup time: " sum/count "s"}' startup_times.txt
+        AVG=$(awk '{sum+=$1; count++} END {print sum/count}' startup_times.txt)
+        echo "Average startup time: ${AVG}s"
 
     - name: Check binary startup time
       run: |
