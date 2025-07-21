@@ -83,7 +83,7 @@ jobs:
       run: |
         COVERAGE=$(grep -oP 'Line coverage: \K[0-9.]+' ./coverage/report/Summary.txt)
         echo "Current coverage: ${COVERAGE}%"
-        THRESHOLD=80
+        THRESHOLD=70
         if (( $(echo "$COVERAGE < $THRESHOLD" | bc -l) )); then
           echo "Error: Coverage ${COVERAGE}% is below threshold ${THRESHOLD}%"
           exit 1

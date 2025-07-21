@@ -397,4 +397,286 @@ public class RedmineApiClientTests : IDisposable
     }
 
     #endregion
+
+    #region Additional Tests
+
+    [Fact]
+    public async Task TestConnectionAsync_Should_ReturnTrue_When_ValidCredentials()
+    {
+        // Arrange
+        var testApiKey = "test-key-456";
+        
+        _mockServer
+            .Given(Request.Create()
+                .WithPath("/users/current.json")
+                .WithHeader("X-Redmine-API-Key", testApiKey)
+                .UsingGet())
+            .RespondWith(Response.Create()
+                .WithStatusCode(200)
+                .WithBodyAsJson(new { user = new { id = 1, login = "test" } }));
+
+        // Act
+        var result = await _client.TestConnectionAsync(_mockServer.Urls[0], testApiKey);
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task TestConnectionAsync_Should_ReturnFalse_When_InvalidCredentials()
+    {
+        // Arrange
+        var testApiKey = "invalid-key";
+        
+        _mockServer
+            .Given(Request.Create()
+                .WithPath("/users/current.json")
+                .UsingGet())
+            .RespondWith(Response.Create()
+                .WithStatusCode(401));
+
+        // Act
+        var result = await _client.TestConnectionAsync(_mockServer.Urls[0], testApiKey);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task TestConnectionAsync_Should_ReturnFalse_When_NetworkError()
+    {
+        // Arrange
+        var invalidUrl = "https://invalid-url-that-does-not-exist.com";
+        var testApiKey = "test-key";
+
+        // Act
+        var result = await _client.TestConnectionAsync(invalidUrl, testApiKey);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GetProjectsAsync_Should_ReturnProjects_When_Success()
+    {
+        // Arrange
+        var projects = new[]
+        {
+            new { id = 1, name = "Project 1" },
+            new { id = 2, name = "Project 2" }
+        };
+
+        _mockServer
+            .Given(Request.Create()
+                .WithPath("/projects.json")
+                .UsingGet())
+            .RespondWith(Response.Create()
+                .WithStatusCode(200)
+                .WithBodyAsJson(new { projects }));
+
+        // Act
+        var result = await _client.GetProjectsAsync();
+
+        // Assert
+        result.Should().HaveCount(2);
+        result[0].Id.Should().Be(1);
+        result[0].Name.Should().Be("Project 1");
+        result[1].Id.Should().Be(2);
+        result[1].Name.Should().Be("Project 2");
+    }
+
+    [Fact]
+    public async Task GetProjectsAsync_Should_ReturnEmptyList_When_NoProjects()
+    {
+        // Arrange
+        _mockServer
+            .Given(Request.Create()
+                .WithPath("/projects.json")
+                .UsingGet())
+            .RespondWith(Response.Create()
+                .WithStatusCode(200)
+                .WithBodyAsJson(new { projects = new object[0] }));
+
+        // Act
+        var result = await _client.GetProjectsAsync();
+
+        // Assert
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetUsersAsync_Should_ReturnUsers_When_Success()
+    {
+        // Arrange
+        var users = new[]
+        {
+            new { id = 10, firstname = "John", lastname = "Doe", mail = "john@example.com" },
+            new { id = 20, firstname = "Jane", lastname = "Smith", mail = "jane@example.com" }
+        };
+
+        _mockServer
+            .Given(Request.Create()
+                .WithPath("/users.json")
+                .UsingGet())
+            .RespondWith(Response.Create()
+                .WithStatusCode(200)
+                .WithBodyAsJson(new { users }));
+
+        // Act
+        var result = await _client.GetUsersAsync();
+
+        // Assert
+        result.Should().HaveCount(2);
+        result[0].Id.Should().Be(10);
+        result[0].FirstName.Should().Be("John");
+        result[0].LastName.Should().Be("Doe");
+        result[1].Id.Should().Be(20);
+        result[1].FirstName.Should().Be("Jane");
+    }
+
+    [Fact]
+    public async Task GetIssueStatusesAsync_Should_ReturnStatuses_When_Success()
+    {
+        // Arrange
+        var statuses = new[]
+        {
+            new { id = 1, name = "New", is_closed = false },
+            new { id = 2, name = "In Progress", is_closed = false },
+            new { id = 3, name = "Closed", is_closed = true }
+        };
+
+        _mockServer
+            .Given(Request.Create()
+                .WithPath("/issue_statuses.json")
+                .UsingGet())
+            .RespondWith(Response.Create()
+                .WithStatusCode(200)
+                .WithBodyAsJson(new { issue_statuses = statuses }));
+
+        // Act
+        var result = await _client.GetIssueStatusesAsync();
+
+        // Assert
+        result.Should().HaveCount(3);
+        result[0].Id.Should().Be(1);
+        result[0].Name.Should().Be("New");
+        result[0].IsClosed.Should().BeFalse();
+        result[2].Id.Should().Be(3);
+        result[2].Name.Should().Be("Closed");
+        result[2].IsClosed.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task GetCurrentUserAsync_Should_ReturnUser_When_Success()
+    {
+        // Arrange
+        var user = new
+        {
+            id = 100,
+            login = "current_user",
+            firstname = "Current",
+            lastname = "User",
+            mail = "current@example.com"
+        };
+
+        _mockServer
+            .Given(Request.Create()
+                .WithPath("/users/current.json")
+                .UsingGet())
+            .RespondWith(Response.Create()
+                .WithStatusCode(200)
+                .WithBodyAsJson(new { user }));
+
+        // Act
+        var result = await _client.GetCurrentUserAsync();
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Id.Should().Be(100);
+        result.Login.Should().Be("current_user");
+        result.FirstName.Should().Be("Current");
+        result.LastName.Should().Be("User");
+        result.Email.Should().Be("current@example.com");
+    }
+
+    [Fact]
+    public async Task GetCurrentUserAsync_Should_ThrowException_When_UserNotFound()
+    {
+        // Arrange
+        _mockServer
+            .Given(Request.Create()
+                .WithPath("/users/current.json")
+                .UsingGet())
+            .RespondWith(Response.Create()
+                .WithStatusCode(404));
+
+        // Act
+        var act = async () => await _client.GetCurrentUserAsync();
+
+        // Assert
+        await act.Should().ThrowAsync<RedmineApiException>();
+    }
+
+    [Fact]
+    public async Task AddCommentAsync_Should_SendPutRequest_When_ValidComment()
+    {
+        // Arrange
+        var issueId = 999;
+        var comment = "This is a test comment";
+
+        _mockServer
+            .Given(Request.Create()
+                .WithPath($"/issues/{issueId}.json")
+                .UsingPut()
+                .WithBody(b => b != null && b.Contains("notes") && b.Contains(comment)))
+            .RespondWith(Response.Create()
+                .WithStatusCode(200));
+
+        // Act
+        await _client.AddCommentAsync(issueId, comment);
+
+        // Assert
+        // Verify that the PUT request was made by checking the mock server received a request
+        _mockServer.LogEntries.Should().NotBeEmpty();
+        var putRequest = _mockServer.LogEntries.FirstOrDefault(entry => 
+            entry.RequestMessage.Method == "PUT" && 
+            entry.RequestMessage.Path == $"/issues/{issueId}.json");
+        putRequest.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task GetIssuesAsync_WithFilter_Should_IncludeQueryParameters()
+    {
+        // Arrange
+        var filter = new IssueFilter
+        {
+            AssignedToId = "me",
+            ProjectId = "5",
+            StatusId = "open",
+            Limit = 25,
+            Offset = 0
+        };
+
+        _mockServer
+            .Given(Request.Create()
+                .WithPath("/issues.json")
+                .WithParam("assigned_to_id", "me")
+                .WithParam("project_id", "5")
+                .WithParam("status_id", "open")
+                .WithParam("limit", "25")
+                .WithParam("offset", "0")
+                .UsingGet())
+            .RespondWith(Response.Create()
+                .WithStatusCode(200)
+                .WithBodyAsJson(new { issues = new[] { new { id = 1, subject = "Test" } } }));
+
+        // Act
+        var result = await _client.GetIssuesAsync(filter);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].Id.Should().Be(1);
+    }
+
+    #endregion
 }
