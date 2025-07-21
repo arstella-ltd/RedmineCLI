@@ -16,7 +16,7 @@ public class DateTimeConverter : JsonConverter<DateTime>
     public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         var dateString = reader.GetString();
-        
+
         if (string.IsNullOrEmpty(dateString))
         {
             return DateTime.MinValue;
@@ -24,7 +24,7 @@ public class DateTimeConverter : JsonConverter<DateTime>
 
         foreach (var format in _formats)
         {
-            if (DateTime.TryParseExact(dateString, format, 
+            if (DateTime.TryParseExact(dateString, format,
                 System.Globalization.CultureInfo.InvariantCulture,
                 System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
                 out var result))

@@ -187,7 +187,7 @@
   - **Refactor**: 入力検証ロジックの改善、@me処理の共通化
   - _要件: 4_
 
-- [ ] 9. チケット更新コマンドの実装（TDD）
+- [x] 9. チケット更新コマンドの実装（TDD）
   - **Red**: IssueEditCommandのテストを先に作成
     - Edit_Should_UpdateStatus_When_StatusOptionProvided
     - Edit_Should_UpdateAssignee_When_AssigneeOptionProvided
@@ -399,6 +399,25 @@
 - 共通ロジックのリファクタリング：ResolveAssigneeAsync、ParseAssignee、ParseProject
 - すべてのテスト（81件）が成功
 - Native AOTビルド成功：バイナリサイズ15MB
+
+### タスク9完了（2025-07-21）
+- TDD手法（Red→Green→Refactor）に従って実装
+- テストケース12件を作成（ステータス更新、担当者更新、進捗率更新、確認メッセージ、ブラウザ起動、@me処理など）
+- `issue edit`コマンドの実装
+- コマンドラインオプション：-s/--status, -a/--assignee, --done-ratio, -w/--web
+- @me特殊値のサポート（ResolveAssigneeAsync共通メソッドを使用）
+- 進捗率の範囲検証（0-100）
+- 対話的モード：オプションを指定しない場合は対話的にフィールドを選択
+  - 現在の値を表示してから編集フィールドを選択
+  - ステータス、担当者、進捗率の個別編集
+  - 変更内容の確認と保存/キャンセル機能
+- 部分更新の実装：IssueUpdateDataモデルを追加してnullフィールドを除外
+- Redmine API要件への対応：subjectフィールドを必ず含める（現在値を取得して設定）
+- ステータス名からIDへの解決機能（GetIssueStatusesAsyncを使用）
+- 更新成功時の詳細表示（どのフィールドを何に更新したかを表示）
+- --web/-wオプションによる編集ページのブラウザ起動
+- リファクタリング：更新フィールドの追跡と表示ロジックの改善
+- すべてのテスト（93件）が成功
 
 ## 使用方法
 

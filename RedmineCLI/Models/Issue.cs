@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+
 using RedmineCLI.Exceptions;
 
 namespace RedmineCLI.Models;

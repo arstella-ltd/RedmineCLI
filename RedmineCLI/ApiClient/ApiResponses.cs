@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+
 using RedmineCLI.Models;
 
 namespace RedmineCLI.ApiClient;
@@ -97,6 +98,47 @@ public class IssueCreateData
 
     [JsonPropertyName("status_id")]
     public int? StatusId { get; set; }
+}
+
+public class IssueUpdateRequest
+{
+    [JsonPropertyName("issue")]
+    public IssueUpdateData Issue { get; set; } = new();
+}
+
+public class IssueUpdateData
+{
+    [JsonPropertyName("subject")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Subject { get; set; }
+
+    [JsonPropertyName("description")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Description { get; set; }
+
+    [JsonPropertyName("status_id")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? StatusId { get; set; }
+
+    [JsonPropertyName("assigned_to_id")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? AssignedToId { get; set; }
+
+    [JsonPropertyName("done_ratio")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? DoneRatio { get; set; }
+
+    [JsonPropertyName("priority_id")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? PriorityId { get; set; }
+
+    [JsonPropertyName("notes")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Notes { get; set; }
+
+    [JsonPropertyName("private_notes")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? PrivateNotes { get; set; }
 }
 
 public class CommentRequest

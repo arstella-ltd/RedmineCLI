@@ -1,6 +1,8 @@
 using System.Text.Json;
+
 using RedmineCLI.ApiClient;
 using RedmineCLI.Models;
+
 using Spectre.Console;
 
 namespace RedmineCLI.Formatters;

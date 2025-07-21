@@ -2,12 +2,15 @@ using System.CommandLine;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+
 using Microsoft.Extensions.Logging;
+
 using RedmineCLI.ApiClient;
 using RedmineCLI.Exceptions;
 using RedmineCLI.Formatters;
 using RedmineCLI.Models;
 using RedmineCLI.Services;
+
 using Spectre.Console;
 
 namespace RedmineCLI.Commands;
@@ -46,7 +49,7 @@ public class IssueCommand
         var issueCommand = new IssueCommand(apiClient, configService, tableFormatter, jsonFormatter, logger);
 
         var listCommand = new Command("list", "List issues with optional filters");
-        
+
         var assigneeOption = new Option<string?>("--assignee") { Description = "Filter by assignee (username, ID, or @me)" };
         assigneeOption.Aliases.Add("-a");
         var statusOption = new Option<string?>("--status") { Description = "Filter by status (open, closed, all, or status ID)" };
@@ -77,7 +80,7 @@ public class IssueCommand
             var offset = parseResult.GetValue(offsetOption);
             var json = parseResult.GetValue(jsonOption);
             var web = parseResult.GetValue(webOption);
-            
+
             Environment.ExitCode = await issueCommand.ListAsync(assignee, status, project, limit, offset, json, web, CancellationToken.None);
         });
 
@@ -100,7 +103,7 @@ public class IssueCommand
             var id = parseResult.GetValue(idArgument);
             var json = parseResult.GetValue(viewJsonOption);
             var web = parseResult.GetValue(viewWebOption);
-            
+
             Environment.ExitCode = await issueCommand.ViewAsync(id, json, web, CancellationToken.None);
         });
 
@@ -132,12 +135,43 @@ public class IssueCommand
             var description = parseResult.GetValue(createDescriptionOption);
             var assignee = parseResult.GetValue(createAssigneeOption);
             var web = parseResult.GetValue(createWebOption);
-            
+
             Environment.ExitCode = await issueCommand.CreateAsync(project, title, description, assignee, web, CancellationToken.None);
         });
 
         command.Add(createCommand);
-        
+
+        // Edit command
+        var editCommand = new Command("edit", "Edit an existing issue");
+        var editIdArgument = new Argument<int>("ID");
+        editIdArgument.Description = "Issue ID";
+        var editStatusOption = new Option<string?>("--status") { Description = "New status" };
+        editStatusOption.Aliases.Add("-s");
+        var editAssigneeOption = new Option<string?>("--assignee") { Description = "New assignee (username, ID, or @me)" };
+        editAssigneeOption.Aliases.Add("-a");
+        var editDoneRatioOption = new Option<int?>("--done-ratio") { Description = "Progress percentage (0-100)" };
+        var editWebOption = new Option<bool>("--web") { Description = "Open edit page in web browser" };
+        editWebOption.Aliases.Add("-w");
+
+        editCommand.Add(editIdArgument);
+        editCommand.Add(editStatusOption);
+        editCommand.Add(editAssigneeOption);
+        editCommand.Add(editDoneRatioOption);
+        editCommand.Add(editWebOption);
+
+        editCommand.SetAction(async (parseResult) =>
+        {
+            var id = parseResult.GetValue(editIdArgument);
+            var status = parseResult.GetValue(editStatusOption);
+            var assignee = parseResult.GetValue(editAssigneeOption);
+            var doneRatio = parseResult.GetValue(editDoneRatioOption);
+            var web = parseResult.GetValue(editWebOption);
+
+            Environment.ExitCode = await issueCommand.EditAsync(id, status, assignee, doneRatio, web, CancellationToken.None);
+        });
+
+        command.Add(editCommand);
+
         return command;
     }
 
@@ -223,10 +257,10 @@ public class IssueCommand
         var queryParams = new List<string>();
 
         // Add set_filter=1 if any filter is specified
-        bool hasFilter = !string.IsNullOrEmpty(filter.AssignedToId) || 
-                        !string.IsNullOrEmpty(filter.StatusId) || 
+        bool hasFilter = !string.IsNullOrEmpty(filter.AssignedToId) ||
+                        !string.IsNullOrEmpty(filter.StatusId) ||
                         !string.IsNullOrEmpty(filter.ProjectId);
-        
+
         if (hasFilter)
         {
             queryParams.Add("set_filter=1");
@@ -386,7 +420,7 @@ public class IssueCommand
         catch (RedmineApiException ex)
         {
             _logger.LogError(ex, "API error while viewing issue {IssueId}", issueId);
-            
+
             if (ex.StatusCode == 404)
             {
                 AnsiConsole.MarkupLine($"[red]Error:[/] Issue #{issueId} not found.");
@@ -597,7 +631,7 @@ public class IssueCommand
     private static string BuildNewIssueUrl(string baseUrl, string? project)
     {
         var url = $"{baseUrl.TrimEnd('/')}/issues/new";
-        
+
         if (!string.IsNullOrEmpty(project))
         {
             // If project is specified, add it as a query parameter
@@ -645,5 +679,269 @@ public class IssueCommand
         }
 
         return new Project { Identifier = project };
+    }
+
+    public async Task<int> EditAsync(
+        int issueId,
+        string? status,
+        string? assignee,
+        int? doneRatio,
+        bool web,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            _logger.LogDebug("Editing issue {IssueId} - Status: {Status}, Assignee: {Assignee}, DoneRatio: {DoneRatio}, Web: {Web}",
+                issueId, status, assignee, doneRatio, web);
+
+            // Handle --web option
+            if (web)
+            {
+                return await OpenInBrowserAsync(
+                    profile => $"{profile.Url.TrimEnd('/')}/issues/{issueId}/edit",
+                    "issue edit page",
+                    cancellationToken);
+            }
+
+            // Validate done ratio
+            if (doneRatio.HasValue && (doneRatio.Value < 0 || doneRatio.Value > 100))
+            {
+                AnsiConsole.MarkupLine("[red]Error:[/] Done ratio must be between 0 and 100");
+                return 1;
+            }
+
+            // If no options provided, launch interactive mode
+            if (string.IsNullOrEmpty(status) && string.IsNullOrEmpty(assignee) && !doneRatio.HasValue)
+            {
+                return await EditInteractiveAsync(issueId, cancellationToken);
+            }
+
+            // Fetch current issue to get the subject
+            var currentIssue = await _apiClient.GetIssueAsync(issueId, false, cancellationToken);
+
+            // Create update object with only the fields to update
+            var updateIssue = new Issue();
+            updateIssue.Subject = currentIssue.Subject; // Always include subject
+            var fieldsToUpdate = new List<string>();
+
+            // Set status if provided
+            if (!string.IsNullOrEmpty(status))
+            {
+                // Try to parse as ID first
+                if (int.TryParse(status, out var statusId))
+                {
+                    updateIssue.Status = new IssueStatus { Id = statusId, Name = status };
+                }
+                else
+                {
+                    // Resolve status name to ID
+                    var statuses = await _apiClient.GetIssueStatusesAsync(cancellationToken);
+                    var matchedStatus = statuses.FirstOrDefault(s => 
+                        s.Name.Equals(status, StringComparison.OrdinalIgnoreCase));
+                    
+                    if (matchedStatus != null)
+                    {
+                        updateIssue.Status = matchedStatus;
+                    }
+                    else
+                    {
+                        AnsiConsole.MarkupLine($"[red]Error:[/] Unknown status: {status}");
+                        return 1;
+                    }
+                }
+                fieldsToUpdate.Add("status");
+            }
+
+            // Handle assignee
+            if (!string.IsNullOrEmpty(assignee))
+            {
+                var resolvedAssignee = await ResolveAssigneeAsync(assignee, cancellationToken);
+                updateIssue.AssignedTo = ParseAssignee(resolvedAssignee);
+                fieldsToUpdate.Add("assignee");
+            }
+
+            // Set done ratio if provided
+            if (doneRatio.HasValue)
+            {
+                updateIssue.DoneRatio = doneRatio.Value;
+                fieldsToUpdate.Add("progress");
+            }
+
+            // Log what we're updating
+            _logger.LogDebug("Updating issue {IssueId} fields: {Fields}", issueId, string.Join(", ", fieldsToUpdate));
+
+            // Update the issue
+            var updatedIssue = await _apiClient.UpdateIssueAsync(issueId, updateIssue, cancellationToken);
+
+            // Show success message with what was updated
+            var updateSummary = string.Join(", ", fieldsToUpdate.Select(f =>
+                f switch
+                {
+                    "status" => $"status → {updateIssue.Status?.Name}",
+                    "assignee" => $"assignee → {updateIssue.AssignedTo?.Name ?? updateIssue.AssignedTo?.Id.ToString() ?? "unknown"}",
+                    "progress" => $"progress → {updateIssue.DoneRatio}%",
+                    _ => f
+                }));
+
+            var profile = await _configService.GetActiveProfileAsync();
+            if (profile != null)
+            {
+                var issueUrl = $"{profile.Url.TrimEnd('/')}/issues/{updatedIssue.Id}";
+                AnsiConsole.MarkupLine($"[green]✓[/] Issue #{updatedIssue.Id} updated ({updateSummary})");
+                AnsiConsole.MarkupLine($"[dim]View at: {Markup.Escape(issueUrl)}[/]");
+            }
+            else
+            {
+                AnsiConsole.MarkupLine($"[green]✓[/] Issue #{updatedIssue.Id} updated ({updateSummary})");
+            }
+
+            return 0;
+        }
+        catch (RedmineApiException ex)
+        {
+            _logger.LogError(ex, "API error while editing issue {IssueId}", issueId);
+
+            if (ex.StatusCode == 404)
+            {
+                AnsiConsole.MarkupLine($"[red]Error:[/] Issue #{issueId} not found.");
+            }
+            else
+            {
+                AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+            }
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while editing issue {IssueId}", issueId);
+            AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+            return 1;
+        }
+    }
+
+    private async Task<int> EditInteractiveAsync(int issueId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            AnsiConsole.MarkupLine($"[bold cyan]Edit Issue #{issueId}[/]");
+            AnsiConsole.WriteLine();
+
+            // Fetch current issue details
+            var currentIssue = await _apiClient.GetIssueAsync(issueId, false, cancellationToken);
+
+            // Show current values
+            AnsiConsole.MarkupLine("[dim]Current values:[/]");
+            AnsiConsole.MarkupLine($"  Status: {currentIssue.Status?.Name ?? "None"}");
+            AnsiConsole.MarkupLine($"  Assignee: {currentIssue.AssignedTo?.Name ?? "None"}");
+            AnsiConsole.MarkupLine($"  Progress: {currentIssue.DoneRatio ?? 0}%");
+            AnsiConsole.WriteLine();
+
+            // Interactive field selection
+            var choices = new List<string> { "Status", "Assignee", "Progress", "Done (save changes)", "Cancel" };
+            var updateIssue = new Issue();
+            updateIssue.Subject = currentIssue.Subject; // Always include subject
+            bool hasChanges = false;
+
+            while (true)
+            {
+                var choice = AnsiConsole.Prompt(
+                    new SelectionPrompt<string>()
+                        .Title("What would you like to edit?")
+                        .AddChoices(choices));
+
+                if (choice == "Cancel")
+                {
+                    AnsiConsole.MarkupLine("[yellow]Edit cancelled[/]");
+                    return 0;
+                }
+
+                if (choice == "Done (save changes)")
+                {
+                    if (!hasChanges)
+                    {
+                        AnsiConsole.MarkupLine("[yellow]No changes to save[/]");
+                        return 0;
+                    }
+                    break;
+                }
+
+                switch (choice)
+                {
+                    case "Status":
+                        var statuses = await _apiClient.GetIssueStatusesAsync(cancellationToken);
+                        var selectedStatus = AnsiConsole.Prompt(
+                            new SelectionPrompt<IssueStatus>()
+                                .Title("Select new status:")
+                                .UseConverter(s => s.Name)
+                                .AddChoices(statuses));
+                        updateIssue.Status = selectedStatus;
+                        hasChanges = true;
+                        AnsiConsole.MarkupLine($"[green]Status will be changed to: {selectedStatus.Name}[/]");
+                        break;
+
+                    case "Assignee":
+                        var assignToMe = AnsiConsole.Confirm("Assign to yourself?", false);
+                        if (assignToMe)
+                        {
+                            var currentUser = await _apiClient.GetCurrentUserAsync(cancellationToken);
+                            updateIssue.AssignedTo = currentUser;
+                            hasChanges = true;
+                            AnsiConsole.MarkupLine($"[green]Will be assigned to: {currentUser.Name}[/]");
+                        }
+                        else
+                        {
+                            var users = await _apiClient.GetUsersAsync(cancellationToken);
+                            var selectedUser = AnsiConsole.Prompt(
+                                new SelectionPrompt<User>()
+                                    .Title("Select assignee:")
+                                    .UseConverter(u => u.Name)
+                                    .AddChoices(users));
+                            updateIssue.AssignedTo = selectedUser;
+                            hasChanges = true;
+                            AnsiConsole.MarkupLine($"[green]Will be assigned to: {selectedUser.Name}[/]");
+                        }
+                        break;
+
+                    case "Progress":
+                        var newProgress = AnsiConsole.Prompt(
+                            new TextPrompt<int>("Enter progress percentage (0-100):")
+                                .DefaultValue(currentIssue.DoneRatio ?? 0)
+                                .Validate(value =>
+                                {
+                                    if (value < 0 || value > 100)
+                                        return ValidationResult.Error("Progress must be between 0 and 100");
+                                    return ValidationResult.Success();
+                                }));
+                        updateIssue.DoneRatio = newProgress;
+                        hasChanges = true;
+                        AnsiConsole.MarkupLine($"[green]Progress will be set to: {newProgress}%[/]");
+                        break;
+                }
+            }
+
+            // Update the issue
+            var updatedIssue = await _apiClient.UpdateIssueAsync(issueId, updateIssue, cancellationToken);
+
+            // Show success message
+            var profile = await _configService.GetActiveProfileAsync();
+            if (profile != null)
+            {
+                var issueUrl = $"{profile.Url.TrimEnd('/')}/issues/{updatedIssue.Id}";
+                AnsiConsole.MarkupLine($"[green]✓[/] Issue #{updatedIssue.Id} updated: {Markup.Escape(updatedIssue.Subject)}");
+                AnsiConsole.MarkupLine($"[dim]View at: {Markup.Escape(issueUrl)}[/]");
+            }
+            else
+            {
+                AnsiConsole.MarkupLine($"[green]✓[/] Issue #{updatedIssue.Id} updated: {Markup.Escape(updatedIssue.Subject)}");
+            }
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during interactive issue edit");
+            AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+            return 1;
+        }
     }
 }

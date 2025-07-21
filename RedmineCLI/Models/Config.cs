@@ -2,7 +2,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+
 using RedmineCLI.Exceptions;
+
 using VYaml.Annotations;
 using VYaml.Serialization;
 
@@ -40,8 +42,8 @@ public partial class Config
             {
                 Name = profile.Name,
                 Url = profile.Url,
-                ApiKey = string.IsNullOrEmpty(profile.ApiKey) 
-                    ? string.Empty 
+                ApiKey = string.IsNullOrEmpty(profile.ApiKey)
+                    ? string.Empty
                     : EncryptApiKey(profile.ApiKey)
             };
         }

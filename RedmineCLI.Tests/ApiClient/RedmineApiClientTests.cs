@@ -318,6 +318,42 @@ public class RedmineApiClientTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdateIssueAsync_Should_FetchIssue_When_EmptyResponse()
+    {
+        // Arrange
+        var updateIssue = new Issue
+        {
+            Subject = "Updated Issue",
+            Status = new IssueStatus { Id = 2 }
+        };
+
+        // PUT returns empty response
+        _mockServer
+            .Given(Request.Create()
+                .WithPath("/issues/789.json")
+                .UsingPut())
+            .RespondWith(Response.Create()
+                .WithStatusCode(200)
+                .WithBody(""));
+
+        // GET returns the updated issue
+        _mockServer
+            .Given(Request.Create()
+                .WithPath("/issues/789.json")
+                .UsingGet())
+            .RespondWith(Response.Create()
+                .WithStatusCode(200)
+                .WithBodyAsJson(new { issue = new { id = 789, subject = "Updated Issue" } }));
+
+        // Act
+        var result = await _client.UpdateIssueAsync(789, updateIssue);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Subject.Should().Be("Updated Issue");
+    }
+
+    [Fact]
     public async Task TestConnectionAsync_Should_ReturnTrue_When_ServerResponds()
     {
         // Arrange

@@ -2,8 +2,10 @@ using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+
 using RedmineCLI.Exceptions;
 using RedmineCLI.Models;
+
 using VYaml.Serialization;
 
 namespace RedmineCLI.Services;
@@ -43,7 +45,7 @@ public class ConfigService : IConfigService
             var yaml = await _fileSystem.File.ReadAllTextAsync(_configPath);
             var yamlBytes = System.Text.Encoding.UTF8.GetBytes(yaml);
             var config = YamlSerializer.Deserialize<Config>(yamlBytes);
-            
+
             // Decrypt API keys after loading
             foreach (var profile in config.Profiles.Values)
             {
@@ -52,7 +54,7 @@ public class ConfigService : IConfigService
                     profile.ApiKey = DecryptApiKey(profile.ApiKey);
                 }
             }
-            
+
             return config;
         }
         catch (Exception ex)
@@ -117,7 +119,7 @@ public class ConfigService : IConfigService
     public async Task SwitchProfileAsync(string profileName)
     {
         var config = await LoadConfigAsync();
-        
+
         if (!config.Profiles.ContainsKey(profileName))
         {
             throw new ValidationException($"プロファイル '{profileName}' が見つかりません");
@@ -135,14 +137,14 @@ public class ConfigService : IConfigService
         }
 
         var config = await LoadConfigAsync();
-        
+
         if (config.Profiles.ContainsKey(profile.Name))
         {
             throw new ValidationException($"プロファイル '{profile.Name}' は既に存在します");
         }
 
         config.Profiles[profile.Name] = profile;
-        
+
         // Set as active if it's the first profile
         if (string.IsNullOrEmpty(config.CurrentProfile))
         {
@@ -155,14 +157,14 @@ public class ConfigService : IConfigService
     public async Task DeleteProfileAsync(string profileName)
     {
         var config = await LoadConfigAsync();
-        
+
         if (!config.Profiles.ContainsKey(profileName))
         {
             throw new ValidationException($"プロファイル '{profileName}' が見つかりません");
         }
 
         config.Profiles.Remove(profileName);
-        
+
         // Clear active profile if deleted
         if (config.CurrentProfile == profileName)
         {
@@ -176,14 +178,14 @@ public class ConfigService : IConfigService
     {
         var config = await LoadConfigAsync();
         var activeProfile = await GetActiveProfileAsync();
-        
+
         if (activeProfile == null)
         {
             throw new ValidationException("アクティブなプロファイルが設定されていません");
         }
 
         activeProfile.Preferences ??= new Preferences();
-        
+
         switch (key.ToLower())
         {
             case "editor":

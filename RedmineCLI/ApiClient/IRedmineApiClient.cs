@@ -17,7 +17,7 @@ public interface IRedmineApiClient
     Task<User> GetCurrentUserAsync(CancellationToken cancellationToken = default);
 
     Task<Issue> GetIssueAsync(int id, CancellationToken cancellationToken = default);
-    
+
     Task<Issue> GetIssueAsync(int id, bool includeJournals, CancellationToken cancellationToken = default);
 
     Task<Issue> CreateIssueAsync(Issue issue, CancellationToken cancellationToken = default);
@@ -33,6 +33,6 @@ public interface IRedmineApiClient
     Task<List<IssueStatus>> GetIssueStatusesAsync(CancellationToken cancellationToken = default);
 
     Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default);
-    
+
     Task<bool> TestConnectionAsync(string url, string apiKey, CancellationToken cancellationToken = default);
 }

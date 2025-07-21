@@ -3,7 +3,9 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+
 using Microsoft.Extensions.Logging;
+
 using RedmineCLI.Exceptions;
 using RedmineCLI.Models;
 using RedmineCLI.Services;
@@ -46,7 +48,7 @@ public class RedmineApiClient : IRedmineApiClient
         });
 
         var path = $"/issues.json{queryString}";
-        return await GetAsync(path, RedmineJsonContext.Default.IssuesResponse, "issues", cancellationToken) 
+        return await GetAsync(path, RedmineJsonContext.Default.IssuesResponse, "issues", cancellationToken)
                ?? new IssuesResponse();
     }
 
@@ -54,7 +56,7 @@ public class RedmineApiClient : IRedmineApiClient
     {
         var path = $"/issues/{id}.json";
         var issueResponse = await GetAsync(path, RedmineJsonContext.Default.IssueResponse, $"get issue {id}", cancellationToken);
-        
+
         return issueResponse?.Issue ?? throw new RedmineApiException(
             (int)HttpStatusCode.NotFound,
             $"Issue with ID {id} not found");
@@ -62,12 +64,12 @@ public class RedmineApiClient : IRedmineApiClient
 
     public async Task<Issue> GetIssueAsync(int id, bool includeJournals, CancellationToken cancellationToken = default)
     {
-        var path = includeJournals 
-            ? $"/issues/{id}.json?include=journals" 
+        var path = includeJournals
+            ? $"/issues/{id}.json?include=journals"
             : $"/issues/{id}.json";
-            
+
         var issueResponse = await GetAsync(path, RedmineJsonContext.Default.IssueResponse, $"get issue {id}", cancellationToken);
-        
+
         return issueResponse?.Issue ?? throw new RedmineApiException(
             (int)HttpStatusCode.NotFound,
             $"Issue with ID {id} not found");
@@ -76,7 +78,7 @@ public class RedmineApiClient : IRedmineApiClient
     public async Task<Issue> CreateIssueAsync(Issue issue, CancellationToken cancellationToken = default)
     {
         var path = "/issues.json";
-        
+
         // Convert Issue to IssueCreateData for proper API format
         var createData = new IssueCreateData
         {
@@ -87,7 +89,7 @@ public class RedmineApiClient : IRedmineApiClient
             PriorityId = issue.Priority?.Id,
             StatusId = issue.Status?.Id
         };
-        
+
         var requestBody = new IssueCreateRequest { Issue = createData };
         var issueResponse = await PostAsync(path, requestBody, RedmineJsonContext.Default.IssueCreateRequest, RedmineJsonContext.Default.IssueResponse, "create issue", cancellationToken);
 
@@ -99,12 +101,61 @@ public class RedmineApiClient : IRedmineApiClient
     public async Task<Issue> UpdateIssueAsync(int id, Issue issue, CancellationToken cancellationToken = default)
     {
         var path = $"/issues/{id}.json";
-        var requestBody = new IssueRequest { Issue = issue };
-        var issueResponse = await PutAsync(path, requestBody, RedmineJsonContext.Default.IssueRequest, RedmineJsonContext.Default.IssueResponse, $"update issue {id}", cancellationToken);
+        
+        // Convert Issue to IssueUpdateData for partial updates
+        var updateData = new IssueUpdateData();
+        
+        // Only set fields that are not null in the input Issue
+        if (issue.Subject != null)
+            updateData.Subject = issue.Subject;
+            
+        if (issue.Description != null)
+            updateData.Description = issue.Description;
+            
+        if (issue.Status != null)
+        {
+            // Use the ID if available, otherwise try to parse the name as an ID
+            if (issue.Status.Id > 0)
+            {
+                updateData.StatusId = issue.Status.Id;
+            }
+            else if (int.TryParse(issue.Status.Name, out var statusId))
+            {
+                updateData.StatusId = statusId;
+            }
+            else
+            {
+                // TODO: In a real implementation, we would need to look up the status ID by name
+                // For now, we'll let the API handle the validation
+                throw new ValidationException($"Status '{issue.Status.Name}' needs to be resolved to an ID");
+            }
+        }
+        
+        if (issue.AssignedTo != null)
+        {
+            updateData.AssignedToId = issue.AssignedTo.Id;
+        }
+        
+        if (issue.DoneRatio.HasValue)
+        {
+            updateData.DoneRatio = issue.DoneRatio.Value;
+        }
+        
+        if (issue.Priority != null && issue.Priority.Id > 0)
+        {
+            updateData.PriorityId = issue.Priority.Id;
+        }
+        
+        var requestBody = new IssueUpdateRequest { Issue = updateData };
+        var issueResponse = await PutAsync(path, requestBody, RedmineJsonContext.Default.IssueUpdateRequest, RedmineJsonContext.Default.IssueResponse, $"update issue {id}", cancellationToken);
 
-        return issueResponse?.Issue ?? throw new RedmineApiException(
-            (int)HttpStatusCode.InternalServerError,
-            "Failed to update issue");
+        // If the response is empty (which is valid for Redmine), fetch the updated issue
+        if (issueResponse?.Issue == null)
+        {
+            return await GetIssueAsync(id, false, cancellationToken);
+        }
+
+        return issueResponse.Issue;
     }
 
     public async Task AddCommentAsync(int issueId, string comment, CancellationToken cancellationToken = default)
@@ -114,7 +165,7 @@ public class RedmineApiClient : IRedmineApiClient
         {
             Issue = new CommentData { Notes = comment }
         };
-        
+
         await PutAsyncVoid(path, requestBody, RedmineJsonContext.Default.CommentRequest, $"add comment to issue {issueId}", cancellationToken);
     }
 
@@ -150,13 +201,13 @@ public class RedmineApiClient : IRedmineApiClient
 
             var response = await _httpClient.GetAsync(path, cancellationToken);
             _logger.LogDebug("Response status: {StatusCode}", response.StatusCode);
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);
                 _logger.LogDebug("Response content: {Content}", content);
             }
-            
+
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
@@ -165,7 +216,7 @@ public class RedmineApiClient : IRedmineApiClient
             return false;
         }
     }
-    
+
     public async Task<bool> TestConnectionAsync(string url, string apiKey, CancellationToken cancellationToken = default)
     {
         try
@@ -173,19 +224,19 @@ public class RedmineApiClient : IRedmineApiClient
             // Create a temporary HttpClient for testing
             using var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Add("X-Redmine-API-Key", apiKey);
-            
+
             var testUrl = new Uri(new Uri(url), "/users/current.json").ToString();
             _logger.LogDebug("Testing connection to {Url}", testUrl);
 
             var response = await httpClient.GetAsync(testUrl, cancellationToken);
             _logger.LogDebug("Response status: {StatusCode}", response.StatusCode);
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);
                 _logger.LogDebug("Response content: {Content}", content);
             }
-            
+
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
@@ -331,6 +382,13 @@ public class RedmineApiClient : IRedmineApiClient
             await EnsureSuccessStatusCodeAsync(response);
 
             var jsonContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            
+            // Handle empty responses (204 No Content or empty 200 OK)
+            if (string.IsNullOrWhiteSpace(jsonContent))
+            {
+                return default(TResponse);
+            }
+            
             return JsonSerializer.Deserialize(jsonContent, responseTypeInfo);
         }
         catch (HttpRequestException ex)

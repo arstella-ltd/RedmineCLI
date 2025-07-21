@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+
 using RedmineCLI.Models;
 
 namespace RedmineCLI.ApiClient;
@@ -31,6 +32,8 @@ namespace RedmineCLI.ApiClient;
 [JsonSerializable(typeof(IssueRequest))]
 [JsonSerializable(typeof(IssueCreateRequest))]
 [JsonSerializable(typeof(IssueCreateData))]
+[JsonSerializable(typeof(IssueUpdateRequest))]
+[JsonSerializable(typeof(IssueUpdateData))]
 [JsonSerializable(typeof(CommentRequest))]
 [JsonSerializable(typeof(CommentData))]
 [JsonSerializable(typeof(UserResponse))]

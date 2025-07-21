@@ -1,4 +1,5 @@
 using RedmineCLI.Models;
+
 using Spectre.Console;
 
 namespace RedmineCLI.Formatters;
@@ -80,7 +81,7 @@ public class TableFormatter : ITableFormatter
             {
                 AnsiConsole.WriteLine();
                 AnsiConsole.MarkupLine($"[grey]#{journal.Id} - {Markup.Escape(journal.User?.Name ?? "Unknown")} - {journal.CreatedOn:yyyy-MM-dd HH:mm}[/]");
-                
+
                 // Show changes
                 if (journal.Details != null && journal.Details.Count > 0)
                 {
@@ -94,7 +95,7 @@ public class TableFormatter : ITableFormatter
                         }
                     }
                 }
-                
+
                 // Show notes
                 if (!string.IsNullOrWhiteSpace(journal.Notes))
                 {
