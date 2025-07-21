@@ -33,7 +33,7 @@ RedmineCLI/                           # メインプロジェクトディレク�
 │   └── RootCommand.cs                # ルートコマンド
 ├── Services/                         # サービス層
 │   ├── IRedmineService.cs            # Redmineサービスインターフェース
-│   ├── RedmineService.cs             # Redmineサービス実装
+│   ├── RedmineService.cs             # Redmineサービス実装（今後実装）
 │   ├── IConfigService.cs             # 設定サービスインターフェース
 │   └── ConfigService.cs              # 設定サービス実装
 ├── Models/                           # データモデル
@@ -71,8 +71,9 @@ RedmineCLI.Tests/                     # 単体テストプロジェクト
 ├── Commands/                         # (今後実装予定)
 │   ├── AuthCommandTests.cs
 │   └── IssueCommandTests.cs
-└── Services/                         # (今後実装予定)
-    └── RedmineServiceTests.cs
+└── Services/
+    ├── ConfigServiceTests.cs         # 設定サービスのテスト
+    └── RedmineServiceTests.cs        # (今後実装予定)
 
 RedmineCLI.IntegrationTests/          # 統合テストプロジェクト
 ├── RedmineCLI.IntegrationTests.csproj

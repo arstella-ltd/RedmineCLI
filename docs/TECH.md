@@ -8,6 +8,7 @@
 - **System.CommandLine** v2.0.0-beta5: Microsoftが提供する最新のCLIフレームワーク
 - **Spectre.Console** v0.49.1: 美しいコンソール出力のためのライブラリ（AOT対応）
 - **VYaml** v0.29.0: Native AOT対応の高速YAMLライブラリ（Source Generator使用）
+- **System.IO.Abstractions** v22.0.15: ファイルシステムの抽象化（テスタビリティ向上）
 - **Redmine REST API v3.0+**: チケット情報の取得・更新に使用するAPIインターフェース
 - **APIキー認証**: Redmineサーバーへの安全な認証方式として採用
 - **設定ファイル形式**: YAML形式（ghコマンドと同様）で設定情報を管理
@@ -23,6 +24,8 @@
 - **Microsoft.Extensions.Logging** v9.0.0
 - **Polly.Extensions.Http** v3.0.0
 - **System.Text.Json** v9.0.0（Source Generator対応）
+- **System.Security.Cryptography.ProtectedData** v9.0.7（Windows DPAPI）
+- **System.IO.Abstractions** v22.0.15
 
 ## 開発ツール
 
@@ -31,6 +34,7 @@
 - **xUnit** v2.9.2: 単体テストフレームワーク
 - **FluentAssertions** v6.12.0: 読みやすいアサーションライブラリ
 - **NSubstitute** v5.1.0: シンプルで使いやすいモッキングライブラリ（AOT対応）
+- **System.IO.Abstractions.TestingHelpers** v22.0.15: ファイルシステムのモック
 - **coverlet.collector** v6.0.2: コードカバレッジ収集ツール
 - **dotnet-format**: コードフォーマッター
 - **SonarAnalyzer.CSharp**: 静的解析ツール
@@ -39,8 +43,12 @@
 
 ## データ＆状態管理
 
-- **設定ファイル**: `~/.config/redmine/config.yml` に認証情報と設定を保存
-- **認証情報**: APIキーは設定ファイルに暗号化または適切な権限で保存
+- **設定ファイル**
+  - Windows: `%APPDATA%\redmine\config.yml`
+  - macOS/Linux: `~/.config/redmine/config.yml`
+- **認証情報**
+  - Windows: DPAPI（Data Protection API）を使用してAPIキーを暗号化
+  - macOS/Linux: Base64エンコーディング（注：将来的により安全な方式への移行を検討）
 - **キャッシュ**: 頻繁にアクセスするデータ（プロジェクト一覧など）の一時保存
 - **エラーログ**: デバッグ用のログファイル（オプション）
 

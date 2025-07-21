@@ -19,14 +19,14 @@ APIキーベースの認証により安全な通信を実現し、設定はYAML�
 ├─────────────────┤
 │   API Client    │  ← HttpClient + Polly
 ├─────────────────┤
-│ Config Manager  │  ← VYaml (AOT対応)
+│ Config Manager  │  ← VYaml (AOT対応) + System.IO.Abstractions
 └─────────────────┘
 ```
 
 ### レイヤー構成
 - **プレゼンテーション層**: System.CommandLineによるコマンド解析、Spectre.Consoleによる出力
 - **アプリケーション層**: サービス層によるビジネスロジック、DIコンテナによる依存性注入
-- **インフラストラクチャ層**: HttpClientFactoryによるAPI通信、VYamlによる設定管理、System.Text.Json Source Generatorによるシリアライゼーション
+- **インフラストラクチャ層**: HttpClientFactoryによるAPI通信、VYamlによる設定管理、System.Text.Json Source Generatorによるシリアライゼーション、System.IO.Abstractionsによるファイルシステム抽象化
 
 ### .NET固有の設計
 - **依存性注入（DI）**: Microsoft.Extensions.DependencyInjectionを使用（AOT向け最適化）
@@ -76,18 +76,27 @@ APIキーベースの認証により安全な通信を実現し、設定はYAML�
 
 ### 設定ファイル構造
 ```yaml
-current_profile: default
+currentProfile: default
 profiles:
   default:
+    name: default
     url: https://redmine.example.com
-    api_key: <encrypted_key>
-    default_project: myproject
+    apiKey: <encrypted_key>
+    defaultProject: myproject
+    preferences: null
   staging:
+    name: staging
     url: https://redmine-staging.example.com
-    api_key: <encrypted_key>
+    apiKey: <encrypted_key>
+    defaultProject: null
+    preferences: null
 preferences:
-  output_format: table
-  page_size: 20
+  defaultFormat: table
+  pageSize: 20
+  useColors: true
+  dateFormat: "yyyy-MM-dd HH:mm:ss"
+  editor: null
+  timeFormat: "HH:mm:ss"
 ```
 
 ### C#モデル定義
@@ -144,6 +153,29 @@ public partial class Config
     private static string EncryptApiKey(string apiKey);
     private static string DecryptApiKey(string encryptedApiKey);
 }
+
+// Profile.cs
+[YamlObject]
+public partial class Profile
+{
+    public string Name { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty;
+    public string ApiKey { get; set; } = string.Empty;
+    public string? DefaultProject { get; set; }
+    public Preferences? Preferences { get; set; }
+}
+
+// Preferences.cs
+[YamlObject]
+public partial class Preferences
+{
+    public string DefaultFormat { get; set; } = "table";
+    public int PageSize { get; set; } = 20;
+    public bool UseColors { get; set; } = true;
+    public string DateFormat { get; set; } = "yyyy-MM-dd HH:mm:ss";
+    public string? Editor { get; set; }
+    public string TimeFormat { get; set; } = "HH:mm:ss";
+}
 ```
 
 ### JSONシリアライゼーション設計
@@ -180,9 +212,22 @@ public class IssuesResponse
 }
 ```
 
-### APIクライアントインターフェース
+### サービスインターフェース
 
 ```csharp
+// IConfigService.cs
+public interface IConfigService
+{
+    Task<Config> LoadConfigAsync();
+    Task SaveConfigAsync(Config config);
+    Task<Profile?> GetActiveProfileAsync();
+    Task SwitchProfileAsync(string profileName);
+    Task CreateProfileAsync(Profile profile);
+    Task DeleteProfileAsync(string profileName);
+    Task UpdatePreferencesAsync(string key, string value);
+}
+
+// IRedmineApiClient.cs
 public interface IRedmineApiClient
 {
     Task<IssuesResponse> GetIssuesAsync(
@@ -267,12 +312,14 @@ services.AddHttpClient<IRedmineApiClient, RedmineApiClient>()
 ### テスト対象
 - コマンドパーサーの正確性
 - API通信のエラーハンドリング
-- 設定ファイルの互換性
+- 設定ファイルの互換性（暗号化/復号化を含む）
 - 出力フォーマットの正確性
+- ファイルシステム操作（System.IO.Abstractionsを使用）
 
 ### .NETテストツール
 - **xUnit**: 単体テストフレームワーク
 - **NSubstitute**: シンプルで使いやすいモッキングライブラリ（AOT対応）
+- **System.IO.Abstractions.TestingHelpers**: ファイルシステムのモック
 - **FluentAssertions**: 読みやすいアサーション
 - **WireMock.Net**: HTTPモックサーバー（統合テスト用）
 - **Coverlet**: コードカバレッジ測定
