@@ -176,6 +176,16 @@ public class IssueCommand
         var url = $"{baseUrl.TrimEnd('/')}/issues";
         var queryParams = new List<string>();
 
+        // Add set_filter=1 if any filter is specified
+        bool hasFilter = !string.IsNullOrEmpty(filter.AssignedToId) || 
+                        !string.IsNullOrEmpty(filter.StatusId) || 
+                        !string.IsNullOrEmpty(filter.ProjectId);
+        
+        if (hasFilter)
+        {
+            queryParams.Add("set_filter=1");
+        }
+
         if (!string.IsNullOrEmpty(filter.AssignedToId))
         {
             if (filter.AssignedToId == "me" || int.TryParse(filter.AssignedToId, out _))
@@ -232,6 +242,32 @@ public class IssueCommand
     {
         try
         {
+            // First, check if BROWSER environment variable is set
+            var browserCommand = Environment.GetEnvironmentVariable("BROWSER");
+            if (!string.IsNullOrEmpty(browserCommand))
+            {
+                // Replace %s with the URL, or append URL if %s is not present
+                if (browserCommand.Contains("%s"))
+                {
+                    browserCommand = browserCommand.Replace("%s", url);
+                    var parts = browserCommand.Split(' ', 2);
+                    if (parts.Length > 1)
+                    {
+                        Process.Start(parts[0], parts[1]);
+                    }
+                    else
+                    {
+                        Process.Start(parts[0]);
+                    }
+                }
+                else
+                {
+                    Process.Start(browserCommand, url);
+                }
+                return;
+            }
+
+            // Fallback to platform-specific commands
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 Process.Start(new ProcessStartInfo("cmd", $"/c start {url.Replace("&", "^&")}") { CreateNoWindow = true });
