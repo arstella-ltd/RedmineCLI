@@ -359,12 +359,20 @@
 
 ### タスク6完了（2025-07-21）
 - TDD手法（Red→Green→Refactor）に従って実装
-- IssueCommandのテスト10件を作成（一覧表示、フィルタリング、ページネーション、フォーマット）
+- IssueCommandのテスト14件を作成（一覧表示、フィルタリング、ページネーション、フォーマット、--webオプション）
 - GitHub CLI準拠の仕様に変更（デフォルトで全オープンチケット表示）
+- ショートハンドオプション実装（-a, -s, -p, -L）
+- @me特殊値サポート（現在のユーザーを指定）
+- all特殊値サポート（全ステータス表示）
 - IssueFilterモデルによるフィルタリング機能の実装
 - TableFormatterとJsonFormatterインターフェースの実装
-- GetCurrentUserAsync APIの追加（自分のチケット表示時に使用）
-- すべてのテスト（60件）が成功
+- GetCurrentUserAsync APIの追加（@me使用時に呼び出し）
+- --web/-wオプションによるブラウザ連携機能の実装
+  - set_filter=1パラメータ追加でRedmineフィルタ有効化
+  - $BROWSER環境変数サポート（%sプレースホルダ対応）
+  - クロスプラットフォーム対応（Windows/macOS/Linux）
+- コンパイラ警告修正（CS8602, CS1998）
+- すべてのテスト（62件）が成功
 - Native AOTビルド成功：起動時間17ms、バイナリサイズ15MB
 
 ## 使用方法

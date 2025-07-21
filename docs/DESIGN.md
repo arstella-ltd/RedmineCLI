@@ -110,9 +110,11 @@ APIキーベースの認証により安全な通信を実現し、設定はYAML�
   }
   ```
 - **--webオプションの動作**
-  - 条件をURLクエリパラメータに変換
-  - プラットフォーム別のブラウザ起動コマンド実行
-  - 例: `/issues?assigned_to_id=me&status_id=open`
+  - 条件をURLクエリパラメータに変換（`set_filter=1`を含む）
+  - ブラウザ起動の優先順位
+    1. $BROWSER環境変数（%sプレースホルダ対応）
+    2. プラットフォーム固有コマンド（Windows: start、macOS: open、Linux: xdg-open）
+  - 例: `/issues?set_filter=1&assigned_to_id=me&status_id=o`
 
 ### API Client
 - **責任**: Redmine REST APIとの通信
@@ -239,7 +241,8 @@ public partial class Preferences
 
 ### JSONシリアライゼーション設計
 
-Native AOT対応のため、System.Text.Json Source Generatorを使用します。VYamlについては、[YamlObject]属性による自動生成フォーマッターを使用し、ILLink.Descriptors.xmlで型情報を保護します。
+Native AOT対応のため、System.Text.Json Source Generatorを使用します。
+VYamlについては、[YamlObject]属性による自動生成フォーマッターを使用し、ILLink.Descriptors.xmlで型情報を保護します。
 
 ```csharp
 // JsonSerializerContext.cs

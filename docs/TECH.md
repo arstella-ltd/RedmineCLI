@@ -187,8 +187,11 @@ RedmineCLI --licenses
 
 ### --webオプション利用時の要件
 - デフォルトブラウザが設定されていること
-- ブラウザ起動コマンド:
-  - Windows: `start` コマンド
-  - macOS: `open` コマンド
-  - Linux: `xdg-open` コマンド
+- ブラウザ起動コマンド
+  - $BROWSER環境変数: 設定されている場合は最優先（%sプレースホルダ対応）
+    - 例: `export BROWSER="firefox %s"`
+    - 例: `export BROWSER="google-chrome --incognito %s"`
+  - Windows: `start` コマンド（$BROWSER未設定時のフォールバック）
+  - macOS: `open` コマンド（$BROWSER未設定時のフォールバック）
+  - Linux: `xdg-open` コマンド（$BROWSER未設定時のフォールバック）
 - Redmine WebUIへの別途ログインが必要（APIキー認証とは独立）
