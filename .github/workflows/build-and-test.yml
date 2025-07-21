@@ -127,6 +127,10 @@ jobs:
         }
 
     - name: Test binary execution
+      # Skip execution test for cross-compiled architectures
+      if: |
+        !(matrix.config.os == 'ubuntu-latest' && matrix.config.rid == 'linux-arm64') &&
+        !(matrix.config.os == 'macos-latest' && matrix.config.rid == 'osx-arm64' && runner.arch != 'ARM64')
       run: publish/${{ matrix.config.rid }}/${{ matrix.config.output }} --version
 
     - name: Upload artifacts
