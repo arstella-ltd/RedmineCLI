@@ -13,6 +13,7 @@ using Profile = RedmineCLI.Models.Profile;
 
 namespace RedmineCLI.Tests.Commands;
 
+[Collection("AuthCommand")]
 public class AuthCommandTests
 {
     private readonly IConfigService _configService;
@@ -143,6 +144,11 @@ public class AuthCommandTests
     public async Task Status_Should_ShowConnectionState_When_Authenticated()
     {
         // Arrange
+        var configService = Substitute.For<IConfigService>();
+        var apiClient = Substitute.For<IRedmineApiClient>();
+        var logger = Substitute.For<ILogger<AuthCommand>>();
+        var authCommand = new AuthCommand(configService, apiClient, logger);
+        
         var testProfile = new Profile
         {
             Name = "default",
@@ -150,18 +156,18 @@ public class AuthCommandTests
             ApiKey = "test-api-key"
         };
 
-        _configService.GetActiveProfileAsync()
+        configService.GetActiveProfileAsync()
             .Returns(Task.FromResult<Profile?>(testProfile));
-        _apiClient.TestConnectionAsync(Arg.Any<CancellationToken>())
+        apiClient.TestConnectionAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(true));
 
         // Act
-        var result = await _authCommand.StatusAsync();
+        var result = await authCommand.StatusAsync();
 
         // Assert
         result.Should().Be(0);
-        await _configService.Received(1).GetActiveProfileAsync();
-        await _apiClient.Received(1).TestConnectionAsync(Arg.Any<CancellationToken>());
+        await configService.Received(1).GetActiveProfileAsync();
+        await apiClient.Received(1).TestConnectionAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
