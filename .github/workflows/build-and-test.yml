@@ -86,13 +86,19 @@ jobs:
       if: matrix.config.rid == 'linux-arm64'
       run: |
         sudo apt-get update
-        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
 
     - name: Restore dependencies
       run: dotnet restore
 
     - name: Publish Native AOT
-      run: dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r ${{ matrix.config.rid }} -p:PublishAot=true -p:StripSymbols=true --self-contained -o publish/${{ matrix.config.rid }}
+      run: |
+        if [[ "${{ matrix.config.rid }}" == "linux-arm64" ]]; then
+          # Disable symbol stripping for cross-compilation
+          dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r ${{ matrix.config.rid }} -p:PublishAot=true -p:StripSymbols=false --self-contained -o publish/${{ matrix.config.rid }}
+        else
+          dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r ${{ matrix.config.rid }} -p:PublishAot=true -p:StripSymbols=true --self-contained -o publish/${{ matrix.config.rid }}
+        fi
 
     - name: Check binary size (Unix)
       if: runner.os != 'Windows'
