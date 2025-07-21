@@ -97,7 +97,11 @@ jobs:
     - name: Check binary size (Unix)
       if: runner.os != 'Windows'
       run: |
-        BINARY_SIZE=$(stat -c%s "publish/${{ matrix.config.rid }}/${{ matrix.config.output }}")
+        if [[ "$RUNNER_OS" == "macOS" ]]; then
+          BINARY_SIZE=$(stat -f%z "publish/${{ matrix.config.rid }}/${{ matrix.config.output }}")
+        else
+          BINARY_SIZE=$(stat -c%s "publish/${{ matrix.config.rid }}/${{ matrix.config.output }}")
+        fi
         BINARY_SIZE_MB=$((BINARY_SIZE / 1024 / 1024))
         echo "Binary size: ${BINARY_SIZE_MB}MB"
         if [ $BINARY_SIZE_MB -gt 20 ]; then
