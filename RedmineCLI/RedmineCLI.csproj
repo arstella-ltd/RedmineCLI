@@ -25,7 +25,7 @@
     <IsPackable>true</IsPackable>
     
     <!-- Versioning -->
-    <Version>1.0.0</Version>
+    <Version>0.8.0</Version>
     <Authors>RedmineCLI Contributors</Authors>
     <Description>A GitHub CLI-like tool for managing Redmine tickets</Description>
   </PropertyGroup>
