@@ -1,5 +1,7 @@
 using System.CommandLine;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using RedmineCLI.ApiClient;
 using RedmineCLI.Formatters;
@@ -54,6 +56,8 @@ public class IssueCommand
         limitOption.Aliases.Add("-L");
         var offsetOption = new Option<int?>("--offset") { Description = "Offset for pagination" };
         var jsonOption = new Option<bool>("--json") { Description = "Output in JSON format" };
+        var webOption = new Option<bool>("--web") { Description = "Open in web browser" };
+        webOption.Aliases.Add("-w");
 
         listCommand.Add(assigneeOption);
         listCommand.Add(statusOption);
@@ -61,6 +65,7 @@ public class IssueCommand
         listCommand.Add(limitOption);
         listCommand.Add(offsetOption);
         listCommand.Add(jsonOption);
+        listCommand.Add(webOption);
 
         listCommand.SetAction(async (parseResult) =>
         {
@@ -70,8 +75,9 @@ public class IssueCommand
             var limit = parseResult.GetValue(limitOption);
             var offset = parseResult.GetValue(offsetOption);
             var json = parseResult.GetValue(jsonOption);
+            var web = parseResult.GetValue(webOption);
             
-            Environment.ExitCode = await issueCommand.ListAsync(assignee, status, project, limit, offset, json, CancellationToken.None);
+            Environment.ExitCode = await issueCommand.ListAsync(assignee, status, project, limit, offset, json, web, CancellationToken.None);
         });
 
         command.Add(listCommand);
@@ -85,6 +91,7 @@ public class IssueCommand
         int? limit,
         int? offset,
         bool json,
+        bool web,
         CancellationToken cancellationToken)
     {
         try
@@ -121,6 +128,22 @@ public class IssueCommand
                 filter.StatusId = "open";
             }
 
+            // Handle --web option
+            if (web)
+            {
+                var activeProfile = await _configService.GetActiveProfileAsync();
+                if (activeProfile?.Url == null)
+                {
+                    AnsiConsole.MarkupLine("[red]Error: No active profile found. Please login first.[/]");
+                    return 1;
+                }
+
+                var url = BuildIssuesUrl(activeProfile.Url, filter);
+                OpenInBrowser(url);
+                AnsiConsole.MarkupLine($"[green]Opening issues in browser: {url}[/]");
+                return 0;
+            }
+
             var issues = await _apiClient.GetIssuesAsync(filter, cancellationToken);
 
             if (json)
@@ -145,6 +168,87 @@ public class IssueCommand
             _logger.LogError(ex, "Failed to list issues");
             AnsiConsole.MarkupLine($"[red]Error: {ex.Message}[/]");
             return 1;
+        }
+    }
+
+    private static string BuildIssuesUrl(string baseUrl, IssueFilter filter)
+    {
+        var url = $"{baseUrl.TrimEnd('/')}/issues";
+        var queryParams = new List<string>();
+
+        if (!string.IsNullOrEmpty(filter.AssignedToId))
+        {
+            if (filter.AssignedToId == "me" || int.TryParse(filter.AssignedToId, out _))
+            {
+                queryParams.Add($"assigned_to_id={filter.AssignedToId}");
+            }
+            else
+            {
+                queryParams.Add($"assigned_to_id={Uri.EscapeDataString(filter.AssignedToId)}");
+            }
+        }
+
+        if (!string.IsNullOrEmpty(filter.StatusId))
+        {
+            if (filter.StatusId == "open")
+            {
+                queryParams.Add("status_id=o"); // Redmine's open status parameter
+            }
+            else if (filter.StatusId == "closed")
+            {
+                queryParams.Add("status_id=c"); // Redmine's closed status parameter
+            }
+            else
+            {
+                queryParams.Add($"status_id={Uri.EscapeDataString(filter.StatusId)}");
+            }
+        }
+
+        if (!string.IsNullOrEmpty(filter.ProjectId))
+        {
+            queryParams.Add($"project_id={Uri.EscapeDataString(filter.ProjectId)}");
+        }
+
+        if (filter.Limit.HasValue)
+        {
+            queryParams.Add($"per_page={filter.Limit.Value}");
+        }
+
+        if (filter.Offset.HasValue)
+        {
+            var page = (filter.Offset.Value / (filter.Limit ?? 25)) + 1;
+            queryParams.Add($"page={page}");
+        }
+
+        if (queryParams.Count > 0)
+        {
+            url += "?" + string.Join("&", queryParams);
+        }
+
+        return url;
+    }
+
+    private static void OpenInBrowser(string url)
+    {
+        try
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Process.Start(new ProcessStartInfo("cmd", $"/c start {url.Replace("&", "^&")}") { CreateNoWindow = true });
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                Process.Start("open", url);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                Process.Start("xdg-open", url);
+            }
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLine($"[yellow]Warning: Could not open browser automatically. Please open this URL manually: {url}[/]");
+            AnsiConsole.MarkupLine($"[dim]Error: {ex.Message}[/]");
         }
     }
 }

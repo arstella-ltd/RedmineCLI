@@ -69,7 +69,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -107,7 +107,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, status, null, null, null, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, status, null, null, null, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -140,7 +140,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, limit, offset, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, limit, offset, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -170,7 +170,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, true, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, true, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -201,7 +201,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(assignee, null, null, null, null, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(assignee, null, null, null, null, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -231,7 +231,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, project, null, null, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, project, null, null, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -271,7 +271,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(assignee, status, project, limit, null, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(assignee, status, project, limit, null, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -293,7 +293,7 @@ public class IssueCommandTests
             .Returns(Task.FromException<List<Issue>>(new HttpRequestException("API Error")));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -358,7 +358,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync("@me", null, null, null, null, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync("@me", null, null, null, null, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -395,7 +395,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, "all", null, null, null, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, "all", null, null, null, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -403,6 +403,36 @@ public class IssueCommandTests
             Arg.Is<IssueFilter>(f => f.StatusId == null && f.Limit == 30), 
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
+    }
+
+    [Fact]
+    public async Task List_Should_OpenBrowser_When_WebOptionIsSet()
+    {
+        // Arrange
+        var profile = new Profile { Url = "https://redmine.example.com", ApiKey = "test-key" };
+        _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
+
+        // Act
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, true, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _configService.Received(1).GetActiveProfileAsync();
+        // Note: We can't easily test browser opening in unit tests, but we verify the success path
+    }
+
+    [Fact]
+    public async Task List_Should_ReturnError_When_WebOptionSetButNoActiveProfile()
+    {
+        // Arrange
+        _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(null));
+
+        // Act
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, true, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(1);
+        await _configService.Received(1).GetActiveProfileAsync();
     }
 
     #endregion
