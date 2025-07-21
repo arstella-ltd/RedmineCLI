@@ -106,6 +106,10 @@ redmine config list
 # ヘルプ
 redmine --help
 redmine <COMMAND> --help
+
+# バージョンとライセンス情報
+redmine --version
+redmine --licenses
 ```
 
 ## ブラウザサポート

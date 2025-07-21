@@ -345,6 +345,22 @@ View it at: https://redmine.example.com/issues/1234
 # エラーメッセージ
 ✗ Error: Authentication failed
 Please run 'redmine auth login' to set up your credentials
+
+# バージョン情報（--version）
+RedmineCLI v1.0.0
+Built with .NET 9.0 (Native AOT)
+
+Dependencies:
+- System.CommandLine v2.0.0-beta5 (MIT)
+- Spectre.Console v0.49.1 (MIT)
+- VYaml v0.29.0 (MIT)
+
+# ライセンス情報（--licenses）
+RedmineCLI - MIT License
+Copyright (c) 2025 [Your Name/Organization]
+
+Third-party licenses:
+See THIRD-PARTY-NOTICES.txt for full license texts.
 ```
 
 ### 対話的入力

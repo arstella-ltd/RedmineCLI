@@ -252,7 +252,27 @@
     - 自動テストとビルドの設定
   - _要件: 8, 全体的な基盤_
 
-- [ ] 15. 継続的テスト実行環境の整備（TDD文化の定着）
+- [ ] 15. ライセンス情報管理機能の実装（TDD）
+  - **Red（〜30分）**: ライセンス管理のテストを先に作成
+    - ライセンス表示テスト（以下のテストケースを作成）
+      - `ShowLicenses_Should_DisplayAllLicenses_When_LicensesOptionProvided`
+      - `ShowVersion_Should_IncludeLicenseInfo_When_VersionOptionProvided`
+    - ライセンスファイル生成テスト（以下のテストケースを作成）
+      - `GenerateNotices_Should_CreateFile_When_BuildExecuted`
+      - `EmbedLicenses_Should_IncludeInBinary_When_AotBuild`
+  - **Green（〜1時間）**: テストを通すための実装
+    - THIRD-PARTY-NOTICES.txtの作成と管理
+    - --licensesオプションの実装
+    - --versionコマンドへのライセンス情報追加
+    - ビルド時のライセンス情報埋め込み
+    - MSBuildタスクによる自動生成
+  - **Refactor（〜30分）**: ライセンス管理の最適化
+    - ライセンス情報のキャッシュ
+    - 表示フォーマットの改善
+    - 依存関係の自動検出
+  - _要件: 9_
+
+- [ ] 16. 継続的テスト実行環境の整備（TDD文化の定着）
   - **テスト自動実行の設定**
     - ファイル変更監視による自動テスト実行（dotnet watch test）
     - Git pre-commitフックでのテスト実行

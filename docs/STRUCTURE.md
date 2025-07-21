@@ -6,7 +6,8 @@
 RedmineCLI/
 ├── RedmineCLI.sln                    # ソリューションファイル
 ├── README.md                         # プロジェクトの概要とクイックスタート
-├── LICENSE                           # ライセンスファイル
+├── LICENSE                           # プロジェクトのライセンス（MIT）
+├── THIRD-PARTY-NOTICES.txt           # サードパーティライブラリのライセンス
 ├── .gitignore                        # Git除外設定
 ├── .editorconfig                     # エディタ設定
 ├── global.json                       # .NET SDKバージョン指定
@@ -57,9 +58,12 @@ RedmineCLI/                           # メインプロジェクトディレク�
 │   ├── IOutputFormatter.cs           # フォーマッターインターフェース
 │   ├── TableFormatter.cs             # テーブル形式
 │   └── JsonFormatter.cs              # JSON形式
-└── Utils/                            # ユーティリティ
-    ├── ConsoleHelper.cs              # コンソール補助
-    └── CryptoHelper.cs               # 暗号化処理
+├── Utils/                            # ユーティリティ
+│   ├── ConsoleHelper.cs              # コンソール補助
+│   ├── CryptoHelper.cs               # 暗号化処理
+│   └── LicenseHelper.cs              # ライセンス情報管理（今後実装）
+└── Resources/                        # 埋め込みリソース（今後実装）
+    └── THIRD-PARTY-NOTICES.txt       # ビルド時埋め込み用
 
 RedmineCLI.Tests/                     # 単体テストプロジェクト
 ├── RedmineCLI.Tests.csproj
