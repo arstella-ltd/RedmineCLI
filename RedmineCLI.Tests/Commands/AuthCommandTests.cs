@@ -321,7 +321,7 @@ public class AuthCommandTests
     #region Command Line Integration Tests
 
     [Fact]
-    public async Task AuthCommand_Should_RegisterSubcommands_When_Created()
+    public void AuthCommand_Should_RegisterSubcommands_When_Created()
     {
         // Arrange & Act
         var command = AuthCommand.Create(_configService, _apiClient, _logger);
@@ -338,7 +338,7 @@ public class AuthCommandTests
     }
 
     [Fact]
-    public async Task LoginCommand_Should_HaveCorrectOptions_When_Created()
+    public void LoginCommand_Should_HaveCorrectOptions_When_Created()
     {
         // Arrange & Act
         var command = AuthCommand.Create(_configService, _apiClient, _logger);

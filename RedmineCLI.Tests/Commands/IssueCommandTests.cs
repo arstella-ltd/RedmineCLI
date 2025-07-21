@@ -34,10 +34,9 @@ public class IssueCommandTests
     #region List Command Tests
 
     [Fact]
-    public async Task List_Should_ReturnAssignedIssues_When_NoOptionsSpecified()
+    public async Task List_Should_ReturnAllOpenIssues_When_NoOptionsSpecified()
     {
         // Arrange
-        var currentUser = new User { Id = 1, Name = "Test User" };
         var issues = new List<Issue>
         {
             new Issue 
@@ -45,7 +44,7 @@ public class IssueCommandTests
                 Id = 1, 
                 Subject = "Test Issue 1", 
                 Status = new IssueStatus { Id = 1, Name = "New" },
-                AssignedTo = currentUser,
+                AssignedTo = new User { Id = 1, Name = "User 1" },
                 Project = new Project { Id = 1, Name = "Test Project" }
             },
             new Issue 
@@ -53,14 +52,20 @@ public class IssueCommandTests
                 Id = 2, 
                 Subject = "Test Issue 2", 
                 Status = new IssueStatus { Id = 2, Name = "In Progress" },
-                AssignedTo = currentUser,
+                AssignedTo = new User { Id = 2, Name = "User 2" },
                 Project = new Project { Id = 1, Name = "Test Project" }
+            },
+            new Issue 
+            { 
+                Id = 3, 
+                Subject = "Test Issue 3", 
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                AssignedTo = null,
+                Project = new Project { Id = 2, Name = "Another Project" }
             }
         };
 
-        _apiClient.GetCurrentUserAsync(Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(currentUser));
-        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == currentUser.Id.ToString() && f.StatusId == "open"), Arg.Any<CancellationToken>())
+        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == "open" && f.AssignedToId == null && f.ProjectId == null && f.Limit == 30), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -68,9 +73,9 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetCurrentUserAsync(Arg.Any<CancellationToken>());
+        await _apiClient.DidNotReceive().GetCurrentUserAsync(Arg.Any<CancellationToken>());
         await _apiClient.Received(1).GetIssuesAsync(
-            Arg.Is<IssueFilter>(f => f.AssignedToId == currentUser.Id.ToString() && f.StatusId == "open"), 
+            Arg.Is<IssueFilter>(f => f.StatusId == "open" && f.AssignedToId == null && f.ProjectId == null && f.Limit == 30), 
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
     }
@@ -118,7 +123,6 @@ public class IssueCommandTests
         // Arrange
         var limit = 10;
         var offset = 5;
-        var currentUser = new User { Id = 1, Name = "Test User" };
         var issues = new List<Issue>
         {
             new Issue 
@@ -130,10 +134,8 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetCurrentUserAsync(Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(currentUser));
         _apiClient.GetIssuesAsync(
-            Arg.Is<IssueFilter>(f => f.Limit == limit && f.Offset == offset && f.AssignedToId == currentUser.Id.ToString() && f.StatusId == "open"), 
+            Arg.Is<IssueFilter>(f => f.Limit == limit && f.Offset == offset && f.StatusId == "open" && f.AssignedToId == null), 
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
@@ -142,9 +144,9 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetCurrentUserAsync(Arg.Any<CancellationToken>());
+        await _apiClient.DidNotReceive().GetCurrentUserAsync(Arg.Any<CancellationToken>());
         await _apiClient.Received(1).GetIssuesAsync(
-            Arg.Is<IssueFilter>(f => f.Limit == limit && f.Offset == offset && f.AssignedToId == currentUser.Id.ToString() && f.StatusId == "open"), 
+            Arg.Is<IssueFilter>(f => f.Limit == limit && f.Offset == offset && f.StatusId == "open" && f.AssignedToId == null), 
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
     }
@@ -153,7 +155,6 @@ public class IssueCommandTests
     public async Task List_Should_FormatAsJson_When_JsonOptionIsSet()
     {
         // Arrange
-        var currentUser = new User { Id = 1, Name = "Test User" };
         var issues = new List<Issue>
         {
             new Issue 
@@ -165,9 +166,7 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetCurrentUserAsync(Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(currentUser));
-        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == currentUser.Id.ToString() && f.StatusId == "open"), Arg.Any<CancellationToken>())
+        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == "open" && f.AssignedToId == null && f.Limit == 30), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -175,8 +174,8 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetCurrentUserAsync(Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == currentUser.Id.ToString() && f.StatusId == "open"), Arg.Any<CancellationToken>());
+        await _apiClient.DidNotReceive().GetCurrentUserAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == "open" && f.AssignedToId == null && f.Limit == 30), Arg.Any<CancellationToken>());
         _jsonFormatter.Received(1).FormatIssues(issues);
         _tableFormatter.DidNotReceive().FormatIssues(Arg.Any<List<Issue>>());
     }
@@ -334,6 +333,76 @@ public class IssueCommandTests
         optionNames.Should().Contain("--limit");
         optionNames.Should().Contain("--offset");
         optionNames.Should().Contain("--json");
+    }
+
+    [Fact]
+    public async Task List_Should_UseCurrentUser_When_AssigneeIsAtMe()
+    {
+        // Arrange
+        var currentUser = new User { Id = 1, Name = "Test User" };
+        var issues = new List<Issue>
+        {
+            new Issue 
+            { 
+                Id = 1, 
+                Subject = "My Issue", 
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                AssignedTo = currentUser,
+                Project = new Project { Id = 1, Name = "Test Project" }
+            }
+        };
+
+        _apiClient.GetCurrentUserAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(currentUser));
+        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == currentUser.Id.ToString()), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync("@me", null, null, null, null, false, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _apiClient.Received(1).GetCurrentUserAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.AssignedToId == currentUser.Id.ToString()), 
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
+    }
+
+    [Fact]
+    public async Task List_Should_ShowAllStatuses_When_StatusIsAll()
+    {
+        // Arrange
+        var issues = new List<Issue>
+        {
+            new Issue 
+            { 
+                Id = 1, 
+                Subject = "Open Issue", 
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                Project = new Project { Id = 1, Name = "Test Project" }
+            },
+            new Issue 
+            { 
+                Id = 2, 
+                Subject = "Closed Issue", 
+                Status = new IssueStatus { Id = 5, Name = "Closed" },
+                Project = new Project { Id = 1, Name = "Test Project" }
+            }
+        };
+
+        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == null && f.Limit == 30), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(null, "all", null, null, null, false, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _apiClient.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.StatusId == null && f.Limit == 30), 
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
     }
 
     #endregion

@@ -127,8 +127,16 @@ public class RedmineApiClientTests : IDisposable
 
         // Assert
         var request = _mockServer.LogEntries.First().RequestMessage;
-        request.Headers.Should().ContainKey("X-Redmine-API-Key");
-        request.Headers["X-Redmine-API-Key"].Should().ContainSingle(_apiKey);
+        request.Headers.Should().NotBeNull();
+        request.Headers!.Should().ContainKey("X-Redmine-API-Key");
+        if (request.Headers!.TryGetValue("X-Redmine-API-Key", out var apiKeyHeaders))
+        {
+            apiKeyHeaders.FirstOrDefault().Should().Be(_apiKey);
+        }
+        else
+        {
+            Assert.Fail("X-Redmine-API-Key header not found");
+        }
     }
 
     [Fact]
