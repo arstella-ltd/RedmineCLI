@@ -4,7 +4,7 @@
 
 - **.NET 9**: 最新版を使用、クロスプラットフォーム対応、Native AOT対応
 - **C# 13**: 最新の言語機能を活用（record型、パターンマッチング等）
-- **Native AOT**: 高速起動（実測7ms）と小サイズバイナリ（実測4.9MB）を実現
+- **Native AOT**: 高速起動（実測15ms）とネイティブバイナリ（実測15MB）を実現
 - **System.CommandLine** v2.0.0-beta6: Microsoftが提供する最新のCLIフレームワーク
 - **Spectre.Console** v0.50.0: 美しいコンソール出力のためのライブラリ（AOT対応）
 - **VYaml** v1.2.0: Native AOT対応の高速YAMLライブラリ（Source Generator使用）
@@ -18,7 +18,7 @@
 
 - **System.CommandLine** v2.0.0-beta6.25358.103
 - **Spectre.Console** v0.50.0
-- **VYaml** v1.2.0（Native AOT対応）
+- **VYaml** v1.2.0（Native AOT対応、[YamlObject]属性でSource Generator使用）
 - **Microsoft.Extensions.DependencyInjection** v9.0.0
 - **Microsoft.Extensions.Http** v9.0.0
 - **Microsoft.Extensions.Logging** v9.0.0
@@ -84,8 +84,10 @@ loginCommand.SetAction(async (parseResult) =>
 
 ### Native AOT対応の考慮事項
 - リフレクションを最小限に抑える
-- Source Generatorを活用（System.Text.Json）
-- DynamicDependency属性の使用（必要に応じて）
+- Source Generatorを活用（System.Text.Json、VYaml）
+- ILLink.Descriptors.xmlで型情報を保護
+- サードパーティライブラリの警告は必要に応じて抑制（IL2104, IL3053）
+- TrimmerRootAssemblyでアセンブリ全体を保護
 
 ## データ＆状態管理
 

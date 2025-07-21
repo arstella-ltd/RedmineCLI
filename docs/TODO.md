@@ -337,6 +337,15 @@
 - Native AOTビルド成功：起動時間15ms、バイナリサイズ4.9MB達成
 - SetActionメソッドを使用したコマンドハンドラーの実装
 - 実行ファイル名: RedmineCLI（プロジェクト名と同じ）
+- 接続テストの修正：URL/APIキーを直接指定できるオーバーロードを追加
+
+### Native AOT対応改善（2025-07-21）
+- VYamlとSpectre.ConsoleのAOT警告への対処
+- ILLink.Descriptors.xmlを作成してシリアライゼーション関連の型を保護
+- プロジェクトファイルで警告を抑制（IL2104, IL3053）
+- TrimmerRootAssemblyにVYamlを追加
+- 最終バイナリサイズ: 15MB（デバッグシンボルを除く）
+- アプリケーションは正常に動作し、すべての機能が利用可能
 
 ## 使用方法
 

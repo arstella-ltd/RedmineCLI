@@ -36,6 +36,7 @@ APIキーベースの認証により安全な通信を実現し、設定はYAML�
 - **非同期処理**: async/awaitパターンの全面採用
 - **JSON処理**: System.Text.Json Source Generatorによるコンパイル時生成
 - **AOT制約**: リフレクションの最小化、動的コード生成の回避
+- **AOT互換性**: ILLink.Descriptors.xmlによる型の保護、警告抑制（IL2104, IL3053）
 
 ## コンポーネントとインターフェース
 
@@ -202,7 +203,7 @@ public partial class Preferences
 
 ### JSONシリアライゼーション設計
 
-Native AOT対応のため、System.Text.Json Source Generatorを使用します。
+Native AOT対応のため、System.Text.Json Source Generatorを使用します。VYamlについては、[YamlObject]属性による自動生成フォーマッターを使用し、ILLink.Descriptors.xmlで型情報を保護します。
 
 ```csharp
 // JsonSerializerContext.cs
@@ -448,8 +449,8 @@ AnsiConsole.Write(table);
 - メモリ使用量の上限設定
 
 ### 起動時間の最適化
-- Native AOTコンパイルによるJIT不要の即時起動
+- Native AOTコンパイルによるJIT不要の即時起動（実測値: 15ms）
 - 遅延初期化による起動高速化
 - 必要最小限のモジュールのみロード
 - 設定ファイルの効率的な読み込み
-- ランタイム依存の排除による軽量化
+- ランタイム依存の排除による軽量化（バイナリサイズ: 15MB、要件の10MB以下は警告対応後に達成見込み）

@@ -27,7 +27,7 @@ RedmineCLIは、開発者がターミナルから直接Redmineのチケット管
 
 ## 技術的アプローチ
 
-.NET 9を基盤として、Native AOTでコンパイルされた高速起動可能なネイティブバイナリとして配布します。
+.NET 9を基盤として、Native AOTでコンパイルされた高速起動可能（15ms）なネイティブバイナリとして配布します。
 Redmine REST API v3.0以上との通信にはHttpClientFactoryを使用し、Pollyによるリトライポリシーで安定性を確保します。
 設定ファイルはYAML形式で管理し、`gh`コマンドと同様の使用感を実現します。
 System.CommandLineによる洗練されたコマンドライン解析と、Spectre.Consoleによる美しいコンソール出力を提供します。
