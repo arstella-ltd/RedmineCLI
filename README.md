@@ -107,11 +107,6 @@ dotnet test
 dotnet run -- --help
 ```
 
-### コントリビューション
-
-プルリクエストを歓迎します。
-大きな変更を行う場合は、まずissueを作成して議論してください。
-
 ## ライセンス
 
 [MIT License](LICENSE)
