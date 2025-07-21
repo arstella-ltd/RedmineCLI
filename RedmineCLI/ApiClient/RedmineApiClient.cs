@@ -76,8 +76,20 @@ public class RedmineApiClient : IRedmineApiClient
     public async Task<Issue> CreateIssueAsync(Issue issue, CancellationToken cancellationToken = default)
     {
         var path = "/issues.json";
-        var requestBody = new IssueRequest { Issue = issue };
-        var issueResponse = await PostAsync(path, requestBody, RedmineJsonContext.Default.IssueRequest, RedmineJsonContext.Default.IssueResponse, "create issue", cancellationToken);
+        
+        // Convert Issue to IssueCreateData for proper API format
+        var createData = new IssueCreateData
+        {
+            Subject = issue.Subject,
+            Description = issue.Description,
+            ProjectId = issue.Project?.Id,
+            AssignedToId = issue.AssignedTo?.Id,
+            PriorityId = issue.Priority?.Id,
+            StatusId = issue.Status?.Id
+        };
+        
+        var requestBody = new IssueCreateRequest { Issue = createData };
+        var issueResponse = await PostAsync(path, requestBody, RedmineJsonContext.Default.IssueCreateRequest, RedmineJsonContext.Default.IssueResponse, "create issue", cancellationToken);
 
         return issueResponse?.Issue ?? throw new RedmineApiException(
             (int)HttpStatusCode.InternalServerError,

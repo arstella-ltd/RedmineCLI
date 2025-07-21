@@ -29,6 +29,8 @@ namespace RedmineCLI.ApiClient;
 [JsonSerializable(typeof(List<JournalDetail>))]
 [JsonSerializable(typeof(ErrorResponse))]
 [JsonSerializable(typeof(IssueRequest))]
+[JsonSerializable(typeof(IssueCreateRequest))]
+[JsonSerializable(typeof(IssueCreateData))]
 [JsonSerializable(typeof(CommentRequest))]
 [JsonSerializable(typeof(CommentData))]
 [JsonSerializable(typeof(UserResponse))]

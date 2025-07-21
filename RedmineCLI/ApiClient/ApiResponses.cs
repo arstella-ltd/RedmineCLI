@@ -72,6 +72,33 @@ public class IssueRequest
     public Issue Issue { get; set; } = new();
 }
 
+public class IssueCreateRequest
+{
+    [JsonPropertyName("issue")]
+    public IssueCreateData Issue { get; set; } = new();
+}
+
+public class IssueCreateData
+{
+    [JsonPropertyName("project_id")]
+    public int? ProjectId { get; set; }
+
+    [JsonPropertyName("subject")]
+    public string Subject { get; set; } = string.Empty;
+
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+
+    [JsonPropertyName("assigned_to_id")]
+    public int? AssignedToId { get; set; }
+
+    [JsonPropertyName("priority_id")]
+    public int? PriorityId { get; set; }
+
+    [JsonPropertyName("status_id")]
+    public int? StatusId { get; set; }
+}
+
 public class CommentRequest
 {
     [JsonPropertyName("issue")]

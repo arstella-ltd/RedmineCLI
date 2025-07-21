@@ -105,6 +105,38 @@ public class IssueCommand
         });
 
         command.Add(viewCommand);
+
+        // Create command
+        var createCommand = new Command("create", "Create a new issue");
+        var createProjectOption = new Option<string?>("--project") { Description = "Project identifier or ID" };
+        createProjectOption.Aliases.Add("-p");
+        var createTitleOption = new Option<string?>("--title") { Description = "Issue title/subject" };
+        createTitleOption.Aliases.Add("-t");
+        var createDescriptionOption = new Option<string?>("--description") { Description = "Issue description" };
+        createDescriptionOption.Aliases.Add("-d");
+        var createAssigneeOption = new Option<string?>("--assignee") { Description = "Assignee (username, ID, or @me)" };
+        createAssigneeOption.Aliases.Add("-a");
+        var createWebOption = new Option<bool>("--web") { Description = "Open new issue page in web browser" };
+        createWebOption.Aliases.Add("-w");
+
+        createCommand.Add(createProjectOption);
+        createCommand.Add(createTitleOption);
+        createCommand.Add(createDescriptionOption);
+        createCommand.Add(createAssigneeOption);
+        createCommand.Add(createWebOption);
+
+        createCommand.SetAction(async (parseResult) =>
+        {
+            var project = parseResult.GetValue(createProjectOption);
+            var title = parseResult.GetValue(createTitleOption);
+            var description = parseResult.GetValue(createDescriptionOption);
+            var assignee = parseResult.GetValue(createAssigneeOption);
+            var web = parseResult.GetValue(createWebOption);
+            
+            Environment.ExitCode = await issueCommand.CreateAsync(project, title, description, assignee, web, CancellationToken.None);
+        });
+
+        command.Add(createCommand);
         
         return command;
     }
@@ -125,11 +157,7 @@ public class IssueCommand
                 assignee, status, project);
 
             // Handle @me special value
-            if (assignee == "@me")
-            {
-                var currentUser = await _apiClient.GetCurrentUserAsync(cancellationToken);
-                assignee = currentUser.Id.ToString();
-            }
+            assignee = await ResolveAssigneeAsync(assignee, cancellationToken);
 
             // Handle status special values
             string? statusFilter = status;
@@ -321,7 +349,7 @@ public class IssueCommand
         var url = urlBuilder(profile);
         _logger.LogDebug("Opening {ResourceType} in browser: {Url}", resourceType, url);
         OpenInBrowser(url);
-        AnsiConsole.MarkupLine($"[green]Opening {resourceType} in browser: {url}[/]");
+        AnsiConsole.MarkupLine($"[green]Opening {resourceType} in browser: {Markup.Escape(url)}[/]");
         return 0;
     }
 
@@ -375,5 +403,247 @@ public class IssueCommand
             AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
             return 1;
         }
+    }
+
+    public async Task<int> CreateAsync(
+        string? project,
+        string? title,
+        string? description,
+        string? assignee,
+        bool web,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            _logger.LogDebug("Creating issue - Project: {Project}, Title: {Title}, Web: {Web}", project, title, web);
+
+            // Handle --web option
+            if (web)
+            {
+                return await OpenInBrowserAsync(
+                    profile => BuildNewIssueUrl(profile.Url, project),
+                    "new issue page",
+                    cancellationToken);
+            }
+
+            // Interactive mode if no options provided
+            if (string.IsNullOrEmpty(project) && string.IsNullOrEmpty(title))
+            {
+                return await CreateInteractiveAsync(cancellationToken);
+            }
+
+            // Validate required fields
+            if (string.IsNullOrEmpty(title))
+            {
+                AnsiConsole.MarkupLine("[red]Error:[/] Title is required");
+                return 1;
+            }
+
+            // Create issue object
+            var issue = new Issue
+            {
+                Subject = title,
+                Description = description
+            };
+
+            // Set project
+            issue.Project = ParseProject(project);
+            if (issue.Project == null)
+            {
+                AnsiConsole.MarkupLine("[red]Error:[/] Project is required");
+                return 1;
+            }
+
+            // Handle assignee
+            if (!string.IsNullOrEmpty(assignee))
+            {
+                if (assignee == "@me")
+                {
+                    var currentUser = await _apiClient.GetCurrentUserAsync(cancellationToken);
+                    issue.AssignedTo = currentUser;
+                }
+                else
+                {
+                    issue.AssignedTo = ParseAssignee(assignee);
+                }
+            }
+
+            // Create the issue
+            var createdIssue = await _apiClient.CreateIssueAsync(issue, cancellationToken);
+
+            // Show success message with URL
+            var profile = await _configService.GetActiveProfileAsync();
+            if (profile != null)
+            {
+                var issueUrl = $"{profile.Url.TrimEnd('/')}/issues/{createdIssue.Id}";
+                AnsiConsole.MarkupLine($"[green]✓[/] Issue #{createdIssue.Id} created: {Markup.Escape(createdIssue.Subject)}");
+                AnsiConsole.MarkupLine($"[dim]View at: {Markup.Escape(issueUrl)}[/]");
+            }
+            else
+            {
+                AnsiConsole.MarkupLine($"[green]✓[/] Issue #{createdIssue.Id} created: {Markup.Escape(createdIssue.Subject)}");
+            }
+
+            return 0;
+        }
+        catch (ValidationException ex)
+        {
+            _logger.LogError(ex, "Validation error while creating issue");
+            AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+            return 1;
+        }
+        catch (RedmineApiException ex)
+        {
+            _logger.LogError(ex, "API error while creating issue");
+            AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while creating issue");
+            AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+            return 1;
+        }
+    }
+
+    // Overload for tests that use different signatures
+    public Task<int> CreateAsync(int projectId, string title, string? description, string? assignee, CancellationToken cancellationToken)
+    {
+        return CreateAsync(projectId.ToString(), title, description, assignee, false, cancellationToken);
+    }
+
+    private async Task<int> CreateInteractiveAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            AnsiConsole.MarkupLine("[bold cyan]Create New Issue[/]");
+            AnsiConsole.WriteLine();
+
+            // Get projects list
+            var projects = await _apiClient.GetProjectsAsync(cancellationToken);
+            if (projects.Count == 0)
+            {
+                AnsiConsole.MarkupLine("[red]Error:[/] No projects available");
+                return 1;
+            }
+
+            // Project selection
+            var selectedProject = AnsiConsole.Prompt(
+                new SelectionPrompt<Project>()
+                    .Title("Select a project:")
+                    .PageSize(10)
+                    .MoreChoicesText("[grey](Move up and down to reveal more projects)[/]")
+                    .UseConverter(p => $"{p.Name} ({p.Identifier})")
+                    .AddChoices(projects));
+
+            // Title input
+            var title = AnsiConsole.Prompt(
+                new TextPrompt<string>("Enter issue title:")
+                    .ValidationErrorMessage("[red]Title cannot be empty[/]")
+                    .Validate(input =>
+                    {
+                        if (string.IsNullOrWhiteSpace(input))
+                            return ValidationResult.Error("Title cannot be empty");
+                        return ValidationResult.Success();
+                    }));
+
+            // Description input (optional)
+            var description = AnsiConsole.Prompt(
+                new TextPrompt<string>("Enter description [dim](optional)[/]:")
+                    .AllowEmpty());
+
+            // Assignee input (optional)
+            var assignToMe = AnsiConsole.Confirm("Assign to yourself?", false);
+
+            // Create the issue
+            var issue = new Issue
+            {
+                Subject = title,
+                Description = string.IsNullOrWhiteSpace(description) ? null : description,
+                Project = selectedProject
+            };
+
+            if (assignToMe)
+            {
+                var currentUser = await _apiClient.GetCurrentUserAsync(cancellationToken);
+                issue.AssignedTo = currentUser;
+            }
+
+            var createdIssue = await _apiClient.CreateIssueAsync(issue, cancellationToken);
+
+            // Show success message with URL
+            var profile = await _configService.GetActiveProfileAsync();
+            if (profile != null)
+            {
+                var issueUrl = $"{profile.Url.TrimEnd('/')}/issues/{createdIssue.Id}";
+                AnsiConsole.MarkupLine($"[green]✓[/] Issue #{createdIssue.Id} created: {Markup.Escape(createdIssue.Subject)}");
+                AnsiConsole.MarkupLine($"[dim]View at: {Markup.Escape(issueUrl)}[/]");
+            }
+            else
+            {
+                AnsiConsole.MarkupLine($"[green]✓[/] Issue #{createdIssue.Id} created: {Markup.Escape(createdIssue.Subject)}");
+            }
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during interactive issue creation");
+            AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+            return 1;
+        }
+    }
+
+    private static string BuildNewIssueUrl(string baseUrl, string? project)
+    {
+        var url = $"{baseUrl.TrimEnd('/')}/issues/new";
+        
+        if (!string.IsNullOrEmpty(project))
+        {
+            // If project is specified, add it as a query parameter
+            url += $"?issue[project_id]={Uri.EscapeDataString(project)}";
+        }
+
+        return url;
+    }
+
+    private async Task<string?> ResolveAssigneeAsync(string? assignee, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(assignee))
+            return null;
+
+        if (assignee == "@me")
+        {
+            var currentUser = await _apiClient.GetCurrentUserAsync(cancellationToken);
+            return currentUser.Id.ToString();
+        }
+
+        return assignee;
+    }
+
+    private static User? ParseAssignee(string? assignee)
+    {
+        if (string.IsNullOrEmpty(assignee))
+            return null;
+
+        if (int.TryParse(assignee, out var assigneeId))
+        {
+            return new User { Id = assigneeId };
+        }
+
+        return new User { Name = assignee };
+    }
+
+    private static Project? ParseProject(string? project)
+    {
+        if (string.IsNullOrEmpty(project))
+            return null;
+
+        if (int.TryParse(project, out var projectId))
+        {
+            return new Project { Id = projectId };
+        }
+
+        return new Project { Identifier = project };
     }
 }
