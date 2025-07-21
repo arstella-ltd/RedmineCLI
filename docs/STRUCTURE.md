@@ -48,12 +48,13 @@ RedmineCLI/                           # メインプロジェクトディレク�
 │   └── Preferences.cs                # ユーザー設定モデル
 ├── ApiClient/                        # API通信
 │   ├── IRedmineApiClient.cs          # APIクライアントインターフェース
-│   ├── RedmineApiClient.cs           # APIクライアント実装（今後実装）
+│   ├── RedmineApiClient.cs           # APIクライアント実装
 │   ├── ApiResponses.cs               # APIレスポンスラッパー
 │   ├── JsonSerializerContext.cs      # AOT対応JSONコンテキスト
 │   └── DateTimeConverter.cs          # 日時変換カスタムコンバーター
 ├── Exceptions/                       # カスタム例外
-│   └── ValidationException.cs        # バリデーション例外
+│   ├── ValidationException.cs        # バリデーション例外
+│   └── RedmineApiException.cs        # Redmine API例外
 ├── Formatters/                       # 出力フォーマッター
 │   ├── IOutputFormatter.cs           # フォーマッターインターフェース
 │   ├── TableFormatter.cs             # テーブル形式
@@ -68,13 +69,14 @@ RedmineCLI/                           # メインプロジェクトディレク�
 RedmineCLI.Tests/                     # 単体テストプロジェクト
 ├── RedmineCLI.Tests.csproj
 ├── ApiClient/
+│   ├── RedmineApiClientTests.cs      # APIクライアントのテスト  
 │   └── SerializationTests.cs         # JSONシリアライゼーションテスト
 ├── Models/
 │   ├── ConfigTests.cs                # 設定モデルのテスト
 │   └── IssueTests.cs                 # Issueモデルのテスト
-├── Commands/                         # (今後実装予定)
-│   ├── AuthCommandTests.cs
-│   └── IssueCommandTests.cs
+├── Commands/
+│   ├── AuthCommandTests.cs           # 認証コマンドのテスト
+│   └── IssueCommandTests.cs          # (今後実装予定)
 └── Services/
     ├── ConfigServiceTests.cs         # 設定サービスのテスト
     └── RedmineServiceTests.cs        # (今後実装予定)
@@ -93,8 +95,13 @@ RedmineCLI.IntegrationTests/          # 統合テストプロジェクト
 ### 階層構造
 1. **Program.cs**: アプリケーションのエントリーポイント、DIコンテナ設定
 2. **Commands層**: System.CommandLineを使用したコマンド定義
+   - AuthCommand: 認証コマンド（実装済み）
+   - IssueCommand: チケット管理（今後実装）
+   - ConfigCommand: 設定管理（今後実装）
 3. **Services層**: ビジネスロジックの実装
-4. **ApiClient層**: Redmine APIとの通信を抽象化
+   - ConfigService: 設定管理（実装済み）
+   - RedmineService: チケット操作（今後実装）
+4. **ApiClient層**: Redmine APIとの通信を抽象化（実装済み）
 5. **Models層**: データ転送オブジェクト（DTO）
 6. **Formatters層**: 出力の整形
 7. **Utils層**: 共通ユーティリティ

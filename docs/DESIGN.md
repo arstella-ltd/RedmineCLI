@@ -55,6 +55,28 @@ APIキーベースの認証により安全な通信を実現し、設定はYAML�
   - バリデーション
   - ヘルプメッセージの生成
 
+### Authentication Command Design
+- **責任**: ユーザー認証とプロファイル管理
+- **主要コマンド**
+  - `auth login`: 認証情報の登録
+  - `auth status`: 現在の認証状態確認
+  - `auth logout`: 認証情報のクリア
+- **認証フロー**
+  ```
+  1. URLとAPIキーの入力（対話的/パラメータ指定）
+     ↓
+  2. URL形式バリデーション
+     ↓
+  3. Redmine APIへの接続テスト
+     ↓
+  4. 成功時：プロファイルの保存
+     失敗時：エラーメッセージ表示
+  ```
+- **セキュリティ考慮事項**
+  - APIキーは暗号化して保存（Windows: DPAPI、その他: Base64）
+  - 接続テスト時のみAPIキーを使用
+  - ログアウト時はAPIキーのみクリア（他の設定は保持）
+
 ### API Client
 - **責任**: Redmine REST APIとの通信
 - **主要機能**
@@ -261,6 +283,31 @@ var encrypted = ProtectedData.Protect(
     Encoding.UTF8.GetBytes(apiKey), 
     _entropy, 
     DataProtectionScope.CurrentUser);
+```
+
+## データフロー
+
+### 認証フロー
+```
+ユーザー入力
+    ↓
+System.CommandLine (コマンド解析)
+    ↓
+AuthCommand (認証コマンドハンドラー)
+    ↓
+ConfigService (設定管理)
+    ↓
+RedmineApiClient (接続テスト)
+    ↓
+プロファイル保存 (成功時) / エラー表示 (失敗時)
+```
+
+### チケット操作フロー
+```
+コマンド入力 → 認証確認 → API呼び出し → レスポンス処理 → フォーマット → 出力
+                    ↓                          ↓
+                プロファイル             エラーハンドリング
+                  読み込み               (リトライ/エラー表示)
 ```
 
 ## エラーハンドリング

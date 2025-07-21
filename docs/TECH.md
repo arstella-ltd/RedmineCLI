@@ -5,9 +5,9 @@
 - **.NET 9**: 最新版を使用、クロスプラットフォーム対応、Native AOT対応
 - **C# 13**: 最新の言語機能を活用（record型、パターンマッチング等）
 - **Native AOT**: 高速起動（実測7ms）と小サイズバイナリ（実測4.9MB）を実現
-- **System.CommandLine** v2.0.0-beta5: Microsoftが提供する最新のCLIフレームワーク
-- **Spectre.Console** v0.49.1: 美しいコンソール出力のためのライブラリ（AOT対応）
-- **VYaml** v0.29.0: Native AOT対応の高速YAMLライブラリ（Source Generator使用）
+- **System.CommandLine** v2.0.0-beta6: Microsoftが提供する最新のCLIフレームワーク
+- **Spectre.Console** v0.50.0: 美しいコンソール出力のためのライブラリ（AOT対応）
+- **VYaml** v1.2.0: Native AOT対応の高速YAMLライブラリ（Source Generator使用）
 - **System.IO.Abstractions** v22.0.15: ファイルシステムの抽象化（テスタビリティ向上）
 - **Redmine REST API v3.0+**: チケット情報の取得・更新に使用するAPIインターフェース
 - **APIキー認証**: Redmineサーバーへの安全な認証方式として採用
@@ -16,9 +16,9 @@
 
 ## 主要NuGetパッケージ
 
-- **System.CommandLine** v2.0.0-beta5.25277.114
-- **Spectre.Console** v0.49.1
-- **VYaml** v0.29.0（Native AOT対応）
+- **System.CommandLine** v2.0.0-beta6.25358.103
+- **Spectre.Console** v0.50.0
+- **VYaml** v1.2.0（Native AOT対応）
 - **Microsoft.Extensions.DependencyInjection** v9.0.0
 - **Microsoft.Extensions.Http** v9.0.0
 - **Microsoft.Extensions.Logging** v9.0.0
@@ -35,11 +35,57 @@
 - **FluentAssertions** v6.12.0: 読みやすいアサーションライブラリ
 - **NSubstitute** v5.1.0: シンプルで使いやすいモッキングライブラリ（AOT対応）
 - **System.IO.Abstractions.TestingHelpers** v22.0.15: ファイルシステムのモック
+- **WireMock.Net** v1.6.6: HTTP APIのモックサーバー
+- **Spectre.Console.Testing** v0.50.0: Spectre.Consoleの出力テスト用ライブラリ
 - **coverlet.collector** v6.0.2: コードカバレッジ収集ツール
 - **dotnet-format**: コードフォーマッター
 - **SonarAnalyzer.CSharp**: 静的解析ツール
-- **VYaml**: Native AOT対応のYAMLライブラリ（設定ファイル用）
-- **System.Text.Json**: 高速なJSON処理（Source Generator使用）
+
+## System.CommandLineの使用方法
+
+### コマンド構造パターン
+System.CommandLine v2.0.0-beta6を使用して、GitHub CLIライクなコマンド構造を実装しています。
+
+```csharp
+// 基本的なコマンド構造
+var rootCommand = new RootCommand("RedmineCLI");
+var authCommand = new Command("auth", "認証管理");
+var loginCommand = new Command("login", "ログイン");
+
+// コマンドの階層構造
+rootCommand.Add(authCommand);
+authCommand.Add(loginCommand);
+```
+
+### オプションと引数の定義
+```csharp
+// オプションの定義
+var urlOption = new Option<string>("--url") { Description = "Redmine server URL" };
+var apiKeyOption = new Option<string>("--api-key") { Description = "API key" };
+
+// デフォルト値の設定
+var profileOption = new Option<string>("--profile") 
+{ 
+    Description = "Profile name",
+    DefaultValueFactory = _ => "default" 
+};
+```
+
+### コマンドアクションの実装
+```csharp
+// SetActionメソッドでコマンドの動作を定義
+loginCommand.SetAction(async (parseResult) =>
+{
+    var url = parseResult.GetValue(urlOption);
+    var apiKey = parseResult.GetValue(apiKeyOption);
+    // 実際の処理
+});
+```
+
+### Native AOT対応の考慮事項
+- リフレクションを最小限に抑える
+- Source Generatorを活用（System.Text.Json）
+- DynamicDependency属性の使用（必要に応じて）
 
 ## データ＆状態管理
 
@@ -87,29 +133,29 @@ dotnet pack
 dotnet tool install --global RedmineCLI
 
 # 使用例
-redmine auth login
-redmine auth status
-redmine auth logout
+RedmineCLI auth login
+RedmineCLI auth status
+RedmineCLI auth logout
 
 # チケット操作
-redmine issue list [--assignee=USER] [--status=STATUS] [--project=PROJECT] [--limit=N] [--json]
-redmine issue view <ID> [--json]
-redmine issue create [--project=PROJECT] [--title=TITLE] [--description=DESC]
-redmine issue edit <ID> [--status=STATUS] [--assignee=USER] [--done-ratio=N]
-redmine issue comment <ID> [--message=MESSAGE]
+RedmineCLI issue list [--assignee=USER] [--status=STATUS] [--project=PROJECT] [--limit=N] [--json]
+RedmineCLI issue view <ID> [--json]
+RedmineCLI issue create [--project=PROJECT] [--title=TITLE] [--description=DESC]
+RedmineCLI issue edit <ID> [--status=STATUS] [--assignee=USER] [--done-ratio=N]
+RedmineCLI issue comment <ID> [--message=MESSAGE]
 
 # 設定管理
-redmine config set <KEY> <VALUE>
-redmine config get <KEY>
-redmine config list
+RedmineCLI config set <KEY> <VALUE>
+RedmineCLI config get <KEY>
+RedmineCLI config list
 
 # ヘルプ
-redmine --help
-redmine <COMMAND> --help
+RedmineCLI --help
+RedmineCLI <COMMAND> --help
 
 # バージョンとライセンス情報
-redmine --version
-redmine --licenses
+RedmineCLI --version
+RedmineCLI --licenses
 ```
 
 ## ブラウザサポート
