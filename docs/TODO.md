@@ -239,21 +239,42 @@
     - 依存関係の自動検出
   - _要件: 9_
 
-- [ ] 12. 設定管理コマンドの実装（TDD）
+- [ ] 12. 日時表示の改善 - 相対時刻表示とローカルタイムゾーン対応（TDD）
+  - **Red**: TimeHelperのテストを先に作成
+    - GetRelativeTime_Should_ReturnMinutesAgo_When_LessThanHour
+    - GetRelativeTime_Should_ReturnHoursAgo_When_LessThanDay  
+    - GetRelativeTime_Should_ReturnDaysAgo_When_LessThanMonth
+    - GetRelativeTime_Should_ReturnMonthDay_When_CurrentYear
+    - GetRelativeTime_Should_ReturnFullDate_When_PreviousYear
+    - ConvertToLocalTime_Should_ConvertFromUtc_When_ValidDateTime
+    - FormatTime_Should_UseConfiguredFormat_When_SettingExists
+  - **Green**: テストを通すための実装
+    - Utils/TimeHelper.csクラスの実装（ITimeHelperインターフェース）
+    - UTCからローカルタイムゾーンへの変換機能
+    - 相対時刻計算ロジック（GitHub CLI準拠）
+    - TableFormatterでの時刻表示の改善
+    - --absolute-timeオプションの追加（ローカル時刻表示）
+    - 設定による時刻表示形式の切り替え（relative/absolute/utc）
+  - **Refactor**: 時刻表示の一貫性確保とパフォーマンス最適化
+  - _要件: 2_
+
+- [ ] 13. 設定管理コマンドの実装（TDD）
   - **Red**: ConfigCommandのテストを先に作成
     - Set_Should_UpdateValue_When_ValidKeyProvided
     - Get_Should_ReturnValue_When_KeyExists
     - List_Should_ShowAllSettings_When_Called
     - Set_Should_ValidateKey_When_UnknownKeyProvided
+    - Set_Should_UpdateTimeFormat_When_TimeSettingProvided
   - **Green**: テストを通すための実装
     - `config set`コマンド：設定値の変更
     - `config get`コマンド：設定値の取得
     - `config list`コマンド：全設定の一覧表示
     - デフォルトプロジェクト等の設定管理
+    - 時刻表示設定の管理（time.format, time.timezone）
   - **Refactor**: 設定キーの検証とヘルプの改善
   - _要件: 7_
 
-- [ ] 13. エラーハンドリングとログ機能の実装（TDD）
+- [ ] 14. エラーハンドリングとログ機能の実装（TDD）
   - **Red**: エラーハンドリングのテストを先に作成
     - GlobalHandler_Should_ShowFriendlyMessage_When_ApiException
     - GlobalHandler_Should_ShowStackTrace_When_DebugMode
@@ -267,7 +288,7 @@
   - **Refactor**: エラーメッセージのローカライズ準備
   - _要件: 全体的な基盤_
 
-- [ ] 14. 統合テストとE2Eテストの実装
+- [ ] 15. 統合テストとE2Eテストの実装
   - **注**: 各機能の単体テストは既にTDDで実装済み
   - **統合テスト**: 実際のファイルシステムとの連携テスト
     - 設定ファイルの読み書き統合テスト
@@ -278,7 +299,7 @@
   - **カバレッジ**: 単体テストで80%以上、統合テスト含めて90%以上を目標
   - _要件: 全体的な基盤_
 
-- [ ] 15. ドキュメントとパッケージング
+- [ ] 16. ドキュメントとパッケージング
   - **ドキュメント作成**
     - README.mdの作成（インストール手順、使用方法）
     - CONTRIBUTING.mdの作成（TDD開発フローの説明）
@@ -294,7 +315,7 @@
     - 自動テストとビルドの設定
   - _要件: 8, 全体的な基盤_
 
-- [ ] 16. 継続的テスト実行環境の整備（TDD文化の定着）
+- [ ] 17. 継続的テスト実行環境の整備（TDD文化の定着）
   - **テスト自動実行の設定**
     - ファイル変更監視による自動テスト実行（dotnet watch test）
     - Git pre-commitフックでのテスト実行

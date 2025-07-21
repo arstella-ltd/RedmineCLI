@@ -65,6 +65,7 @@ RedmineCLI/                           # メインプロジェクトディレク�
 ├── Utils/                            # ユーティリティ
 │   ├── ConsoleHelper.cs              # コンソール補助
 │   ├── CryptoHelper.cs               # 暗号化処理
+│   ├── TimeHelper.cs                 # 時刻変換と相対表示
 │   └── LicenseHelper.cs              # ライセンス情報管理（今後実装）
 └── Resources/                        # 埋め込みリソース（今後実装）
     └── THIRD-PARTY-NOTICES.txt       # ビルド時埋め込み用

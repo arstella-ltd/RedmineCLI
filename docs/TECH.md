@@ -156,14 +156,15 @@ RedmineCLI auth status
 RedmineCLI auth logout
 
 # チケット操作（ショートハンドオプション対応）
-RedmineCLI issue list                              # プロジェクトの全オープンチケット（30件）
+RedmineCLI issue list                              # プロジェクトの全オープンチケット（30件、相対時刻表示）
 RedmineCLI issue list -a @me                       # 自分に割り当てられたチケット
 RedmineCLI issue list --assignee john.doe          # 特定ユーザーのチケット（または -a john.doe）
 RedmineCLI issue list --status closed              # クローズドチケット（または -s closed）
 RedmineCLI issue list --status all                 # 全ステータスのチケット（または -s all）
 RedmineCLI issue list --project myproject          # 特定プロジェクト（または -p myproject）
 RedmineCLI issue list --limit 50                   # 表示件数指定（または -L 50）
-RedmineCLI issue list --json                       # JSON形式で出力
+RedmineCLI issue list --json                       # JSON形式で出力（ISO 8601 UTC時刻）
+RedmineCLI issue list --absolute-time              # ローカル時刻で表示
 RedmineCLI issue list -a @me -s open -p myproject # 複数条件の組み合わせ
 RedmineCLI issue list --web                        # ブラウザで開く（または -w）
 RedmineCLI issue list -a @me --web                # 条件付きでブラウザで開く
@@ -183,6 +184,13 @@ RedmineCLI issue comment 456 --message "テスト結果OK"   # --messageでも�
 RedmineCLI config set <KEY> <VALUE>
 RedmineCLI config get <KEY>
 RedmineCLI config list
+
+# 時刻表示設定の例
+RedmineCLI config set time.format relative    # 相対時刻表示（デフォルト）
+RedmineCLI config set time.format absolute    # ローカル時刻表示
+RedmineCLI config set time.format utc         # UTC時刻表示
+RedmineCLI config set time.timezone system    # システムのタイムゾーン使用（デフォルト）
+RedmineCLI config set time.timezone "Asia/Tokyo"  # 特定のタイムゾーン指定
 
 # ヘルプ
 RedmineCLI --help

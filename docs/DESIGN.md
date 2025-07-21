@@ -291,6 +291,9 @@ preferences:
   dateFormat: "yyyy-MM-dd HH:mm:ss"
   editor: null
   timeFormat: "HH:mm:ss"
+  time:
+    format: relative  # relative | absolute | utc
+    timezone: system  # system | UTC | Asia/Tokyo など
 ```
 
 ### C#モデル定義
@@ -406,6 +409,15 @@ public partial class Preferences
     public string DateFormat { get; set; } = "yyyy-MM-dd HH:mm:ss";
     public string? Editor { get; set; }
     public string TimeFormat { get; set; } = "HH:mm:ss";
+    public TimeSettings Time { get; set; } = new();
+}
+
+// TimeSettings.cs
+[YamlObject]
+public partial class TimeSettings
+{
+    public string Format { get; set; } = "relative"; // relative | absolute | utc
+    public string Timezone { get; set; } = "system"; // system | UTC | Asia/Tokyo など
 }
 ```
 
@@ -538,6 +550,24 @@ public interface IJsonFormatter
     void FormatIssues(List<Issue> issues);
     void FormatIssueDetails(Issue issue);
 }
+
+// ITimeHelper.cs
+public interface ITimeHelper
+{
+    string GetRelativeTime(DateTime utcTime);
+    string GetLocalTime(DateTime utcTime, string format = "yyyy-MM-dd HH:mm");
+    string GetUtcTime(DateTime utcTime, string format = "yyyy-MM-dd HH:mm:ss");
+    DateTime ConvertToLocalTime(DateTime utcTime);
+    string FormatTime(DateTime dateTime, TimeFormat format);
+}
+
+// TimeFormat.cs
+public enum TimeFormat
+{
+    Relative,    // "2 hours ago"
+    Absolute,    // Local time "2025-01-22 09:30"
+    Utc          // UTC time "2025-01-22 00:30 UTC"
+}
 ```
 
 ### 設定管理の暗号化
@@ -660,10 +690,15 @@ services.AddHttpClient<IRedmineApiClient, RedmineApiClient>()
 
 ### 出力デザイン
 ```
-# テーブル形式の例（英語表示）
+# テーブル形式の例（英語表示、デフォルト相対時刻）
 ID     STATUS        SUBJECT                           ASSIGNEE      UPDATED
-#1234  New           Implement login functionality     John Doe      2024-01-15
-#1235  In Progress   Review database design            Jane Smith    2024-01-14
+#1234  New           Implement login functionality     John Doe      2 hours ago
+#1235  In Progress   Review database design            Jane Smith    3 days ago
+
+# テーブル形式の例（--absolute-time オプション使用時）
+ID     STATUS        SUBJECT                           ASSIGNEE      UPDATED
+#1234  New           Implement login functionality     John Doe      2024-01-15 14:30
+#1235  In Progress   Review database design            Jane Smith    2024-01-12 09:15
 
 # 成功メッセージ
 ✓ Issue #1234 created successfully

@@ -32,6 +32,10 @@ RedmineCLIは、Redmineのチケット管理をコマンドラインから効率
 9. WHEN `--status all` を指定 THEN 全てのステータスのチケットが表示される SHALL
 10. WHEN `--web` または `-w` オプションを指定 THEN 指定された条件でRedmineのチケット一覧ページをWebブラウザで開く SHALL
 11. WHEN `--web` と他のフィルタオプションを組み合わせる THEN URLにクエリパラメータとして条件が反映される SHALL
+12. WHEN チケット一覧を表示 THEN 更新日時はデフォルトで相対時刻（例：2 hours ago）で表示される SHALL
+13. WHEN `--absolute-time` オプションを指定 THEN 日時はローカルタイムゾーンの絶対時刻で表示される SHALL
+14. WHEN `--json` オプションを指定 THEN 日時はISO 8601形式のUTCで出力される SHALL
+15. WHEN `config set time.format` で設定 THEN 指定された形式（relative/absolute/utc）で日時が表示される SHALL
 
 ### 要求 3
 **ユーザーストーリー:** 開発者として、IDを指定して全情報を表示したいので、チケットの詳細情報を確認できる
