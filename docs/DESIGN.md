@@ -89,12 +89,13 @@ APIキーベースの認証により安全な通信を実現し、設定はYAML�
   - `issue edit <ID>`: チケット編集
   - `issue comment <ID>`: コメント追加
 - **ショートハンドオプション**
-  - `-a` / `--assignee`: 担当者フィルタ
+  - `-a` / `--assignee`: 担当者フィルタ/指定
   - `-s` / `--status`: ステータスフィルタ
-  - `-p` / `--project`: プロジェクトフィルタ
+  - `-p` / `--project`: プロジェクトフィルタ/指定
   - `-L` / `--limit`: 表示件数制限
   - `-w` / `--web`: ブラウザで開く
   - `-t` / `--title`: タイトル指定
+  - `-d` / `--description`: 説明指定
   - `-m` / `--message`: メッセージ指定
 - **特殊値の処理**
   - `@me`: 現在の認証ユーザーを表す特殊値
@@ -115,6 +116,45 @@ APIキーベースの認証により安全な通信を実現し、設定はYAML�
     1. $BROWSER環境変数（%sプレースホルダ対応）
     2. プラットフォーム固有コマンド（Windows: start、macOS: open、Linux: xdg-open）
   - 例: `/issues?set_filter=1&assigned_to_id=me&status_id=o`
+
+#### Issue Create Command 詳細設計
+- **実行モード**
+  - 対話的モード：オプション無しで起動した場合
+  - 非対話的モード：必要なオプションを指定した場合
+- **対話的入力フロー**
+  ```
+  1. プロジェクト選択（SelectionPrompt）
+     ↓
+  2. タイトル入力（TextPrompt、必須）
+     ↓
+  3. 説明入力（TextPrompt、任意）
+     ↓
+  4. 自分に割り当てるか確認（Confirm）
+     ↓
+  5. チケット作成API呼び出し
+     ↓
+  6. 成功時：チケットID/URL表示
+  ```
+- **APIリクエスト形式**
+  ```
+  IssueCreateData {
+    project_id: int?      // プロジェクトID
+    subject: string       // タイトル
+    description: string?  // 説明
+    assigned_to_id: int?  // 担当者ID
+  }
+  ```
+- **@me処理フロー**
+  - 担当者に`@me`が指定された場合、現在のユーザー情報を取得
+  - `/users/current.json`エンドポイントを使用
+  - 取得したユーザーIDを`assigned_to_id`に設定
+- **プロジェクト/担当者の解析**
+  - 数値の場合：IDとして処理
+  - 文字列の場合：識別子/ユーザー名として処理
+- **エラーハンドリング**
+  - 必須フィールド（タイトル、プロジェクト）の検証
+  - API応答のエラーメッセージを適切に表示
+  - ValidationExceptionとRedmineApiExceptionの使い分け
 
 ### API Client
 - **責任**: Redmine REST APIとの通信

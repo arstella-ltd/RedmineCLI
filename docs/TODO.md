@@ -169,7 +169,7 @@
   - **Refactor**: 出力ロジックの共通化、ブラウザ起動処理の抽象化
   - _要件: 3_
 
-- [ ] 8. チケット作成コマンドの実装（TDD）
+- [x] 8. チケット作成コマンドの実装（TDD）
   - **Red**: IssueCreateCommandのテストを先に作成
     - Create_Should_CreateIssue_When_InteractiveMode
     - Create_Should_CreateIssue_When_OptionsProvided
@@ -385,7 +385,20 @@
 - --web/-wオプションによる個別チケットのブラウザ表示
 - ブラウザ起動処理の共通化（OpenInBrowserAsyncメソッド）
 - すべてのテスト（71件）が成功
-- Native AOTビルド成功、実行確認済み
+
+### タスク8完了（2025-07-21）
+- TDD手法（Red→Green→Refactor）に従って実装
+- テストケース7件を作成（対話的モード、オプション指定、URL表示、入力検証、ブラウザ起動、@me処理）
+- `issue create`コマンドの実装
+- 対話的モード：プロジェクト選択→タイトル入力→説明入力→自分に割り当て確認
+- コマンドラインオプション：-p/--project, -t/--title, -d/--description, -a/--assignee
+- @me特殊値のサポート（現在のユーザーに割り当て）
+- APIリクエスト形式の修正：IssueCreateDataモデルを追加してproject_idフィールドを使用
+- 作成成功時のチケットIDとURL表示（Markup.Escapeでエスケープ処理）
+- --web/-wオプションによる新規作成ページのブラウザ起動（プロジェクト指定対応）
+- 共通ロジックのリファクタリング：ResolveAssigneeAsync、ParseAssignee、ParseProject
+- すべてのテスト（81件）が成功
+- Native AOTビルド成功：バイナリサイズ15MB
 
 ## 使用方法
 

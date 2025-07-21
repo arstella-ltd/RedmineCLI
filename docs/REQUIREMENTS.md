@@ -49,7 +49,7 @@ RedmineCLIは、Redmineのチケット管理をコマンドラインから効率
 #### 受け入れ基準
 1. WHEN `redmine issue create` を実行 THEN 対話的にチケット情報を入力できる SHALL
 2. WHEN `--project <project>` または `-p <project>` オプションを指定 THEN プロジェクトを事前に選択できる SHALL
-3. WHEN `--title <title>` または `-t <title>` と `--description <desc>` を指定 THEN 非対話的に作成できる SHALL
+3. WHEN `--title <title>` または `-t <title>` と `--description <desc>` または `-d <desc>` を指定 THEN 非対話的に作成できる SHALL
 4. WHEN チケットが作成される THEN 作成されたチケットのIDとURLが表示される SHALL
 5. WHEN `--assignee <user>` または `-a <user>` を指定 THEN 担当者を事前に設定できる SHALL
 6. WHEN `--web` または `-w` オプションを指定 THEN 新規チケット作成ページをWebブラウザで開く SHALL
