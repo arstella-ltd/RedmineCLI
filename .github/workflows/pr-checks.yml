@@ -120,9 +120,10 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
 
-    - name: Test AOT publish (dry run)
+    - name: Verify AOT compatibility
       run: |
-        dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r linux-x64 -p:PublishAot=true --dry-run
+        # Test that the project can be built with AOT enabled
+        dotnet build RedmineCLI/RedmineCLI.csproj -c Release -p:PublishAot=true -p:IsAotCompatible=true
 
     - name: Check for AOT warnings
       run: |
