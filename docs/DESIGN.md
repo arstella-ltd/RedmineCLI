@@ -11,9 +11,11 @@ APIキーベースの認証により安全な通信を実現し、設定はYAML�
 ### 全体構成
 ```
 ┌─────────────────┐
-│  CLI Interface  │  ← System.CommandLine
+│  CLI Interface  │  ← System.CommandLine（ショートハンド対応）
 ├─────────────────┤
-│    Commands     │  ← コマンドハンドラー
+│    Commands     │  ← コマンドハンドラー（@me処理、--web対応）
+├─────────────────┤
+│   Formatters    │  ← ITableFormatter / IJsonFormatter
 ├─────────────────┤
 │    Services     │  ← ビジネスロジック（DI）
 ├─────────────────┤
@@ -77,6 +79,40 @@ APIキーベースの認証により安全な通信を実現し、設定はYAML�
   - APIキーは暗号化して保存（Windows: DPAPI、その他: Base64）
   - 接続テスト時のみAPIキーを使用
   - ログアウト時はAPIキーのみクリア（他の設定は保持）
+
+### Issue Command Design
+- **責任**: チケットの一覧表示、詳細表示、作成、編集
+- **主要コマンド**
+  - `issue list`: チケット一覧表示（デフォルト：全オープンチケット）
+  - `issue view <ID>`: チケット詳細表示
+  - `issue create`: 新規チケット作成
+  - `issue edit <ID>`: チケット編集
+  - `issue comment <ID>`: コメント追加
+- **ショートハンドオプション**
+  - `-a` / `--assignee`: 担当者フィルタ
+  - `-s` / `--status`: ステータスフィルタ
+  - `-p` / `--project`: プロジェクトフィルタ
+  - `-L` / `--limit`: 表示件数制限
+  - `-w` / `--web`: ブラウザで開く
+  - `-t` / `--title`: タイトル指定
+  - `-m` / `--message`: メッセージ指定
+- **特殊値の処理**
+  - `@me`: 現在の認証ユーザーを表す特殊値
+  - `all`: 全てのステータスを表す特殊値
+- **フィルタリング設計**
+  ```
+  IssueFilter {
+    AssignedToId: string?  // ユーザーID or @me
+    ProjectId: string?     // プロジェクトID
+    StatusId: string?      // ステータスID or all
+    Limit: int?            // 表示件数
+    Offset: int?           // オフセット
+  }
+  ```
+- **--webオプションの動作**
+  - 条件をURLクエリパラメータに変換
+  - プラットフォーム別のブラウザ起動コマンド実行
+  - 例: `/issues?assigned_to_id=me&status_id=open`
 
 ### API Client
 - **責任**: Redmine REST APIとの通信
@@ -260,6 +296,10 @@ public interface IRedmineApiClient
         int? limit = null,
         int? offset = null,
         CancellationToken cancellationToken = default);
+    
+    Task<List<Issue>> GetIssuesAsync(IssueFilter filter, CancellationToken cancellationToken = default);
+    
+    Task<User> GetCurrentUserAsync(CancellationToken cancellationToken = default);
         
     Task<Issue> GetIssueAsync(int id, CancellationToken cancellationToken = default);
     
@@ -268,6 +308,20 @@ public interface IRedmineApiClient
     Task<Issue> UpdateIssueAsync(int id, Issue issue, CancellationToken cancellationToken = default);
     
     Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default);
+    
+    Task<bool> TestConnectionAsync(string url, string apiKey, CancellationToken cancellationToken = default);
+}
+
+// ITableFormatter.cs
+public interface ITableFormatter
+{
+    void FormatIssues(List<Issue> issues);
+}
+
+// IJsonFormatter.cs
+public interface IJsonFormatter
+{
+    void FormatIssues(List<Issue> issues);
 }
 ```
 
@@ -377,7 +431,17 @@ services.AddHttpClient<IRedmineApiClient, RedmineApiClient>()
 ### コマンド体系
 - 動詞-名詞の構造（`redmine issue list`）
 - 一貫したオプション名（`--json`, `--limit`）
-- 短縮オプションの提供（`-p` for `--project`）
+- ショートハンドオプションの体系的な提供
+  - `-a` for `--assignee` （assignee）
+  - `-s` for `--status` （status）
+  - `-p` for `--project` （project）
+  - `-L` for `--limit` （Limit - 大文字で`-l`との競合回避）
+  - `-w` for `--web` （web）
+  - `-t` for `--title` （title）
+  - `-m` for `--message` （message）
+- 特殊値の採用
+  - `@me`: 現在の認証ユーザー
+  - `all`: 全ての値（例: `--status all`）
 
 ### 出力デザイン
 ```

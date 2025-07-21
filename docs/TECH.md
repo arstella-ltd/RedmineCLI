@@ -88,6 +88,9 @@ loginCommand.SetAction(async (parseResult) =>
 - ILLink.Descriptors.xmlで型情報を保護
 - サードパーティライブラリの警告は必要に応じて抑制（IL2104, IL3053）
 - TrimmerRootAssemblyでアセンブリ全体を保護
+- DynamicDependency属性でコマンドハンドラーの型情報を保護
+- JsonSerializerContextでJSON型のメタデータを事前生成
+- フォーマッターインターフェースで出力処理を抽象化
 
 ## データ＆状態管理
 
@@ -139,12 +142,23 @@ RedmineCLI auth login
 RedmineCLI auth status
 RedmineCLI auth logout
 
-# チケット操作
-RedmineCLI issue list [--assignee=USER] [--status=STATUS] [--project=PROJECT] [--limit=N] [--json]
-RedmineCLI issue view <ID> [--json]
-RedmineCLI issue create [--project=PROJECT] [--title=TITLE] [--description=DESC]
-RedmineCLI issue edit <ID> [--status=STATUS] [--assignee=USER] [--done-ratio=N]
-RedmineCLI issue comment <ID> [--message=MESSAGE]
+# チケット操作（ショートハンドオプション対応）
+RedmineCLI issue list                              # プロジェクトの全オープンチケット（30件）
+RedmineCLI issue list -a @me                       # 自分に割り当てられたチケット
+RedmineCLI issue list --assignee john.doe          # 特定ユーザーのチケット（または -a john.doe）
+RedmineCLI issue list --status closed              # クローズドチケット（または -s closed）
+RedmineCLI issue list --status all                 # 全ステータスのチケット（または -s all）
+RedmineCLI issue list --project myproject          # 特定プロジェクト（または -p myproject）
+RedmineCLI issue list --limit 50                   # 表示件数指定（または -L 50）
+RedmineCLI issue list --json                       # JSON形式で出力
+RedmineCLI issue list -a @me -s open -p myproject # 複数条件の組み合わせ
+RedmineCLI issue list --web                        # ブラウザで開く（または -w）
+RedmineCLI issue list -a @me --web                # 条件付きでブラウザで開く
+
+RedmineCLI issue view <ID> [--json] [--web]
+RedmineCLI issue create [-p PROJECT] [-t TITLE] [--description DESC] [-a USER] [--web]
+RedmineCLI issue edit <ID> [-s STATUS] [-a USER/@me] [--done-ratio N] [--web]
+RedmineCLI issue comment <ID> [-m MESSAGE]
 
 # 設定管理
 RedmineCLI config set <KEY> <VALUE>
@@ -162,11 +176,19 @@ RedmineCLI --licenses
 
 ## ブラウザサポート
 
-本ツールはCLIアプリケーションのため、ブラウザサポートは不要です。
-ただし、以下の環境要件があります。
+本ツールはCLIアプリケーションですが、--webオプションによりWebブラウザとの連携が可能です。
 
+### CLI環境要件
 - ターミナルエミュレータ: ANSI エスケープシーケンスをサポートする標準的なターミナル
 - 文字エンコーディング: UTF-8対応
 - OS: Windows, macOS, Linux（主要なディストリビューション）
 - ネットワーク: HTTPS通信が可能な環境
 - 言語: 英語のみ対応（ghコマンドと同様）
+
+### --webオプション利用時の要件
+- デフォルトブラウザが設定されていること
+- ブラウザ起動コマンド:
+  - Windows: `start` コマンド
+  - macOS: `open` コマンド
+  - Linux: `xdg-open` コマンド
+- Redmine WebUIへの別途ログインが必要（APIキー認証とは独立）

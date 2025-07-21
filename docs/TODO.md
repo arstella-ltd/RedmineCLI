@@ -139,14 +139,14 @@
   - **Refactor**: UIロジックの分離とテスタビリティの向上
   - _要件: 1_
 
-- [ ] 6. チケット一覧表示コマンドの実装（TDD）
+- [x] 6. チケット一覧表示コマンドの実装（TDD）
   - **Red**: IssueListCommandのテストを先に作成
     - List_Should_ReturnAssignedIssues_When_NoOptionsSpecified
     - List_Should_ReturnFilteredIssues_When_StatusIsSpecified
     - List_Should_LimitResults_When_LimitOptionIsSet
     - List_Should_FormatAsJson_When_JsonOptionIsSet
   - **Green**: テストを通すための実装
-    - `issue list`コマンドの基本実装
+    - `issue list`コマンドの基本実装（デフォルトで全オープンチケット表示）
     - フィルタリングオプション（assignee、status、project）の実装
     - ページネーション対応（limit、offset）
     - TableFormatterとJsonFormatterの実装
@@ -159,12 +159,14 @@
     - View_Should_ShowHistory_When_JournalsExist
     - View_Should_ReturnError_When_IssueNotFound
     - View_Should_FormatAsJson_When_JsonOptionIsSet
+    - View_Should_OpenBrowser_When_WebOptionIsSet
   - **Green**: テストを通すための実装
     - `issue view`コマンドの実装
     - チケット履歴（journals）の表示機能
     - Spectre.Consoleによる整形された出力
     - JSON出力オプションの実装
-  - **Refactor**: 出力ロジックの共通化
+    - --webオプションによるブラウザ起動機能
+  - **Refactor**: 出力ロジックの共通化、ブラウザ起動処理の抽象化
   - _要件: 3_
 
 - [ ] 8. チケット作成コマンドの実装（TDD）
@@ -173,12 +175,16 @@
     - Create_Should_CreateIssue_When_OptionsProvided
     - Create_Should_ShowUrl_When_IssueCreated
     - Create_Should_ValidateInput_When_RequiredFieldsMissing
+    - Create_Should_OpenBrowser_When_WebOptionIsSet
+    - Create_Should_SetAssigneeToMe_When_AssigneeIsAtMe
   - **Green**: テストを通すための実装
     - `issue create`コマンドの実装
     - 対話的な入力モード（プロジェクト選択、タイトル、説明入力）
-    - コマンドラインオプションによる非対話的作成
+    - コマンドラインオプションによる非対話的作成（-p, -t, -a）
+    - @me特殊値の処理（担当者指定時）
     - 作成成功時のURL表示
-  - **Refactor**: 入力検証ロジックの改善
+    - --webオプションによる新規作成ページのブラウザ起動
+  - **Refactor**: 入力検証ロジックの改善、@me処理の共通化
   - _要件: 4_
 
 - [ ] 9. チケット更新コマンドの実装（TDD）
@@ -187,12 +193,16 @@
     - Edit_Should_UpdateAssignee_When_AssigneeOptionProvided
     - Edit_Should_UpdateProgress_When_DoneRatioProvided
     - Edit_Should_ShowConfirmation_When_UpdateSuccessful
+    - Edit_Should_OpenBrowser_When_WebOptionIsSet
+    - Edit_Should_SetAssigneeToMe_When_AssigneeIsAtMe
   - **Green**: テストを通すための実装
     - `issue edit`コマンドの実装
-    - ステータス、担当者、進捗率の更新機能
+    - ステータス、担当者、進捗率の更新機能（-s, -a, --done-ratio）
+    - @me特殊値の処理（担当者変更時）
     - 対話的な更新内容選択UI
     - 部分的な更新（PATCH）の実装
-  - **Refactor**: 更新ロジックの統合と最適化
+    - --webオプションによる編集ページのブラウザ起動
+  - **Refactor**: 更新ロジックの統合と最適化、@me処理の共通化
   - _要件: 5_
 
 - [ ] 10. コメント追加コマンドの実装（TDD）
@@ -204,7 +214,7 @@
   - **Green**: テストを通すための実装
     - `issue comment`コマンドの実装
     - エディタ統合（$EDITOR環境変数の利用）
-    - メッセージオプションによる直接入力
+    - メッセージオプションによる直接入力（-m）
     - コメント追加確認メッセージ
   - **Refactor**: エディタ統合ロジックの改善
   - _要件: 6_
@@ -346,6 +356,16 @@
 - TrimmerRootAssemblyにVYamlを追加
 - 最終バイナリサイズ: 15MB（デバッグシンボルを除く）
 - アプリケーションは正常に動作し、すべての機能が利用可能
+
+### タスク6完了（2025-07-21）
+- TDD手法（Red→Green→Refactor）に従って実装
+- IssueCommandのテスト10件を作成（一覧表示、フィルタリング、ページネーション、フォーマット）
+- GitHub CLI準拠の仕様に変更（デフォルトで全オープンチケット表示）
+- IssueFilterモデルによるフィルタリング機能の実装
+- TableFormatterとJsonFormatterインターフェースの実装
+- GetCurrentUserAsync APIの追加（自分のチケット表示時に使用）
+- すべてのテスト（60件）が成功
+- Native AOTビルド成功：起動時間17ms、バイナリサイズ15MB
 
 ## 使用方法
 
