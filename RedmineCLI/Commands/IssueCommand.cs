@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using RedmineCLI.ApiClient;
+using RedmineCLI.Exceptions;
 using RedmineCLI.Formatters;
 using RedmineCLI.Models;
 using RedmineCLI.Services;
@@ -81,6 +82,30 @@ public class IssueCommand
         });
 
         command.Add(listCommand);
+
+        // View command
+        var viewCommand = new Command("view", "View issue details");
+        var idArgument = new Argument<int>("ID");
+        idArgument.Description = "Issue ID";
+        var viewJsonOption = new Option<bool>("--json") { Description = "Output in JSON format" };
+        var viewWebOption = new Option<bool>("--web") { Description = "Open in web browser" };
+        viewWebOption.Aliases.Add("-w");
+
+        viewCommand.Add(idArgument);
+        viewCommand.Add(viewJsonOption);
+        viewCommand.Add(viewWebOption);
+
+        viewCommand.SetAction(async (parseResult) =>
+        {
+            var id = parseResult.GetValue(idArgument);
+            var json = parseResult.GetValue(viewJsonOption);
+            var web = parseResult.GetValue(viewWebOption);
+            
+            Environment.ExitCode = await issueCommand.ViewAsync(id, json, web, CancellationToken.None);
+        });
+
+        command.Add(viewCommand);
+        
         return command;
     }
 
@@ -131,17 +156,10 @@ public class IssueCommand
             // Handle --web option
             if (web)
             {
-                var activeProfile = await _configService.GetActiveProfileAsync();
-                if (activeProfile?.Url == null)
-                {
-                    AnsiConsole.MarkupLine("[red]Error: No active profile found. Please login first.[/]");
-                    return 1;
-                }
-
-                var url = BuildIssuesUrl(activeProfile.Url, filter);
-                OpenInBrowser(url);
-                AnsiConsole.MarkupLine($"[green]Opening issues in browser: {url}[/]");
-                return 0;
+                return await OpenInBrowserAsync(
+                    profile => BuildIssuesUrl(profile.Url, filter),
+                    "issues",
+                    cancellationToken);
             }
 
             var issues = await _apiClient.GetIssuesAsync(filter, cancellationToken);
@@ -285,6 +303,77 @@ public class IssueCommand
         {
             AnsiConsole.MarkupLine($"[yellow]Warning: Could not open browser automatically. Please open this URL manually: {url}[/]");
             AnsiConsole.MarkupLine($"[dim]Error: {ex.Message}[/]");
+        }
+    }
+
+    private async Task<int> OpenInBrowserAsync(
+        Func<Models.Profile, string> urlBuilder,
+        string resourceType,
+        CancellationToken cancellationToken)
+    {
+        var profile = await _configService.GetActiveProfileAsync();
+        if (profile == null)
+        {
+            AnsiConsole.MarkupLine("[red]Error:[/] No active profile found. Please run 'redmine auth login' first.");
+            return 1;
+        }
+
+        var url = urlBuilder(profile);
+        _logger.LogDebug("Opening {ResourceType} in browser: {Url}", resourceType, url);
+        OpenInBrowser(url);
+        AnsiConsole.MarkupLine($"[green]Opening {resourceType} in browser: {url}[/]");
+        return 0;
+    }
+
+    public async Task<int> ViewAsync(int issueId, bool json, bool web, CancellationToken cancellationToken)
+    {
+        try
+        {
+            _logger.LogDebug("Viewing issue {IssueId}", issueId);
+
+            // Handle web option
+            if (web)
+            {
+                return await OpenInBrowserAsync(
+                    profile => $"{profile.Url.TrimEnd('/')}/issues/{issueId}",
+                    "issue",
+                    cancellationToken);
+            }
+
+            // Fetch issue details with journals
+            var issue = await _apiClient.GetIssueAsync(issueId, true, cancellationToken);
+
+            // Format output
+            if (json)
+            {
+                _jsonFormatter.FormatIssueDetails(issue);
+            }
+            else
+            {
+                _tableFormatter.FormatIssueDetails(issue);
+            }
+
+            return 0;
+        }
+        catch (RedmineApiException ex)
+        {
+            _logger.LogError(ex, "API error while viewing issue {IssueId}", issueId);
+            
+            if (ex.StatusCode == 404)
+            {
+                AnsiConsole.MarkupLine($"[red]Error:[/] Issue #{issueId} not found.");
+            }
+            else
+            {
+                AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+            }
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while viewing issue {IssueId}", issueId);
+            AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+            return 1;
         }
     }
 }

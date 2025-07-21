@@ -153,7 +153,7 @@
   - **Refactor**: フォーマッターの抽象化とコードの整理
   - _要件: 2_
 
-- [ ] 7. チケット詳細表示コマンドの実装（TDD）
+- [x] 7. チケット詳細表示コマンドの実装（TDD）
   - **Red**: IssueViewCommandのテストを先に作成
     - View_Should_ShowIssueDetails_When_ValidIdProvided
     - View_Should_ShowHistory_When_JournalsExist
@@ -374,6 +374,18 @@
 - コンパイラ警告修正（CS8602, CS1998）
 - すべてのテスト（62件）が成功
 - Native AOTビルド成功：起動時間17ms、バイナリサイズ15MB
+
+### タスク7完了（2025-07-21）
+- TDD手法（Red→Green→Refactor）に従って実装
+- テストケース7件を作成（詳細表示、履歴表示、エラー処理、JSON出力、ブラウザ起動）
+- `issue view <ID>`コマンドの実装
+- Journalモデルを追加してチケット履歴表示機能を実装
+- GetIssueAsyncのオーバーロード追加（includeJournalsパラメータ）
+- Spectre.Consoleによる美しいチケット詳細表示（パネル、グリッド、履歴）
+- --web/-wオプションによる個別チケットのブラウザ表示
+- ブラウザ起動処理の共通化（OpenInBrowserAsyncメソッド）
+- すべてのテスト（71件）が成功
+- Native AOTビルド成功、実行確認済み
 
 ## 使用方法
 

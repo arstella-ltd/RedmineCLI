@@ -17,6 +17,8 @@ public interface IRedmineApiClient
     Task<User> GetCurrentUserAsync(CancellationToken cancellationToken = default);
 
     Task<Issue> GetIssueAsync(int id, CancellationToken cancellationToken = default);
+    
+    Task<Issue> GetIssueAsync(int id, bool includeJournals, CancellationToken cancellationToken = default);
 
     Task<Issue> CreateIssueAsync(Issue issue, CancellationToken cancellationToken = default);
 

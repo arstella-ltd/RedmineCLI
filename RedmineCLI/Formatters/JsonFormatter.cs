@@ -19,4 +19,10 @@ public class JsonFormatter : IJsonFormatter
         var json = JsonSerializer.Serialize(issues, RedmineJsonContext.Default.ListIssue);
         AnsiConsole.WriteLine(json);
     }
+
+    public void FormatIssueDetails(Issue issue)
+    {
+        var json = JsonSerializer.Serialize(issue, RedmineJsonContext.Default.Issue);
+        AnsiConsole.WriteLine(json);
+    }
 }

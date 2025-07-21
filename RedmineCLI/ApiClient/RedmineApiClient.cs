@@ -60,6 +60,19 @@ public class RedmineApiClient : IRedmineApiClient
             $"Issue with ID {id} not found");
     }
 
+    public async Task<Issue> GetIssueAsync(int id, bool includeJournals, CancellationToken cancellationToken = default)
+    {
+        var path = includeJournals 
+            ? $"/issues/{id}.json?include=journals" 
+            : $"/issues/{id}.json";
+            
+        var issueResponse = await GetAsync(path, RedmineJsonContext.Default.IssueResponse, $"get issue {id}", cancellationToken);
+        
+        return issueResponse?.Issue ?? throw new RedmineApiException(
+            (int)HttpStatusCode.NotFound,
+            $"Issue with ID {id} not found");
+    }
+
     public async Task<Issue> CreateIssueAsync(Issue issue, CancellationToken cancellationToken = default)
     {
         var path = "/issues.json";

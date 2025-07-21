@@ -35,6 +35,9 @@ public class Issue : IEquatable<Issue>
     [JsonPropertyName("done_ratio")]
     public int? DoneRatio { get; set; }
 
+    [JsonPropertyName("journals")]
+    public List<Journal>? Journals { get; set; }
+
     public void Validate()
     {
         if (string.IsNullOrWhiteSpace(Subject))

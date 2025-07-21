@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using NSubstitute;
 using RedmineCLI.ApiClient;
 using RedmineCLI.Commands;
+using RedmineCLI.Exceptions;
 using RedmineCLI.Formatters;
 using RedmineCLI.Models;
 using RedmineCLI.Services;
@@ -433,6 +434,196 @@ public class IssueCommandTests
         // Assert
         result.Should().Be(1);
         await _configService.Received(1).GetActiveProfileAsync();
+    }
+
+    #endregion
+
+    #region View Command Tests
+
+    [Fact]
+    public async Task View_Should_ShowIssueDetails_When_ValidIdProvided()
+    {
+        // Arrange
+        var issueId = 123;
+        var issue = new Issue
+        {
+            Id = issueId,
+            Subject = "Test Issue",
+            Description = "This is a test issue description",
+            Status = new IssueStatus { Id = 1, Name = "New" },
+            Priority = new Priority { Id = 2, Name = "Normal" },
+            AssignedTo = new User { Id = 1, Name = "John Doe" },
+            Project = new Project { Id = 10, Name = "Test Project" },
+            CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0),
+            UpdatedOn = new DateTime(2024, 1, 2, 15, 30, 0),
+            DoneRatio = 50,
+            Journals = new List<Journal>()
+        };
+
+        _apiClient.GetIssueAsync(issueId, true, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issue));
+
+        // Act
+        var result = await _issueCommand.ViewAsync(issueId, false, false, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _apiClient.Received(1).GetIssueAsync(issueId, true, Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssueDetails(issue);
+    }
+
+    [Fact]
+    public async Task View_Should_ShowHistory_When_JournalsExist()
+    {
+        // Arrange
+        var issueId = 123;
+        var issue = new Issue
+        {
+            Id = issueId,
+            Subject = "Test Issue with History",
+            Description = "Issue with journals",
+            Status = new IssueStatus { Id = 1, Name = "New" },
+            Project = new Project { Id = 10, Name = "Test Project" },
+            CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0),
+            UpdatedOn = new DateTime(2024, 1, 3, 16, 45, 0),
+            Journals = new List<Journal>
+            {
+                new Journal
+                {
+                    Id = 1,
+                    User = new User { Id = 2, Name = "Jane Smith" },
+                    Notes = "Updated the status",
+                    CreatedOn = new DateTime(2024, 1, 2, 14, 0, 0),
+                    Details = new List<JournalDetail>
+                    {
+                        new JournalDetail
+                        {
+                            Property = "attr",
+                            Name = "status_id",
+                            OldValue = "1",
+                            NewValue = "2"
+                        }
+                    }
+                },
+                new Journal
+                {
+                    Id = 2,
+                    User = new User { Id = 3, Name = "Bob Johnson" },
+                    Notes = "Added a comment",
+                    CreatedOn = new DateTime(2024, 1, 3, 16, 45, 0),
+                    Details = null
+                }
+            }
+        };
+
+        _apiClient.GetIssueAsync(issueId, true, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issue));
+
+        // Act
+        var result = await _issueCommand.ViewAsync(issueId, false, false, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _apiClient.Received(1).GetIssueAsync(issueId, true, Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssueDetails(issue);
+    }
+
+    [Fact]
+    public async Task View_Should_ReturnError_When_IssueNotFound()
+    {
+        // Arrange
+        var issueId = 999;
+        _apiClient.GetIssueAsync(issueId, true, Arg.Any<CancellationToken>())
+            .Returns(Task.FromException<Issue>(new RedmineApiException(404, "Issue not found")));
+
+        // Act
+        var result = await _issueCommand.ViewAsync(issueId, false, false, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(1);
+        await _apiClient.Received(1).GetIssueAsync(issueId, true, Arg.Any<CancellationToken>());
+        _tableFormatter.DidNotReceive().FormatIssueDetails(Arg.Any<Issue>());
+        _jsonFormatter.DidNotReceive().FormatIssueDetails(Arg.Any<Issue>());
+    }
+
+    [Fact]
+    public async Task View_Should_FormatAsJson_When_JsonOptionIsSet()
+    {
+        // Arrange
+        var issueId = 123;
+        var issue = new Issue
+        {
+            Id = issueId,
+            Subject = "Test Issue",
+            Description = "JSON format test",
+            Status = new IssueStatus { Id = 1, Name = "New" },
+            Project = new Project { Id = 10, Name = "Test Project" },
+            CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0),
+            UpdatedOn = new DateTime(2024, 1, 2, 15, 30, 0),
+            Journals = new List<Journal>()
+        };
+
+        _apiClient.GetIssueAsync(issueId, true, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issue));
+
+        // Act
+        var result = await _issueCommand.ViewAsync(issueId, true, false, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _apiClient.Received(1).GetIssueAsync(issueId, true, Arg.Any<CancellationToken>());
+        _jsonFormatter.Received(1).FormatIssueDetails(issue);
+        _tableFormatter.DidNotReceive().FormatIssueDetails(Arg.Any<Issue>());
+    }
+
+    [Fact]
+    public async Task View_Should_OpenBrowser_When_WebOptionIsSet()
+    {
+        // Arrange
+        var issueId = 123;
+        var profile = new Profile { Url = "https://redmine.example.com", ApiKey = "test-key" };
+        _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
+
+        // Act
+        var result = await _issueCommand.ViewAsync(issueId, false, true, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _configService.Received(1).GetActiveProfileAsync();
+        // Note: We can't easily test browser opening in unit tests, but we verify the success path
+        await _apiClient.DidNotReceive().GetIssueAsync(Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task View_Should_ReturnError_When_WebOptionSetButNoActiveProfile()
+    {
+        // Arrange
+        var issueId = 123;
+        _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(null));
+
+        // Act
+        var result = await _issueCommand.ViewAsync(issueId, false, true, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(1);
+        await _configService.Received(1).GetActiveProfileAsync();
+    }
+
+    [Fact]
+    public void ViewCommand_Should_HaveCorrectOptions_When_Created()
+    {
+        // Arrange & Act
+        var command = IssueCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var viewCommand = command.Subcommands.FirstOrDefault(sc => sc.Name == "view");
+
+        // Assert
+        viewCommand.Should().NotBeNull();
+        var optionNames = viewCommand!.Options.Select(o => o.Name).ToList();
+        optionNames.Should().Contain("--json");
+        optionNames.Should().Contain("--web");
+        
+        var argNames = viewCommand.Arguments.Select(a => a.Name).ToList();
+        argNames.Should().Contain("ID");
     }
 
     #endregion
