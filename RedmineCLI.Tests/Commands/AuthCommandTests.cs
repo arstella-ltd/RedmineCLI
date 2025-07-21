@@ -41,7 +41,7 @@ public class AuthCommandTests
         var testApiKey = "test-api-key-12345";
         var testProfileName = "default";
 
-        _apiClient.TestConnectionAsync(Arg.Any<CancellationToken>())
+        _apiClient.TestConnectionAsync(testUrl, testApiKey, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(true));
 
         var config = new Config
@@ -87,7 +87,7 @@ public class AuthCommandTests
         var testApiKey = "invalid-api-key";
         var testProfileName = "default";
 
-        _apiClient.TestConnectionAsync(Arg.Any<CancellationToken>())
+        _apiClient.TestConnectionAsync(testUrl, testApiKey, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(false));
 
         var config = new Config
@@ -114,7 +114,7 @@ public class AuthCommandTests
         var testApiKey = "test-api-key-12345";
         var testProfileName = "default";
 
-        _apiClient.TestConnectionAsync(Arg.Any<CancellationToken>())
+        _apiClient.TestConnectionAsync(testUrl, testApiKey, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(true));
 
         var emptyConfig = new Config
@@ -304,7 +304,7 @@ public class AuthCommandTests
             Preferences = new Preferences()
         };
         _configService.LoadConfigAsync().Returns(Task.FromResult(config));
-        _apiClient.TestConnectionAsync(Arg.Any<CancellationToken>())
+        _apiClient.TestConnectionAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(true));
 
         // Act & Assert
