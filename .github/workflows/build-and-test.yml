@@ -55,23 +55,23 @@ jobs:
           - name: "Windows x64"
             os: windows-latest
             rid: win-x64
-            output: RedmineCLI.exe
+            output: redmine.exe
           - name: "macOS x64"
             os: macos-latest
             rid: osx-x64
-            output: RedmineCLI
+            output: redmine
           - name: "macOS ARM64"
             os: macos-latest
             rid: osx-arm64
-            output: RedmineCLI
+            output: redmine
           - name: "Linux x64"
             os: ubuntu-latest
             rid: linux-x64
-            output: RedmineCLI
+            output: redmine
           - name: "Linux ARM64"
             os: ubuntu-latest
             rid: linux-arm64
-            output: RedmineCLI
+            output: redmine
 
     steps:
     - name: Checkout code
