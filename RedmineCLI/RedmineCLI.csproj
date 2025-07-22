@@ -53,7 +53,7 @@
 
   <!-- AOT warning suppressions for known safe usages -->
   <ItemGroup>
-    <TrimmerRootAssembly Include="RedmineCLI" />
+    <TrimmerRootAssembly Include="redmine" />
     <!-- Preserve VYaml for serialization -->
     <TrimmerRootAssembly Include="VYaml" />
   </ItemGroup>
