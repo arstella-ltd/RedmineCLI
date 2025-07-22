@@ -195,4 +195,35 @@ public class ProgramTests
         // config command might show help and return 0
         result.Should().Be(expectedCode);
     }
+
+    [Fact]
+    public async Task Main_Should_HandleAtSymbol_Without_ResponseFileError()
+    {
+        // Arrange
+        // This test verifies that @me is not interpreted as a response file
+        var args = new[] { "issue", "list", "--assignee", "@me", "--help" };
+
+        // Act
+        var result = await Program.Main(args);
+
+        // Assert
+        // The command should show help (return 0) without trying to interpret @me as a response file
+        // If response file handling was not disabled, this would fail with "Response file 'me' not found"
+        result.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Main_Should_AcceptAtMeInAssigneeOption()
+    {
+        // Arrange
+        // Additional test to verify @me works in different contexts
+        var args = new[] { "issue", "create", "--assignee", "@me", "--help" };
+
+        // Act
+        var result = await Program.Main(args);
+
+        // Assert
+        // Should show help without response file error
+        result.Should().Be(0);
+    }
 }
