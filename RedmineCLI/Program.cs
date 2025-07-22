@@ -1,5 +1,4 @@
 using System.CommandLine;
-using System.CommandLine.Help;
 using System.Linq;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -111,9 +110,30 @@ public class Program
                 !parseResult.Tokens.Any() && 
                 !parseResult.GetValue(debugOption))
             {
-                var helpBuilder = new HelpBuilder(rootCommand);
-                helpBuilder.Write(Console.Out);
+                // Manually display help text
+                Console.WriteLine("Description:");
+                Console.WriteLine($"  {rootCommand.Description}");
+                Console.WriteLine();
+                Console.WriteLine("Usage:");
+                Console.WriteLine("  RedmineCLI [command] [options]");
+                Console.WriteLine();
+                Console.WriteLine("Options:");
+                foreach (var option in rootCommand.Options)
+                {
+                    var aliases = string.Join(", ", option.Aliases);
+                    Console.WriteLine($"  {aliases,-20} {option.Description}");
+                }
+                Console.WriteLine();
+                Console.WriteLine("Commands:");
+                foreach (var command in rootCommand.Subcommands)
+                {
+                    Console.WriteLine($"  {command.Name,-20} {command.Description}");
+                }
+                Console.WriteLine();
+                Console.WriteLine("Run 'RedmineCLI [command] --help' for more information on a command.");
+                
                 Environment.ExitCode = 0;
+                return;
             }
         });
 
