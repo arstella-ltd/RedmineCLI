@@ -165,7 +165,7 @@ jobs:
 
     - name: Check binary size
       run: |
-        BINARY_SIZE=$(stat -c%s "./bin/RedmineCLI")
+        BINARY_SIZE=$(stat -c%s "./bin/redmine")
         BINARY_SIZE_MB=$((BINARY_SIZE / 1024 / 1024))
         echo "Binary size: ${BINARY_SIZE_MB}MB"
         
@@ -178,16 +178,16 @@ jobs:
 
     - name: Measure startup time
       run: |
-        chmod +x ./bin/RedmineCLI
+        chmod +x ./bin/redmine
         
         # Warm up
-        ./bin/RedmineCLI --version > /dev/null
+        ./bin/redmine --version > /dev/null
         
         # Measure startup time (5 iterations)
         TOTAL_TIME=0
         for i in {1..5}; do
           START_TIME=$(date +%s%N)
-          ./bin/RedmineCLI --version > /dev/null
+          ./bin/redmine --version > /dev/null
           END_TIME=$(date +%s%N)
           TIME_MS=$(((END_TIME - START_TIME) / 1000000))
           TOTAL_TIME=$((TOTAL_TIME + TIME_MS))
