@@ -105,6 +105,17 @@ public class Program
                 return;
             }
 
+            // Check if no arguments are provided (except the executable itself)
+            if (parseResult.CommandResult.Command == rootCommand && 
+                args.Length == 0 && 
+                !parseResult.GetValue(debugOption))
+            {
+                // Display help when launched without arguments
+                rootCommand.InvokeAsync(new[] { "--help" });
+                Environment.ExitCode = 0;
+                return;
+            }
+
             // Default action - no specific handling needed
         });
 
