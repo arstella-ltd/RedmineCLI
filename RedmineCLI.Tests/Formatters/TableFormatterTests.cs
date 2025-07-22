@@ -1,7 +1,10 @@
 using FluentAssertions;
 
+using NSubstitute;
+
 using RedmineCLI.Formatters;
 using RedmineCLI.Models;
+using RedmineCLI.Utils;
 
 using Xunit;
 
@@ -10,10 +13,15 @@ namespace RedmineCLI.Tests.Formatters;
 public class TableFormatterTests
 {
     private readonly TableFormatter _formatter;
+    private readonly ITimeHelper _timeHelper;
 
     public TableFormatterTests()
     {
-        _formatter = new TableFormatter();
+        _timeHelper = Substitute.For<ITimeHelper>();
+        _timeHelper.FormatTime(Arg.Any<DateTime>(), Arg.Any<TimeFormat>())
+            .Returns(callInfo => callInfo.ArgAt<DateTime>(0).ToString("yyyy-MM-dd HH:mm"));
+        
+        _formatter = new TableFormatter(_timeHelper);
     }
 
     [Fact]

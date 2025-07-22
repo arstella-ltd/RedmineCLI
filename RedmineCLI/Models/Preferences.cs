@@ -11,4 +11,5 @@ public partial class Preferences
     public string DateFormat { get; set; } = "yyyy-MM-dd HH:mm:ss";
     public string? Editor { get; set; }
     public string TimeFormat { get; set; } = "HH:mm:ss";
+    public TimeSettings Time { get; set; } = new();
 }

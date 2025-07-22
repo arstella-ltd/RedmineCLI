@@ -62,6 +62,7 @@ public class IssueCommand
         var jsonOption = new Option<bool>("--json") { Description = "Output in JSON format" };
         var webOption = new Option<bool>("--web") { Description = "Open in web browser" };
         webOption.Aliases.Add("-w");
+        var absoluteTimeOption = new Option<bool>("--absolute-time") { Description = "Display absolute time instead of relative time" };
 
         listCommand.Add(assigneeOption);
         listCommand.Add(statusOption);
@@ -70,6 +71,7 @@ public class IssueCommand
         listCommand.Add(offsetOption);
         listCommand.Add(jsonOption);
         listCommand.Add(webOption);
+        listCommand.Add(absoluteTimeOption);
 
         listCommand.SetAction(async (parseResult) =>
         {
@@ -80,8 +82,9 @@ public class IssueCommand
             var offset = parseResult.GetValue(offsetOption);
             var json = parseResult.GetValue(jsonOption);
             var web = parseResult.GetValue(webOption);
+            var absoluteTime = parseResult.GetValue(absoluteTimeOption);
 
-            Environment.ExitCode = await issueCommand.ListAsync(assignee, status, project, limit, offset, json, web, CancellationToken.None);
+            Environment.ExitCode = await issueCommand.ListAsync(assignee, status, project, limit, offset, json, web, absoluteTime, CancellationToken.None);
         });
 
         command.Add(listCommand);
@@ -93,18 +96,21 @@ public class IssueCommand
         var viewJsonOption = new Option<bool>("--json") { Description = "Output in JSON format" };
         var viewWebOption = new Option<bool>("--web") { Description = "Open in web browser" };
         viewWebOption.Aliases.Add("-w");
+        var viewAbsoluteTimeOption = new Option<bool>("--absolute-time") { Description = "Display absolute time instead of relative time" };
 
         viewCommand.Add(idArgument);
         viewCommand.Add(viewJsonOption);
         viewCommand.Add(viewWebOption);
+        viewCommand.Add(viewAbsoluteTimeOption);
 
         viewCommand.SetAction(async (parseResult) =>
         {
             var id = parseResult.GetValue(idArgument);
             var json = parseResult.GetValue(viewJsonOption);
             var web = parseResult.GetValue(viewWebOption);
+            var absoluteTime = parseResult.GetValue(viewAbsoluteTimeOption);
 
-            Environment.ExitCode = await issueCommand.ViewAsync(id, json, web, CancellationToken.None);
+            Environment.ExitCode = await issueCommand.ViewAsync(id, json, web, absoluteTime, CancellationToken.None);
         });
 
         command.Add(viewCommand);
@@ -203,6 +209,7 @@ public class IssueCommand
         int? offset,
         bool json,
         bool web,
+        bool absoluteTime,
         CancellationToken cancellationToken)
     {
         try
@@ -252,6 +259,29 @@ public class IssueCommand
             }
             else
             {
+                // Determine time format
+                TimeFormat timeFormat = TimeFormat.Relative;
+                
+                if (absoluteTime)
+                {
+                    timeFormat = TimeFormat.Absolute;
+                }
+                else
+                {
+                    // Check config setting
+                    var config = await _configService.LoadConfigAsync();
+                    if (config.Preferences?.Time?.Format != null)
+                    {
+                        timeFormat = config.Preferences.Time.Format.ToLower() switch
+                        {
+                            "absolute" => TimeFormat.Absolute,
+                            "utc" => TimeFormat.Utc,
+                            _ => TimeFormat.Relative
+                        };
+                    }
+                }
+                
+                _tableFormatter.SetTimeFormat(timeFormat);
                 _tableFormatter.FormatIssues(issues);
             }
 
@@ -424,7 +454,7 @@ public class IssueCommand
         return 0;
     }
 
-    public async Task<int> ViewAsync(int issueId, bool json, bool web, CancellationToken cancellationToken)
+    public async Task<int> ViewAsync(int issueId, bool json, bool web, bool absoluteTime, CancellationToken cancellationToken)
     {
         try
         {
@@ -449,6 +479,29 @@ public class IssueCommand
             }
             else
             {
+                // Determine time format
+                TimeFormat timeFormat = TimeFormat.Relative;
+                
+                if (absoluteTime)
+                {
+                    timeFormat = TimeFormat.Absolute;
+                }
+                else
+                {
+                    // Check config setting
+                    var config = await _configService.LoadConfigAsync();
+                    if (config.Preferences?.Time?.Format != null)
+                    {
+                        timeFormat = config.Preferences.Time.Format.ToLower() switch
+                        {
+                            "absolute" => TimeFormat.Absolute,
+                            "utc" => TimeFormat.Utc,
+                            _ => TimeFormat.Relative
+                        };
+                    }
+                }
+                
+                _tableFormatter.SetTimeFormat(timeFormat);
                 _tableFormatter.FormatIssueDetails(issue);
             }
 

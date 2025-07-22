@@ -239,7 +239,7 @@
     - 依存関係の自動検出
   - _要件: 9_
 
-- [ ] 12. 日時表示の改善 - 相対時刻表示とローカルタイムゾーン対応（TDD）
+- [x] 12. 日時表示の改善 - 相対時刻表示とローカルタイムゾーン対応（TDD）
   - **Red**: TimeHelperのテストを先に作成
     - GetRelativeTime_Should_ReturnMinutesAgo_When_LessThanHour
     - GetRelativeTime_Should_ReturnHoursAgo_When_LessThanDay  
@@ -472,6 +472,21 @@
 - Program.csにILicenseHelperのDI登録とライセンスオプション処理
 - すべてのテスト（104件）が成功
 - 要件9（ライセンス情報管理機能）の完全実装
+
+### タスク12完了（2025-07-22）
+- TDD手法（Red→Green→Refactor）に従って実装
+- TimeHelperTestsを作成し、テストケース14件を実装
+  - 相対時刻表示（just now, minutes ago, hours ago, days ago）
+  - 年内の日付表示（MMM dd）、前年の日付表示（MMM dd, yyyy）
+  - ローカル時刻変換、UTC時刻表示、カスタムフォーマット対応
+- ITimeHelperインターフェースとTimeHelperクラスの実装
+- TimeFormat列挙型とTimeSettingsモデルの追加
+- TableFormatterにTimeHelper依存性注入とSetTimeFormatメソッドを追加
+- IssueCommandに--absolute-timeオプションを追加（list、viewコマンド）
+- 設定ファイルからtime.formatを読み取る機能を実装
+- ConfigCommandを新規作成（config set/get/listコマンド）
+- すべての既存テストをアップデート（新しいパラメータに対応）
+- 要件2（日時表示の改善）の完全実装
 
 ## 使用方法
 

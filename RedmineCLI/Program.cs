@@ -42,7 +42,8 @@ public class Program
 
         var authCommand = AuthCommand.Create(configService, apiClient, authLogger);
         var issueCommand = IssueCommand.Create(apiClient, configService, tableFormatter, jsonFormatter, issueLogger);
-        var configCommand = new Command("config", "Manage configuration");
+        var configLogger = serviceProvider.GetRequiredService<ILogger<ConfigCommand>>();
+        var configCommand = ConfigCommand.Create(configService, configLogger);
 
         rootCommand.Add(authCommand);
         rootCommand.Add(issueCommand);
@@ -152,6 +153,9 @@ public class Program
 
         // Redmine API Client
         services.AddScoped<IRedmineApiClient, RedmineApiClient>();
+
+        // Utils
+        services.AddSingleton<ITimeHelper, TimeHelper>();
 
         // Formatters
         services.AddSingleton<ITableFormatter, TableFormatter>();

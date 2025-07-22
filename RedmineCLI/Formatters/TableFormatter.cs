@@ -1,4 +1,5 @@
 using RedmineCLI.Models;
+using RedmineCLI.Utils;
 
 using Spectre.Console;
 
@@ -6,6 +7,19 @@ namespace RedmineCLI.Formatters;
 
 public class TableFormatter : ITableFormatter
 {
+    private readonly ITimeHelper _timeHelper;
+    private TimeFormat _timeFormat = TimeFormat.Relative;
+    
+    public TableFormatter(ITimeHelper timeHelper)
+    {
+        _timeHelper = timeHelper;
+    }
+    
+    public void SetTimeFormat(TimeFormat format)
+    {
+        _timeFormat = format;
+    }
+    
     public void FormatIssues(List<Issue> issues)
     {
         if (issues.Count == 0)
@@ -30,7 +44,7 @@ public class TableFormatter : ITableFormatter
                 Markup.Escape(issue.Status?.Name ?? "Unknown"),
                 Markup.Escape(issue.AssignedTo?.Name ?? "Unassigned"),
                 Markup.Escape(issue.Project?.Name ?? "No Project"),
-                issue.UpdatedOn.ToString("yyyy-MM-dd HH:mm")
+                _timeHelper.FormatTime(issue.UpdatedOn, _timeFormat)
             );
         }
 
@@ -59,8 +73,8 @@ public class TableFormatter : ITableFormatter
         grid.AddRow("[bold]Assignee:[/]", Markup.Escape(issue.AssignedTo?.Name ?? "Unassigned"));
         grid.AddRow("[bold]Project:[/]", Markup.Escape(issue.Project?.Name ?? "No Project"));
         grid.AddRow("[bold]Progress:[/]", $"{issue.DoneRatio ?? 0}%");
-        grid.AddRow("[bold]Created:[/]", issue.CreatedOn.ToString("yyyy-MM-dd HH:mm"));
-        grid.AddRow("[bold]Updated:[/]", issue.UpdatedOn.ToString("yyyy-MM-dd HH:mm"));
+        grid.AddRow("[bold]Created:[/]", _timeHelper.FormatTime(issue.CreatedOn, _timeFormat));
+        grid.AddRow("[bold]Updated:[/]", _timeHelper.FormatTime(issue.UpdatedOn, _timeFormat));
 
         AnsiConsole.Write(grid);
         AnsiConsole.WriteLine();
@@ -80,7 +94,7 @@ public class TableFormatter : ITableFormatter
             foreach (var journal in issue.Journals.OrderBy(j => j.CreatedOn))
             {
                 AnsiConsole.WriteLine();
-                AnsiConsole.MarkupLine($"[grey]#{journal.Id} - {Markup.Escape(journal.User?.Name ?? "Unknown")} - {journal.CreatedOn:yyyy-MM-dd HH:mm}[/]");
+                AnsiConsole.MarkupLine($"[grey]#{journal.Id} - {Markup.Escape(journal.User?.Name ?? "Unknown")} - {_timeHelper.FormatTime(journal.CreatedOn, _timeFormat)}[/]");
 
                 // Show changes
                 if (journal.Details != null && journal.Details.Count > 0)
