@@ -564,7 +564,7 @@ public interface ITimeHelper
 // TimeFormat.cs
 public enum TimeFormat
 {
-    Relative,    // "2 hours ago"
+    Relative,    // "about 2 hours ago"
     Absolute,    // Local time "2025-01-22 09:30"
     Utc          // UTC time "2025-01-22 00:30 UTC"
 }
@@ -692,8 +692,8 @@ services.AddHttpClient<IRedmineApiClient, RedmineApiClient>()
 ```
 # テーブル形式の例（英語表示、デフォルト相対時刻）
 ID     STATUS        SUBJECT                           ASSIGNEE      UPDATED
-#1234  New           Implement login functionality     John Doe      2 hours ago
-#1235  In Progress   Review database design            Jane Smith    3 days ago
+#1234  New           Implement login functionality     John Doe      about 2 hours ago
+#1235  In Progress   Review database design            Jane Smith    about 3 days ago
 
 # テーブル形式の例（--absolute-time オプション使用時）
 ID     STATUS        SUBJECT                           ASSIGNEE      UPDATED
