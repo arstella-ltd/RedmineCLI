@@ -367,7 +367,7 @@
 - すべてのテスト（50件）が成功
 - Native AOTビルド成功：起動時間15ms、バイナリサイズ4.9MB達成
 - SetActionメソッドを使用したコマンドハンドラーの実装
-- 実行ファイル名: RedmineCLI（プロジェクト名と同じ）
+- 実行ファイル名: redmine（プロジェクト名・AssemblyNameはRedmineCLIを維持）
 - 接続テストの修正：URL/APIキーを直接指定できるオーバーロードを追加
 
 ### Native AOT対応改善（2025-07-21）
@@ -500,10 +500,10 @@
 ## 使用方法
 
 ### 実行可能ファイル名
-- 実行可能ファイル名は `RedmineCLI` （プロジェクト名と同じ）
+- 実行可能ファイル名は `redmine` （プロジェクト名は`RedmineCLI`を維持）
 - Native AOTビルド後の実行例
   ```bash
-  ./bin/Release/net9.0/linux-x64/publish/RedmineCLI auth login
-  ./bin/Release/net9.0/linux-x64/publish/RedmineCLI auth status
-  ./bin/Release/net9.0/linux-x64/publish/RedmineCLI auth logout
+  ./bin/Release/net9.0/linux-x64/publish/redmine auth login
+  ./bin/Release/net9.0/linux-x64/publish/redmine auth status
+  ./bin/Release/net9.0/linux-x64/publish/redmine auth logout
   ```

@@ -730,7 +730,7 @@ History:
 Please run 'redmine auth login' to set up your credentials
 
 # バージョン情報（--version）
-RedmineCLI v1.0.0
+redmine v1.0.0 (RedmineCLI)
 Built with .NET 9.0 (Native AOT)
 
 Dependencies:
@@ -740,7 +740,7 @@ Dependencies:
 
 # ライセンス情報（--licenses）
 RedmineCLI - MIT License
-Copyright (c) 2025 [Your Name/Organization]
+Copyright (c) 2025 Arstella ltd.
 
 Third-party licenses:
 See THIRD-PARTY-NOTICES.txt for full license texts.
