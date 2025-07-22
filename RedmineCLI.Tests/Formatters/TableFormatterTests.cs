@@ -20,7 +20,7 @@ public class TableFormatterTests
         _timeHelper = Substitute.For<ITimeHelper>();
         _timeHelper.FormatTime(Arg.Any<DateTime>(), Arg.Any<TimeFormat>())
             .Returns(callInfo => callInfo.ArgAt<DateTime>(0).ToString("yyyy-MM-dd HH:mm"));
-        
+
         _formatter = new TableFormatter(_timeHelper);
     }
 

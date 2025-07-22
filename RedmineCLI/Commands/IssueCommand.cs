@@ -261,7 +261,7 @@ public class IssueCommand
             {
                 // Determine time format
                 TimeFormat timeFormat = TimeFormat.Relative;
-                
+
                 if (absoluteTime)
                 {
                     timeFormat = TimeFormat.Absolute;
@@ -280,7 +280,7 @@ public class IssueCommand
                         };
                     }
                 }
-                
+
                 _tableFormatter.SetTimeFormat(timeFormat);
                 _tableFormatter.FormatIssues(issues);
             }
@@ -481,7 +481,7 @@ public class IssueCommand
             {
                 // Determine time format
                 TimeFormat timeFormat = TimeFormat.Relative;
-                
+
                 if (absoluteTime)
                 {
                     timeFormat = TimeFormat.Absolute;
@@ -500,7 +500,7 @@ public class IssueCommand
                         };
                     }
                 }
-                
+
                 _tableFormatter.SetTimeFormat(timeFormat);
                 _tableFormatter.FormatIssueDetails(issue);
             }

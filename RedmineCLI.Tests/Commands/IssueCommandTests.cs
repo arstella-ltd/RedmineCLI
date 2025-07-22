@@ -34,6 +34,15 @@ public class IssueCommandTests
         _jsonFormatter = Substitute.For<IJsonFormatter>();
         _logger = Substitute.For<ILogger<IssueCommand>>();
 
+        // Setup default config to avoid null reference
+        var config = new Config
+        {
+            CurrentProfile = "default",
+            Profiles = new Dictionary<string, Profile>(),
+            Preferences = new Preferences()
+        };
+        _configService.LoadConfigAsync().Returns(Task.FromResult(config));
+
         _issueCommand = new IssueCommand(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
     }
 

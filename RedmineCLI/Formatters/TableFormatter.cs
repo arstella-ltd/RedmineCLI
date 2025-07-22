@@ -9,17 +9,17 @@ public class TableFormatter : ITableFormatter
 {
     private readonly ITimeHelper _timeHelper;
     private TimeFormat _timeFormat = TimeFormat.Relative;
-    
+
     public TableFormatter(ITimeHelper timeHelper)
     {
         _timeHelper = timeHelper;
     }
-    
+
     public void SetTimeFormat(TimeFormat format)
     {
         _timeFormat = format;
     }
-    
+
     public void FormatIssues(List<Issue> issues)
     {
         if (issues.Count == 0)
