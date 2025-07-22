@@ -1,5 +1,5 @@
 <linker>
-  <assembly fullname="RedmineCLI">
+  <assembly fullname="redmine">
     <!-- Preserve all model types with their members -->
     <type fullname="RedmineCLI.Models.Config" preserve="all" />
     <type fullname="RedmineCLI.Models.Profile" preserve="all" />

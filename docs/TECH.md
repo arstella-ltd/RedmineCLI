@@ -147,58 +147,59 @@ dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true
 
 # グローバルツールとしてインストール
 # 注: .csprojファイルで<PackageId>RedmineCLI</PackageId>と<ToolCommandName>redmine</ToolCommandName>を設定
+# インストール後は 'redmine' コマンドとして使用可能
 dotnet pack
 dotnet tool install --global RedmineCLI
 
 # 使用例
-RedmineCLI auth login
-RedmineCLI auth status
-RedmineCLI auth logout
+redmine auth login
+redmine auth status
+redmine auth logout
 
 # チケット操作（ショートハンドオプション対応）
-RedmineCLI issue list                              # プロジェクトの全オープンチケット（30件、相対時刻表示）
-RedmineCLI issue list -a @me                       # 自分に割り当てられたチケット
-RedmineCLI issue list --assignee john.doe          # 特定ユーザーのチケット（または -a john.doe）
-RedmineCLI issue list --status closed              # クローズドチケット（または -s closed）
-RedmineCLI issue list --status all                 # 全ステータスのチケット（または -s all）
-RedmineCLI issue list --project myproject          # 特定プロジェクト（または -p myproject）
-RedmineCLI issue list --limit 50                   # 表示件数指定（または -L 50）
-RedmineCLI issue list --json                       # JSON形式で出力（ISO 8601 UTC時刻）
-RedmineCLI issue list --absolute-time              # ローカル時刻で表示
-RedmineCLI issue list -a @me -s open -p myproject # 複数条件の組み合わせ
-RedmineCLI issue list --web                        # ブラウザで開く（または -w）
-RedmineCLI issue list -a @me --web                # 条件付きでブラウザで開く
+redmine issue list                              # プロジェクトの全オープンチケット（30件、相対時刻表示）
+redmine issue list -a @me                       # 自分に割り当てられたチケット
+redmine issue list --assignee john.doe          # 特定ユーザーのチケット（または -a john.doe）
+redmine issue list --status closed              # クローズドチケット（または -s closed）
+redmine issue list --status all                 # 全ステータスのチケット（または -s all）
+redmine issue list --project myproject          # 特定プロジェクト（または -p myproject）
+redmine issue list --limit 50                   # 表示件数指定（または -L 50）
+redmine issue list --json                       # JSON形式で出力（ISO 8601 UTC時刻）
+redmine issue list --absolute-time              # ローカル時刻で表示
+redmine issue list -a @me -s open -p myproject # 複数条件の組み合わせ
+redmine issue list --web                        # ブラウザで開く（または -w）
+redmine issue list -a @me --web                # 条件付きでブラウザで開く
 
-RedmineCLI issue view <ID> [--json] [--web]
-RedmineCLI issue create [-p PROJECT] [-t TITLE] [--description DESC] [-a USER] [--web]
-RedmineCLI issue edit <ID> [-s STATUS] [-a USER/@me] [--done-ratio N] [--web]  # オプション指定時
-RedmineCLI issue edit <ID>                                                     # 対話的編集モード
-RedmineCLI issue comment <ID> [-m MESSAGE]
+redmine issue view <ID> [--json] [--web]
+redmine issue create [-p PROJECT] [-t TITLE] [--description DESC] [-a USER] [--web]
+redmine issue edit <ID> [-s STATUS] [-a USER/@me] [--done-ratio N] [--web]  # オプション指定時
+redmine issue edit <ID>                                                     # 対話的編集モード
+redmine issue comment <ID> [-m MESSAGE]
 
 # チケットコメント追加の詳細例
-RedmineCLI issue comment 123                           # エディタで長文コメント作成
-RedmineCLI issue comment 123 -m "作業完了しました"      # 直接コメント入力
-RedmineCLI issue comment 456 --message "テスト結果OK"   # --messageでも指定可能
+redmine issue comment 123                           # エディタで長文コメント作成
+redmine issue comment 123 -m "作業完了しました"      # 直接コメント入力
+redmine issue comment 456 --message "テスト結果OK"   # --messageでも指定可能
 
 # 設定管理
-RedmineCLI config set <KEY> <VALUE>
-RedmineCLI config get <KEY>
-RedmineCLI config list
+redmine config set <KEY> <VALUE>
+redmine config get <KEY>
+redmine config list
 
 # 時刻表示設定の例
-RedmineCLI config set time.format relative    # 相対時刻表示（デフォルト）
-RedmineCLI config set time.format absolute    # ローカル時刻表示
-RedmineCLI config set time.format utc         # UTC時刻表示
-RedmineCLI config set time.timezone system    # システムのタイムゾーン使用（デフォルト）
-RedmineCLI config set time.timezone "Asia/Tokyo"  # 特定のタイムゾーン指定
+redmine config set time.format relative    # 相対時刻表示（デフォルト）
+redmine config set time.format absolute    # ローカル時刻表示
+redmine config set time.format utc         # UTC時刻表示
+redmine config set time.timezone system    # システムのタイムゾーン使用（デフォルト）
+redmine config set time.timezone "Asia/Tokyo"  # 特定のタイムゾーン指定
 
 # ヘルプ
-RedmineCLI --help
-RedmineCLI <COMMAND> --help
+redmine --help
+redmine <COMMAND> --help
 
 # バージョンとライセンス情報
-RedmineCLI --version
-RedmineCLI --licenses
+redmine --version
+redmine --licenses
 ```
 
 ## ブラウザサポート

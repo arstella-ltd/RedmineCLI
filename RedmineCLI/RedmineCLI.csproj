@@ -5,7 +5,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyName>RedmineCLI</AssemblyName>
+    <AssemblyName>redmine</AssemblyName>
     <RootNamespace>RedmineCLI</RootNamespace>
     
     <!-- Native AOT settings -->
@@ -53,7 +53,7 @@
 
   <!-- AOT warning suppressions for known safe usages -->
   <ItemGroup>
-    <TrimmerRootAssembly Include="RedmineCLI" />
+    <TrimmerRootAssembly Include="redmine" />
     <!-- Preserve VYaml for serialization -->
     <TrimmerRootAssembly Include="VYaml" />
   </ItemGroup>
