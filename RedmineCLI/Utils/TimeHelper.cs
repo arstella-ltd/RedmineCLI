@@ -13,37 +13,45 @@ public class TimeHelper : ITimeHelper
 
         // Less than a minute
         if (diff.TotalSeconds < 60)
-            return "just now";
+            return "less than a minute ago";
 
         // Less than an hour
         if (diff.TotalMinutes < 60)
         {
             var minutes = (int)diff.TotalMinutes;
-            return minutes == 1 ? "1 minute ago" : $"{minutes} minutes ago";
+            return FormatDuration(minutes, "minute");
         }
 
         // Less than a day
         if (diff.TotalHours < 24)
         {
             var hours = (int)diff.TotalHours;
-            return hours == 1 ? "1 hour ago" : $"{hours} hours ago";
+            return FormatDuration(hours, "hour");
         }
 
         // Less than 30 days
         if (diff.TotalDays < 30)
         {
             var days = (int)diff.TotalDays;
-            return days == 1 ? "1 day ago" : $"{days} days ago";
+            return FormatDuration(days, "day");
         }
 
-        // Same year
-        if (utcTime.Year == now.Year)
+        // Less than a year (365 days)
+        if (diff.TotalDays < 365)
         {
-            return utcTime.ToString("MMM dd", CultureInfo.InvariantCulture);
+            var months = (int)(diff.TotalDays / 30);
+            return FormatDuration(months, "month");
         }
 
-        // Previous years
-        return utcTime.ToString("MMM dd, yyyy", CultureInfo.InvariantCulture);
+        // Years
+        var years = (int)(diff.TotalDays / 365);
+        return FormatDuration(years, "year");
+    }
+
+    private static string FormatDuration(int amount, string unit)
+    {
+        var pluralizedUnit = amount == 1 ? unit : $"{unit}s";
+        return $"about {amount} {pluralizedUnit} ago";
     }
 
     public string GetLocalTime(DateTime utcTime, string format = "yyyy-MM-dd HH:mm")

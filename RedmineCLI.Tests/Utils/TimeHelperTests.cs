@@ -31,7 +31,7 @@ public class TimeHelperTests
         var result = _timeHelper.GetRelativeTime(fiveMinutesAgo);
 
         // Assert
-        result.Should().Be("5 minutes ago");
+        result.Should().Be("about 5 minutes ago");
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public class TimeHelperTests
         var result = _timeHelper.GetRelativeTime(oneMinuteAgo);
 
         // Assert
-        result.Should().Be("1 minute ago");
+        result.Should().Be("about 1 minute ago");
     }
 
     [Fact]
@@ -59,7 +59,7 @@ public class TimeHelperTests
         var result = _timeHelper.GetRelativeTime(twoHoursAgo);
 
         // Assert
-        result.Should().Be("2 hours ago");
+        result.Should().Be("about 2 hours ago");
     }
 
     [Fact]
@@ -73,7 +73,7 @@ public class TimeHelperTests
         var result = _timeHelper.GetRelativeTime(oneHourAgo);
 
         // Assert
-        result.Should().Be("1 hour ago");
+        result.Should().Be("about 1 hour ago");
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public class TimeHelperTests
         var result = _timeHelper.GetRelativeTime(threeDaysAgo);
 
         // Assert
-        result.Should().Be("3 days ago");
+        result.Should().Be("about 3 days ago");
     }
 
     [Fact]
@@ -101,35 +101,63 @@ public class TimeHelperTests
         var result = _timeHelper.GetRelativeTime(oneDayAgo);
 
         // Assert
-        result.Should().Be("1 day ago");
+        result.Should().Be("about 1 day ago");
     }
 
     [Fact]
-    public void GetRelativeTime_Should_ReturnMonthDay_When_CurrentYear()
+    public void GetRelativeTime_Should_ReturnMonthsAgo_When_LessThanYear()
     {
         // Arrange
         var utcNow = DateTime.UtcNow;
-        var twoMonthsAgo = utcNow.AddMonths(-2);
+        var twoMonthsAgo = utcNow.AddDays(-60); // 2 months
 
         // Act
         var result = _timeHelper.GetRelativeTime(twoMonthsAgo);
 
         // Assert
-        result.Should().Match($"{twoMonthsAgo:MMM dd}");
+        result.Should().Be("about 2 months ago");
     }
 
     [Fact]
-    public void GetRelativeTime_Should_ReturnFullDate_When_PreviousYear()
+    public void GetRelativeTime_Should_ReturnYearsAgo_When_MoreThanYear()
     {
         // Arrange
         var utcNow = DateTime.UtcNow;
-        var lastYear = utcNow.AddYears(-1);
+        var twoYearsAgo = utcNow.AddYears(-2);
 
         // Act
-        var result = _timeHelper.GetRelativeTime(lastYear);
+        var result = _timeHelper.GetRelativeTime(twoYearsAgo);
 
         // Assert
-        result.Should().Match($"{lastYear:MMM dd, yyyy}");
+        result.Should().Be("about 2 years ago");
+    }
+
+    [Fact]
+    public void GetRelativeTime_Should_ReturnMonthAgo_When_OneMonth()
+    {
+        // Arrange
+        var utcNow = DateTime.UtcNow;
+        var oneMonthAgo = utcNow.AddDays(-30);
+
+        // Act
+        var result = _timeHelper.GetRelativeTime(oneMonthAgo);
+
+        // Assert
+        result.Should().Be("about 1 month ago");
+    }
+
+    [Fact]
+    public void GetRelativeTime_Should_ReturnYearAgo_When_OneYear()
+    {
+        // Arrange
+        var utcNow = DateTime.UtcNow;
+        var oneYearAgo = utcNow.AddDays(-365);
+
+        // Act
+        var result = _timeHelper.GetRelativeTime(oneYearAgo);
+
+        // Assert
+        result.Should().Be("about 1 year ago");
     }
 
     [Fact]
@@ -143,7 +171,7 @@ public class TimeHelperTests
         var result = _timeHelper.GetRelativeTime(thirtySecondsAgo);
 
         // Assert
-        result.Should().Be("just now");
+        result.Should().Be("less than a minute ago");
     }
 
     [Fact]
@@ -229,7 +257,7 @@ public class TimeHelperTests
         var utcResult = _timeHelper.FormatTime(twoHoursAgo, TimeFormat.Utc);
 
         // Assert
-        relativeResult.Should().Be("2 hours ago");
+        relativeResult.Should().Be("about 2 hours ago");
         absoluteResult.Should().Be(twoHoursAgo.ToLocalTime().ToString("yyyy-MM-dd HH:mm"));
         utcResult.Should().EndWith(" UTC");
     }
