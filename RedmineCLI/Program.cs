@@ -105,7 +105,14 @@ public class Program
                 return;
             }
 
-            // Default action - no specific handling needed
+            // If no subcommand was invoked and no options were specified, show help
+            if (parseResult.CommandResult.Command == rootCommand && 
+                !parseResult.Tokens.Any() && 
+                !parseResult.GetValue(debugOption))
+            {
+                parseResult.CommandResult.Command.InvokeHelp(parseResult);
+                Environment.ExitCode = 0;
+            }
         });
 
         // Create and use CLI configuration
