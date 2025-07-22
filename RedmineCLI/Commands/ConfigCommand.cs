@@ -39,6 +39,13 @@ public class ConfigCommand
             var key = parseResult.GetValue(keyArgument);
             var value = parseResult.GetValue(valueArgument);
 
+            if (key == null || value == null)
+            {
+                AnsiConsole.MarkupLine("[red]Error:[/] Key and value are required");
+                Environment.ExitCode = 1;
+                return;
+            }
+
             Environment.ExitCode = await configCommand.SetAsync(key, value, CancellationToken.None);
         });
 
@@ -54,6 +61,13 @@ public class ConfigCommand
         getCommand.SetAction(async (parseResult) =>
         {
             var key = parseResult.GetValue(getKeyArgument);
+
+            if (key == null)
+            {
+                AnsiConsole.MarkupLine("[red]Error:[/] Key is required");
+                Environment.ExitCode = 1;
+                return;
+            }
 
             Environment.ExitCode = await configCommand.GetAsync(key, CancellationToken.None);
         });
