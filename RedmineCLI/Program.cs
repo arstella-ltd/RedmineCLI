@@ -105,6 +105,20 @@ public class Program
                 return;
             }
 
+            // Check if no arguments were provided (except debug option)
+            var commandResult = parseResult.CommandResult;
+            var hasSubcommand = commandResult.Children.Any(c => c.Command != rootCommand);
+            var hasDebugOption = parseResult.GetValue(debugOption);
+            
+            // If no subcommand was invoked and no special options (only checking for non-debug options)
+            if (!hasSubcommand && !parseResult.GetValue(licensesOption) && parseResult.Tokens.Count == 0)
+            {
+                // Show help
+                Console.WriteLine(rootCommand.GetHelp(parseResult));
+                Environment.ExitCode = 0;
+                return;
+            }
+
             // Default action - no specific handling needed
         });
 
