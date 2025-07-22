@@ -109,7 +109,11 @@ public class Program
         });
 
         // Create and use CLI configuration
-        var config = new CommandLineConfiguration(rootCommand);
+        var config = new CommandLineConfiguration(rootCommand)
+        {
+            // Disable response file processing to allow @me syntax
+            ResponseFileTokenReplacer = null
+        };
 
         // Parse and execute
         return await config.InvokeAsync(args);
