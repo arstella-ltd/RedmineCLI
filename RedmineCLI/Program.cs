@@ -61,6 +61,13 @@ public class Program
         licensesOption.Description = "Show license information";
         rootCommand.Add(licensesOption);
 
+        // Create and use CLI configuration (moved up to be in scope)
+        var config = new CommandLineConfiguration(rootCommand)
+        {
+            // Disable response file processing to allow @me syntax
+            ResponseFileTokenReplacer = null
+        };
+
         // Add root command action to handle global options
         rootCommand.SetAction(async (parseResult) =>
         {
@@ -105,15 +112,20 @@ public class Program
                 return;
             }
 
+            // Show help when no arguments are provided
+            if (parseResult.CommandResult.Command == rootCommand &&
+                parseResult.Tokens.Count == 0 &&
+                !parseResult.GetValue(debugOption))
+            {
+                // Create a new parse result with --help to trigger help display
+                var helpArgs = new[] { "--help" };
+                config.InvokeAsync(helpArgs).Wait();
+                Environment.ExitCode = 0;
+                return;
+            }
+
             // Default action - no specific handling needed
         });
-
-        // Create and use CLI configuration
-        var config = new CommandLineConfiguration(rootCommand)
-        {
-            // Disable response file processing to allow @me syntax
-            ResponseFileTokenReplacer = null
-        };
 
         // Parse and execute
         return await config.InvokeAsync(args);
