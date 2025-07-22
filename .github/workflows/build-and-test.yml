@@ -156,7 +156,7 @@ jobs:
         path: ./bin
 
     - name: Make binary executable
-      run: chmod +x ./bin/RedmineCLI
+      run: chmod +x ./bin/redmine
 
     - name: Benchmark startup time
       run: |
@@ -164,7 +164,7 @@ jobs:
         > startup_times.txt
         for i in {1..10}; do
           START=$(date +%s.%N)
-          ./bin/RedmineCLI --version > /dev/null 2>&1
+          ./bin/redmine --version > /dev/null 2>&1
           END=$(date +%s.%N)
           DURATION=$(echo "$END - $START" | bc)
           echo "$DURATION" >> startup_times.txt
@@ -178,5 +178,5 @@ jobs:
     - name: Check binary startup time
       run: |
         # Quick startup time check (should be under 1 second for CI)
-        timeout 2s time ./bin/RedmineCLI --version
+        timeout 2s time ./bin/redmine --version
         echo "Startup time check passed"
