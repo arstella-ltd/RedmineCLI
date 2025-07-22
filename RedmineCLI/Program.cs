@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.CommandLine.Help;
 using System.Linq;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -110,7 +111,8 @@ public class Program
                 !parseResult.Tokens.Any() && 
                 !parseResult.GetValue(debugOption))
             {
-                parseResult.CommandResult.Command.InvokeHelp(parseResult);
+                var helpBuilder = new HelpBuilder(rootCommand);
+                helpBuilder.Write(Console.Out);
                 Environment.ExitCode = 0;
             }
         });
