@@ -34,6 +34,15 @@ public class IssueCommandTests
         _jsonFormatter = Substitute.For<IJsonFormatter>();
         _logger = Substitute.For<ILogger<IssueCommand>>();
 
+        // Setup default config to avoid null reference
+        var config = new Config
+        {
+            CurrentProfile = "default",
+            Profiles = new Dictionary<string, Profile>(),
+            Preferences = new Preferences()
+        };
+        _configService.LoadConfigAsync().Returns(Task.FromResult(config));
+
         _issueCommand = new IssueCommand(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
     }
 
@@ -75,7 +84,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -113,7 +122,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, status, null, null, null, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, status, null, null, null, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -146,7 +155,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, limit, offset, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, limit, offset, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -176,7 +185,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, true, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, true, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -207,7 +216,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(assignee, null, null, null, null, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(assignee, null, null, null, null, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -237,7 +246,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, project, null, null, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, project, null, null, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -277,7 +286,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(assignee, status, project, limit, null, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(assignee, status, project, limit, null, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -299,7 +308,7 @@ public class IssueCommandTests
             .Returns(Task.FromException<List<Issue>>(new HttpRequestException("API Error")));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -339,6 +348,7 @@ public class IssueCommandTests
         optionNames.Should().Contain("--limit");
         optionNames.Should().Contain("--offset");
         optionNames.Should().Contain("--json");
+        optionNames.Should().Contain("--absolute-time");
     }
 
     [Fact]
@@ -364,7 +374,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync("@me", null, null, null, null, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync("@me", null, null, null, null, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -401,7 +411,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, "all", null, null, null, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, "all", null, null, null, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -419,7 +429,7 @@ public class IssueCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, true, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, true, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -434,7 +444,7 @@ public class IssueCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(null));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, true, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, true, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -469,7 +479,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issue));
 
         // Act
-        var result = await _issueCommand.ViewAsync(issueId, false, false, CancellationToken.None);
+        var result = await _issueCommand.ViewAsync(issueId, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -525,7 +535,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issue));
 
         // Act
-        var result = await _issueCommand.ViewAsync(issueId, false, false, CancellationToken.None);
+        var result = await _issueCommand.ViewAsync(issueId, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -542,7 +552,7 @@ public class IssueCommandTests
             .Returns(Task.FromException<Issue>(new RedmineApiException(404, "Issue not found")));
 
         // Act
-        var result = await _issueCommand.ViewAsync(issueId, false, false, CancellationToken.None);
+        var result = await _issueCommand.ViewAsync(issueId, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -572,7 +582,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issue));
 
         // Act
-        var result = await _issueCommand.ViewAsync(issueId, true, false, CancellationToken.None);
+        var result = await _issueCommand.ViewAsync(issueId, true, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -590,7 +600,7 @@ public class IssueCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.ViewAsync(issueId, false, true, CancellationToken.None);
+        var result = await _issueCommand.ViewAsync(issueId, false, true, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -607,7 +617,7 @@ public class IssueCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(null));
 
         // Act
-        var result = await _issueCommand.ViewAsync(issueId, false, true, CancellationToken.None);
+        var result = await _issueCommand.ViewAsync(issueId, false, true, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -626,6 +636,7 @@ public class IssueCommandTests
         var optionNames = viewCommand!.Options.Select(o => o.Name).ToList();
         optionNames.Should().Contain("--json");
         optionNames.Should().Contain("--web");
+        optionNames.Should().Contain("--absolute-time");
 
         var argNames = viewCommand.Arguments.Select(a => a.Name).ToList();
         argNames.Should().Contain("ID");
