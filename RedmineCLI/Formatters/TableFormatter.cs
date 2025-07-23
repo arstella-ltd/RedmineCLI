@@ -34,6 +34,7 @@ public class TableFormatter : ITableFormatter
         table.AddColumn("Status");
         table.AddColumn("Assignee");
         table.AddColumn("Project");
+        table.AddColumn("Due Date");
         table.AddColumn("Updated");
 
         foreach (var issue in issues)
@@ -44,6 +45,7 @@ public class TableFormatter : ITableFormatter
                 Markup.Escape(issue.Status?.Name ?? "Unknown"),
                 Markup.Escape(issue.AssignedTo?.Name ?? "Unassigned"),
                 Markup.Escape(issue.Project?.Name ?? "No Project"),
+                issue.DueDate.HasValue ? _timeHelper.GetLocalTime(issue.DueDate.Value, "yyyy-MM-dd") : "-",
                 _timeHelper.FormatTime(issue.UpdatedOn, _timeFormat)
             );
         }
@@ -73,6 +75,7 @@ public class TableFormatter : ITableFormatter
         grid.AddRow("[bold]Assignee:[/]", Markup.Escape(issue.AssignedTo?.Name ?? "Unassigned"));
         grid.AddRow("[bold]Project:[/]", Markup.Escape(issue.Project?.Name ?? "No Project"));
         grid.AddRow("[bold]Progress:[/]", $"{issue.DoneRatio ?? 0}%");
+        grid.AddRow("[bold]Due Date:[/]", issue.DueDate.HasValue ? _timeHelper.GetLocalTime(issue.DueDate.Value, "yyyy-MM-dd") : "Not set");
         grid.AddRow("[bold]Created:[/]", _timeHelper.FormatTime(issue.CreatedOn, _timeFormat));
         grid.AddRow("[bold]Updated:[/]", _timeHelper.FormatTime(issue.UpdatedOn, _timeFormat));
 

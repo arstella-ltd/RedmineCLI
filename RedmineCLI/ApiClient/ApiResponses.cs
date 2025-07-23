@@ -98,6 +98,9 @@ public class IssueCreateData
 
     [JsonPropertyName("status_id")]
     public int? StatusId { get; set; }
+
+    [JsonPropertyName("due_date")]
+    public DateTime? DueDate { get; set; }
 }
 
 public class IssueUpdateRequest
@@ -139,6 +142,10 @@ public class IssueUpdateData
     [JsonPropertyName("private_notes")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public bool? PrivateNotes { get; set; }
+
+    [JsonPropertyName("due_date")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public DateTime? DueDate { get; set; }
 }
 
 public class CommentRequest
