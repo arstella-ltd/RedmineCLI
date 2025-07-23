@@ -1,3 +1,4 @@
+using RedmineCLI.ApiClient;
 using RedmineCLI.Models;
 using RedmineCLI.Utils;
 
@@ -8,11 +9,15 @@ namespace RedmineCLI.Formatters;
 public class TableFormatter : ITableFormatter
 {
     private readonly ITimeHelper _timeHelper;
+    private readonly IRedmineApiClient? _apiClient;
+    private readonly ImageReferenceDetector _imageDetector;
     private TimeFormat _timeFormat = TimeFormat.Relative;
 
-    public TableFormatter(ITimeHelper timeHelper)
+    public TableFormatter(ITimeHelper timeHelper, IRedmineApiClient? apiClient = null)
     {
         _timeHelper = timeHelper;
+        _apiClient = apiClient;
+        _imageDetector = new ImageReferenceDetector();
     }
 
     public void SetTimeFormat(TimeFormat format)
@@ -90,6 +95,9 @@ public class TableFormatter : ITableFormatter
             AnsiConsole.MarkupLine("[bold]Description:[/]");
             AnsiConsole.WriteLine(Markup.Escape(issue.Description));
             AnsiConsole.WriteLine();
+
+            // Display inline images if any
+            DisplayInlineImages(issue);
         }
 
         // History/Journals
@@ -221,5 +229,44 @@ public class TableFormatter : ITableFormatter
         }
 
         return $"{size:0.##} {sizes[order]}";
+    }
+
+    private void DisplayInlineImages(Issue issue)
+    {
+        if (_apiClient == null || issue.Attachments == null || issue.Attachments.Count == 0)
+        {
+            return;
+        }
+
+        // Detect image references in description
+        var imageReferences = _imageDetector.DetectImageReferences(issue.Description);
+        if (imageReferences.Count == 0)
+        {
+            return;
+        }
+
+        // Find matching image attachments
+        var imageAttachments = _imageDetector.FindMatchingAttachments(issue.Attachments, imageReferences);
+        if (imageAttachments.Count == 0)
+        {
+            return;
+        }
+
+        AnsiConsole.MarkupLine("[bold]Inline Images:[/]");
+        
+        foreach (var attachment in imageAttachments)
+        {
+            // Spectre.Console v0.50.0 doesn't support CanvasImage
+            // Display image information instead
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine($"[dim]📷 {Markup.Escape(attachment.Filename)} ({FormatFileSize(attachment.Filesize)})[/]");
+            AnsiConsole.MarkupLine($"[dim]   Type: {Markup.Escape(attachment.ContentType)}[/]");
+            AnsiConsole.MarkupLine($"[dim]   URL: {Markup.Escape(attachment.ContentUrl)}[/]");
+            
+            // Note: Actual image display would require CanvasImage from newer Spectre.Console versions
+            // or external image viewer integration
+        }
+        
+        AnsiConsole.WriteLine();
     }
 }
