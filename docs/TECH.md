@@ -188,11 +188,10 @@ redmine attachment download 789 --force                                  # 既�
 redmine attachment view <ATTACHMENT-ID>                                  # 添付ファイルのメタデータ表示
 
 # チケットの添付ファイル管理
-redmine issue list-attachments <ISSUE-ID>                               # 添付ファイル一覧表示
-redmine issue attachments <ISSUE-ID>                                     # list-attachmentsのエイリアス
-redmine issue download-attachments <ISSUE-ID>                            # 対話的に選択してダウンロード（デフォルト動作）
-redmine issue download-attachments <ISSUE-ID> --all                     # すべての添付ファイルをダウンロード
-redmine issue download-attachments <ISSUE-ID> --all --output ./files/   # 出力先を指定して一括ダウンロード
+redmine issue attachment list <ISSUE-ID>                                 # 添付ファイル一覧表示
+redmine issue attachment download <ISSUE-ID>                             # 対話的に選択してダウンロード（デフォルト動作）
+redmine issue attachment download <ISSUE-ID> --all                      # すべての添付ファイルをダウンロード
+redmine issue attachment download <ISSUE-ID> --all --output ./files/    # 出力先を指定して一括ダウンロード
 
 # 設定管理
 redmine config set <KEY> <VALUE>

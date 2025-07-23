@@ -129,12 +129,12 @@ RedmineCLIは、Redmineのチケット管理をコマンドラインから効率
 
 #### 受け入れ基準
 1. WHEN `redmine issue view <ID>` を実行 THEN チケットに添付されているファイルの一覧（ID、ファイル名、サイズ、アップロード日時）が表示される SHALL
-2. WHEN `redmine issue list-attachments <issue-id>` または `redmine issue attachments <issue-id>` を実行 THEN 指定チケットの添付ファイル一覧が詳細に表示される SHALL
+2. WHEN `redmine issue attachment list <issue-id>` を実行 THEN 指定チケットの添付ファイル一覧が詳細に表示される SHALL
 3. WHEN `redmine attachment download <attachment-id>` を実行 THEN 指定IDの添付ファイルがカレントディレクトリにダウンロードされる SHALL
 4. WHEN `redmine attachment download <attachment-id> --output <path>` を指定 THEN 指定したパスにファイルが保存される SHALL
 5. WHEN `redmine attachment view <attachment-id>` を実行 THEN 添付ファイルのメタデータ（ファイル名、サイズ、MIME Type、作成者、作成日時）が表示される SHALL
-6. WHEN `redmine issue download-attachments <issue-id>` を実行 THEN チケットの添付ファイル一覧から対話的に選択してダウンロードできる SHALL
-7. WHEN `redmine issue download-attachments <issue-id> --all` を実行 THEN チケットのすべての添付ファイルが一括でダウンロードされる SHALL
+6. WHEN `redmine issue attachment download <issue-id>` を実行 THEN チケットの添付ファイル一覧から対話的に選択してダウンロードできる SHALL
+7. WHEN `redmine issue attachment download <issue-id> --all` を実行 THEN チケットのすべての添付ファイルが一括でダウンロードされる SHALL
 8. WHEN ダウンロード中 THEN プログレスバーまたは進捗インジケーターが表示される SHALL
 9. WHEN ファイル名に不正な文字が含まれている THEN サニタイズされた安全なファイル名で保存される SHALL
 10. WHEN ダウンロード先に同名ファイルが存在する THEN エラーメッセージを表示し、`--force` オプションで上書きできる SHALL

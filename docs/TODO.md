@@ -390,9 +390,9 @@
     - DownloadAttachments_Should_DownloadAll_When_AllOptionProvided
     - IssueView_Should_IncludeAttachments_When_AttachmentsExist
   - **Green**: テストを通すための実装
-    - `issue list-attachments <id>` / `issue attachments <id>`コマンドの実装
-    - `issue download-attachments <id>`の実装（デフォルトで対話的、gh run downloadと同様）
-    - `issue download-attachments <id> --all`の実装
+    - `issue attachment list <id>`コマンドの実装
+    - `issue attachment download <id>`の実装（デフォルトで対話的、gh run downloadと同様）
+    - `issue attachment download <id> --all`の実装
     - IssueモデルにAttachmentsプロパティを追加
     - issue viewコマンドでの添付ファイル表示
     - Spectre.ConsoleのMultiSelectionPromptを使用した対話的選択（デフォルト動作）
