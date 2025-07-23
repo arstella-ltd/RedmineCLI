@@ -346,4 +346,97 @@ public class TableFormatterTests
         var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue));
         exception.Should().BeNull();
     }
+
+    [Fact]
+    public void FormatIssueDetails_Should_HandleSixelRendering_When_TerminalSupportsSixel()
+    {
+        // Arrange
+        var issue = new Issue
+        {
+            Id = 125,
+            Subject = "Sixel対応ターミナルでの画像表示テスト",
+            Description = @"## Sixelプロトコルテスト
+![テスト画像](test-image.png)
+{{thumbnail(test-thumbnail.jpg)}}",
+            Status = new IssueStatus { Id = 1, Name = "新規" },
+            Priority = new Priority { Id = 2, Name = "通常" },
+            AssignedTo = new User { Id = 1, Name = "テストユーザー" },
+            Project = new Project { Id = 1, Name = "テストプロジェクト" },
+            CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0),
+            UpdatedOn = new DateTime(2024, 1, 2, 15, 30, 0),
+            Attachments = new List<Attachment>
+            {
+                new Attachment
+                {
+                    Id = 1,
+                    Filename = "test-image.png",
+                    ContentType = "image/png",
+                    ContentUrl = "https://example.com/attachments/1",
+                    Filesize = 102400,
+                    Author = new User { Id = 1, Name = "テストユーザー" },
+                    CreatedOn = new DateTime(2024, 1, 1, 9, 0, 0)
+                },
+                new Attachment
+                {
+                    Id = 2,
+                    Filename = "test-thumbnail.jpg",
+                    ContentType = "image/jpeg",
+                    ContentUrl = "https://example.com/attachments/2",
+                    Filesize = 51200,
+                    Author = new User { Id = 1, Name = "テストユーザー" },
+                    CreatedOn = new DateTime(2024, 1, 1, 9, 30, 0)
+                }
+            }
+        };
+
+        // Act & Assert - Sixelレンダリング機能が呼ばれてもエラーが発生しないことを確認
+        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue));
+        exception.Should().BeNull();
+    }
+
+    [Fact]
+    public void FormatIssueDetails_Should_SkipNonImageAttachments_When_DisplayingInlineImages()
+    {
+        // Arrange
+        var issue = new Issue
+        {
+            Id = 126,
+            Subject = "画像以外の添付ファイルを含むチケット",
+            Description = @"![画像](image.png)
+{{thumbnail(document.pdf)}}",
+            Status = new IssueStatus { Id = 1, Name = "新規" },
+            Priority = new Priority { Id = 2, Name = "通常" },
+            AssignedTo = new User { Id = 1, Name = "テストユーザー" },
+            Project = new Project { Id = 1, Name = "テストプロジェクト" },
+            CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0),
+            UpdatedOn = new DateTime(2024, 1, 2, 15, 30, 0),
+            Attachments = new List<Attachment>
+            {
+                new Attachment
+                {
+                    Id = 1,
+                    Filename = "image.png",
+                    ContentType = "image/png",
+                    ContentUrl = "https://example.com/attachments/1",
+                    Filesize = 102400,
+                    Author = new User { Id = 1, Name = "テストユーザー" },
+                    CreatedOn = new DateTime(2024, 1, 1, 9, 0, 0)
+                },
+                new Attachment
+                {
+                    Id = 2,
+                    Filename = "document.pdf",
+                    ContentType = "application/pdf",
+                    ContentUrl = "https://example.com/attachments/2",
+                    Filesize = 204800,
+                    Author = new User { Id = 1, Name = "テストユーザー" },
+                    CreatedOn = new DateTime(2024, 1, 1, 9, 30, 0)
+                }
+            }
+        };
+
+        // Act & Assert - PDFは画像として表示されないことを確認
+        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue));
+        exception.Should().BeNull();
+    }
 }

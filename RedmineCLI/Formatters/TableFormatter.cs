@@ -253,20 +253,30 @@ public class TableFormatter : ITableFormatter
         }
 
         AnsiConsole.MarkupLine("[bold]Inline Images:[/]");
-        
+
         foreach (var attachment in imageAttachments)
         {
-            // Spectre.Console v0.50.0 doesn't support CanvasImage
-            // Display image information instead
             AnsiConsole.WriteLine();
             AnsiConsole.MarkupLine($"[dim]📷 {Markup.Escape(attachment.Filename)} ({FormatFileSize(attachment.Filesize)})[/]");
             AnsiConsole.MarkupLine($"[dim]   Type: {Markup.Escape(attachment.ContentType)}[/]");
+
+            // Sixelプロトコル対応ターミナルの場合は画像を表示
+            if (TerminalCapabilityDetector.SupportsSixel() && IsImageType(attachment.ContentType))
+            {
+                // Sixel画像のプレースホルダーを表示（簡易実装）
+                SixelImageRenderer.OutputImagePlaceholder(attachment.Filename, 60, 30);
+                AnsiConsole.WriteLine();
+                AnsiConsole.MarkupLine($"[dim]   (Sixel preview - actual image download requires API key)[/]");
+            }
+
             AnsiConsole.MarkupLine($"[dim]   URL: {Markup.Escape(attachment.ContentUrl)}[/]");
-            
-            // Note: Actual image display would require CanvasImage from newer Spectre.Console versions
-            // or external image viewer integration
         }
-        
+
         AnsiConsole.WriteLine();
+    }
+
+    private static bool IsImageType(string contentType)
+    {
+        return contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
     }
 }
