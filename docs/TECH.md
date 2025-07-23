@@ -181,6 +181,19 @@ redmine issue comment 123                           # エディタで長文コ�
 redmine issue comment 123 -m "作業完了しました"      # 直接コメント入力
 redmine issue comment 456 --message "テスト結果OK"   # --messageでも指定可能
 
+# 添付ファイル操作
+redmine attachment download <ATTACHMENT-ID>                              # 添付ファイルをダウンロード
+redmine attachment download 789 --output ~/Downloads/                    # 出力先を指定（または -o）
+redmine attachment download 789 --force                                  # 既存ファイルを上書き（または -f）
+redmine attachment view <ATTACHMENT-ID>                                  # 添付ファイルのメタデータ表示
+
+# チケットの添付ファイル管理
+redmine issue list-attachments <ISSUE-ID>                               # 添付ファイル一覧表示
+redmine issue attachments <ISSUE-ID>                                     # list-attachmentsのエイリアス
+redmine issue download-attachments <ISSUE-ID> --interactive             # 対話的に選択してダウンロード
+redmine issue download-attachments <ISSUE-ID> --all                     # すべての添付ファイルをダウンロード
+redmine issue download-attachments <ISSUE-ID> --all --output ./files/   # 出力先を指定して一括ダウンロード
+
 # 設定管理
 redmine config set <KEY> <VALUE>
 redmine config get <KEY>
