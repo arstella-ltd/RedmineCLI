@@ -101,12 +101,9 @@ jobs:
       uses: marocchino/sticky-pull-request-comment@v2
       with:
         header: coverage
+        path: ./coverage/report/Summary.txt
         message: |
           ## 📊 Test Coverage Report
-          
-          ```
-          $(cat ./coverage/report/Summary.txt)
-          ```
           
           [View detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
