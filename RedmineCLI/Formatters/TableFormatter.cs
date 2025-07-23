@@ -123,4 +123,79 @@ public class TableFormatter : ITableFormatter
             }
         }
     }
+
+    public Task FormatAttachmentsAsync(List<Attachment> attachments)
+    {
+        var table = new Table();
+        table.AddColumn("ID");
+        table.AddColumn("Filename");
+        table.AddColumn("Size");
+        table.AddColumn("Type");
+        table.AddColumn("Author");
+        table.AddColumn("Created");
+
+        foreach (var attachment in attachments)
+        {
+            table.AddRow(
+                $"#{attachment.Id}",
+                Markup.Escape(attachment.Filename),
+                FormatFileSize(attachment.Filesize),
+                Markup.Escape(attachment.ContentType),
+                Markup.Escape(attachment.Author?.Name ?? "Unknown"),
+                _timeHelper.FormatTime(attachment.CreatedOn, _timeFormat)
+            );
+        }
+
+        AnsiConsole.Write(table);
+        return Task.CompletedTask;
+    }
+
+    public Task FormatAttachmentDetailsAsync(Attachment attachment)
+    {
+        var panel = new Panel($"[bold]Attachment #{attachment.Id}[/]")
+            .BorderColor(Color.Blue)
+            .Header($"[blue]{Markup.Escape(attachment.Filename)}[/]");
+
+        var grid = new Grid()
+            .AddColumn()
+            .AddColumn();
+
+        grid.AddRow("[bold]Filename:[/]", Markup.Escape(attachment.Filename));
+        grid.AddRow("[bold]Size:[/]", FormatFileSize(attachment.Filesize));
+        grid.AddRow("[bold]Type:[/]", Markup.Escape(attachment.ContentType));
+        
+        if (!string.IsNullOrEmpty(attachment.Description))
+        {
+            grid.AddRow("[bold]Description:[/]", Markup.Escape(attachment.Description));
+        }
+        
+        if (attachment.Author != null)
+        {
+            grid.AddRow("[bold]Author:[/]", Markup.Escape(attachment.Author.Name));
+        }
+        
+        grid.AddRow("[bold]Created:[/]", _timeHelper.FormatTime(attachment.CreatedOn, _timeFormat));
+        grid.AddRow("[bold]URL:[/]", Markup.Escape(attachment.ContentUrl));
+
+        AnsiConsole.Write(panel);
+        AnsiConsole.WriteLine();
+        AnsiConsole.Write(grid);
+        
+        return Task.CompletedTask;
+    }
+
+    private static string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        double size = bytes;
+        int order = 0;
+        
+        while (size >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            size = size / 1024;
+        }
+        
+        return $"{size:0.##} {sizes[order]}";
+    }
 }

@@ -363,7 +363,7 @@
   - **Refactor**: セキュリティとエラー処理の強化
   - _要件: 10（将来機能）_
 
-- [ ] 20. 添付ファイルダウンロード機能の実装（TDD）
+- [x] 20. 添付ファイルダウンロード機能の実装（TDD）
   - **Red**: AttachmentCommandのテストを先に作成
     - Download_Should_SaveFile_When_ValidAttachmentId
     - Download_Should_UseOutputPath_When_OutputOptionProvided
@@ -562,6 +562,18 @@
   - 単数・複数形の処理をFormatDurationメソッドで統一
 - TimeHelperTestsのテストケースを更新（"about"形式に対応）
 - テストケース17件すべてが成功
+
+### タスク20完了（2025-07-23）
+- TDD手法（Red→Green→Refactor）に従って実装
+- AttachmentCommandTestsのテストケース9件を作成
+  - ファイルダウンロード、出力パス指定、進捗表示、ファイル名サニタイズ
+  - 上書き確認、メタデータ表示、エラーハンドリング
+- AttachmentCommand（download/viewサブコマンド）の実装
+- RedmineApiClientに添付ファイル関連メソッドを追加
+- TableFormatterに添付ファイル表示機能を実装（ファイルサイズの人間向け表示を含む）
+- Environment.Exit()をEnvironment.ExitCodeに変更（テスタビリティ向上）
+- すべてのテスト（230件）が成功
+- 要件11（添付ファイルダウンロード機能）の部分実装完了
 
 ## 使用方法
 

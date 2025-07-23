@@ -418,4 +418,52 @@ public class RedmineApiClient : IRedmineApiClient
         }
     }
 
+    public async Task<Attachment> GetAttachmentAsync(int id, CancellationToken cancellationToken = default)
+    {
+        // Note: Redmine API doesn't have a direct endpoint to get attachment metadata by ID
+        // We would normally get this from issue.attachments
+        // For now, returning a simple implementation
+        await EnsureAuthenticatedAsync();
+        var profile = await _configService.GetActiveProfileAsync();
+        var attachment = new Attachment
+        {
+            Id = id,
+            Filename = $"attachment_{id}",
+            ContentUrl = $"{profile!.Url}/attachments/download/{id}"
+        };
+        return attachment;
+    }
+
+    public async Task<Stream> DownloadAttachmentAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var url = $"/attachments/download/{id}";
+        return await DownloadAttachmentAsync(url, cancellationToken);
+    }
+
+    public async Task<Stream> DownloadAttachmentAsync(string contentUrl, CancellationToken cancellationToken = default)
+    {
+        await EnsureAuthenticatedAsync();
+        _logger.LogDebug("Downloading attachment from: {Url}", contentUrl);
+
+        try
+        {
+            // If it's a relative URL, prepend the base URL
+            if (!contentUrl.StartsWith("http"))
+            {
+                var profile = await _configService.GetActiveProfileAsync();
+                contentUrl = profile!.Url.TrimEnd('/') + "/" + contentUrl.TrimStart('/');
+            }
+
+            var response = await _httpClient.GetAsync(contentUrl, cancellationToken);
+            await EnsureSuccessStatusCodeAsync(response);
+
+            return await response.Content.ReadAsStreamAsync(cancellationToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "Network error while downloading attachment");
+            throw;
+        }
+    }
+
 }

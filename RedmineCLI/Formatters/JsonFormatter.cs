@@ -27,4 +27,18 @@ public class JsonFormatter : IJsonFormatter
         var json = JsonSerializer.Serialize(issue, RedmineJsonContext.Default.Issue);
         AnsiConsole.WriteLine(json);
     }
+
+    public Task FormatAttachmentsAsync(List<Attachment> attachments)
+    {
+        var json = JsonSerializer.Serialize(attachments, RedmineJsonContext.Default.ListAttachment);
+        AnsiConsole.WriteLine(json);
+        return Task.CompletedTask;
+    }
+
+    public Task FormatAttachmentDetailsAsync(Attachment attachment)
+    {
+        var json = JsonSerializer.Serialize(attachment, RedmineJsonContext.Default.Attachment);
+        AnsiConsole.WriteLine(json);
+        return Task.CompletedTask;
+    }
 }
