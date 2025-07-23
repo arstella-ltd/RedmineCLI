@@ -130,4 +130,74 @@ public class TableFormatterTests
         var exception = Record.Exception(() => _formatter.FormatIssues(issues));
         exception.Should().BeNull();
     }
+
+    [Fact]
+    public void FormatIssues_Should_DisplayDueDate_When_IssueHasDueDate()
+    {
+        // Arrange
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "Test Issue with Due Date",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                AssignedTo = new User { Id = 1, Name = "User" },
+                Project = new Project { Id = 1, Name = "Test Project" },
+                UpdatedOn = new DateTime(2024, 1, 1, 10, 0, 0),
+                DueDate = new DateTime(2024, 12, 31)
+            }
+        };
+
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.FormatIssues(issues));
+        exception.Should().BeNull();
+    }
+
+    [Fact]
+    public void FormatIssues_Should_HandleNullDueDate_When_IssueHasNoDueDate()
+    {
+        // Arrange
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "Test Issue without Due Date",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                AssignedTo = new User { Id = 1, Name = "User" },
+                Project = new Project { Id = 1, Name = "Test Project" },
+                UpdatedOn = new DateTime(2024, 1, 1, 10, 0, 0),
+                DueDate = null
+            }
+        };
+
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.FormatIssues(issues));
+        exception.Should().BeNull();
+    }
+
+    [Fact]
+    public void FormatIssueDetails_Should_DisplayDueDate_When_IssueHasDueDate()
+    {
+        // Arrange
+        var issue = new Issue
+        {
+            Id = 123,
+            Subject = "Test Issue",
+            Description = "Test Description",
+            Status = new IssueStatus { Id = 1, Name = "New" },
+            Priority = new Priority { Id = 2, Name = "Normal" },
+            AssignedTo = new User { Id = 1, Name = "Test User" },
+            Project = new Project { Id = 1, Name = "Test Project" },
+            CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0),
+            UpdatedOn = new DateTime(2024, 1, 2, 15, 30, 0),
+            DueDate = new DateTime(2024, 12, 31),
+            Journals = new List<Journal>()
+        };
+
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue));
+        exception.Should().BeNull();
+    }
 }

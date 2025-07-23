@@ -23,6 +23,7 @@ public class IssueTests
         var assigneeName = "John Doe";
         var createdOn = DateTime.UtcNow.AddDays(-1);
         var updatedOn = DateTime.UtcNow;
+        var dueDate = DateTime.UtcNow.AddDays(7);
 
         // Act
         var issue = new Issue
@@ -35,7 +36,8 @@ public class IssueTests
             Priority = new Priority { Name = priority },
             AssignedTo = new User { Id = assigneeId, Name = assigneeName },
             CreatedOn = createdOn,
-            UpdatedOn = updatedOn
+            UpdatedOn = updatedOn,
+            DueDate = dueDate
         };
 
         // Assert
@@ -55,6 +57,7 @@ public class IssueTests
         issue.AssignedTo.Name.Should().Be(assigneeName);
         issue.CreatedOn.Should().Be(createdOn);
         issue.UpdatedOn.Should().Be(updatedOn);
+        issue.DueDate.Should().Be(dueDate);
     }
 
     [Fact]
@@ -112,5 +115,38 @@ public class IssueTests
 
         // Assert
         hash1.Should().Be(hash2);
+    }
+
+    [Fact]
+    public void DueDate_Should_BeNullable_When_NotSet()
+    {
+        // Arrange & Act
+        var issue = new Issue
+        {
+            Id = 123,
+            Subject = "Test Issue",
+            DueDate = null
+        };
+
+        // Assert
+        issue.DueDate.Should().BeNull();
+    }
+
+    [Fact]
+    public void DueDate_Should_AcceptValidDate_When_Set()
+    {
+        // Arrange
+        var expectedDate = new DateTime(2024, 12, 31);
+
+        // Act
+        var issue = new Issue
+        {
+            Id = 123,
+            Subject = "Test Issue",
+            DueDate = expectedDate
+        };
+
+        // Assert
+        issue.DueDate.Should().Be(expectedDate);
     }
 }
