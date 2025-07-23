@@ -420,18 +420,12 @@ public class RedmineApiClient : IRedmineApiClient
 
     public async Task<Attachment> GetAttachmentAsync(int id, CancellationToken cancellationToken = default)
     {
-        // Note: Redmine API doesn't have a direct endpoint to get attachment metadata by ID
-        // We would normally get this from issue.attachments
-        // For now, returning a simple implementation
-        await EnsureAuthenticatedAsync();
-        var profile = await _configService.GetActiveProfileAsync();
-        var attachment = new Attachment
-        {
-            Id = id,
-            Filename = $"attachment_{id}",
-            ContentUrl = $"{profile!.Url}/attachments/download/{id}"
-        };
-        return attachment;
+        var path = $"/attachments/{id}.json";
+        var attachmentResponse = await GetAsync(path, RedmineJsonContext.Default.AttachmentResponse, $"get attachment {id}", cancellationToken);
+
+        return attachmentResponse?.Attachment ?? throw new RedmineApiException(
+            (int)HttpStatusCode.NotFound,
+            $"Attachment with ID {id} not found");
     }
 
     public async Task<Stream> DownloadAttachmentAsync(int id, CancellationToken cancellationToken = default)
