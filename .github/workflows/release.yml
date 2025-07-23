@@ -104,7 +104,7 @@ jobs:
             output: redmine
             asset_name: redmine-cli-linux-x64
           - name: "Linux ARM64"
-            os: ubuntu-latest
+            os: ubuntu-24.04-arm
             rid: linux-arm64
             output: redmine
             asset_name: redmine-cli-linux-arm64
@@ -118,11 +118,6 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Install cross-compilation tools for ARM64
-      if: matrix.config.rid == 'linux-arm64'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
 
     - name: Restore dependencies
       run: dotnet restore
@@ -130,14 +125,7 @@ jobs:
     - name: Run tests
       run: dotnet test --configuration Release
 
-    - name: Publish Native AOT (Linux ARM64)
-      if: matrix.config.rid == 'linux-arm64'
-      run: |
-        # Disable symbol stripping for cross-compilation
-        dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r ${{ matrix.config.rid }} -p:PublishAot=true -p:StripSymbols=false --self-contained -o publish/${{ matrix.config.rid }}
-
-    - name: Publish Native AOT (Other platforms)
-      if: matrix.config.rid != 'linux-arm64'
+    - name: Publish Native AOT
       run: |
         dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r ${{ matrix.config.rid }} -p:PublishAot=true -p:StripSymbols=true --self-contained -o publish/${{ matrix.config.rid }}
 
