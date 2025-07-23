@@ -143,3 +143,5 @@ RedmineCLIは、Redmineのチケット管理をコマンドラインから効率
 11. WHEN ネットワークエラーが発生 THEN Pollyによるリトライ処理が実行され、最終的に失敗した場合はエラーメッセージが表示される SHALL
 12. WHEN `--json` オプションを指定 THEN 添付ファイル情報がJSON形式で出力される SHALL
 13. WHEN `GetIssueAsync` を呼び出す THEN `include=attachments` パラメータが自動的に含まれる SHALL
+14. WHEN `attachment view <attachment-id>` を実行 THEN 添付ファイルのメタデータ（ファイル名、サイズ、種類、作成者、作成日時、説明）が表示される SHALL
+15. WHEN `attachment download <attachment-id>` を実行 THEN 添付ファイルIDを直接指定してダウンロードできる SHALL
