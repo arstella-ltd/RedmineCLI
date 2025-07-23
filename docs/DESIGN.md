@@ -255,7 +255,7 @@ APIキーベースの認証により安全な通信を実現し、設定はYAML�
   - `attachment download <attachment-id>`: 特定の添付ファイルをダウンロード
   - `attachment view <attachment-id>`: 添付ファイルのメタデータ表示
   - `issue list-attachments <issue-id>` / `issue attachments <issue-id>`: チケットの添付ファイル一覧
-  - `issue download-attachments <issue-id> --interactive`: 対話的な選択ダウンロード
+  - `issue download-attachments <issue-id>`: 対話的な選択ダウンロード（デフォルト動作）
   - `issue download-attachments <issue-id> --all`: 全添付ファイルの一括ダウンロード
 - **ダウンロード処理フロー**
   ```
@@ -271,11 +271,11 @@ APIキーベースの認証により安全な通信を実現し、設定はYAML�
      ↓
   6. ファイル保存と完了メッセージ
   ```
-- **対話的選択フロー**
+- **対話的選択フロー**（`download-attachments`のデフォルト動作）
   ```
   1. チケットの添付ファイル一覧取得
      ↓
-  2. MultiSelectionPromptで複数選択可能
+  2. MultiSelectionPromptで複数選択可能（`gh run download`と同様）
      ↓
   3. 選択されたファイルを順次ダウンロード
      ↓

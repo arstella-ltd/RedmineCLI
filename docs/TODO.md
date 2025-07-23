@@ -386,16 +386,16 @@
   - **Red**: IssueAttachmentCommandのテストを先に作成
     - ListAttachments_Should_ShowAttachments_When_IssueHasFiles
     - ListAttachments_Should_ShowEmptyMessage_When_NoAttachments
-    - DownloadAttachments_Should_PromptSelection_When_InteractiveMode
+    - DownloadAttachments_Should_PromptSelection_When_DefaultMode
     - DownloadAttachments_Should_DownloadAll_When_AllOptionProvided
     - IssueView_Should_IncludeAttachments_When_AttachmentsExist
   - **Green**: テストを通すための実装
     - `issue list-attachments <id>` / `issue attachments <id>`コマンドの実装
-    - `issue download-attachments <id> --interactive`の実装
+    - `issue download-attachments <id>`の実装（デフォルトで対話的、gh run downloadと同様）
     - `issue download-attachments <id> --all`の実装
     - IssueモデルにAttachmentsプロパティを追加
     - issue viewコマンドでの添付ファイル表示
-    - Spectre.ConsoleのMultiSelectionPromptを使用した対話的選択
+    - Spectre.ConsoleのMultiSelectionPromptを使用した対話的選択（デフォルト動作）
     - 複数ファイルの並行ダウンロード
   - **Refactor**: UIの改善とパフォーマンス最適化
   - _要件: 11_

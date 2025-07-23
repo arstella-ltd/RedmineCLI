@@ -190,7 +190,7 @@ redmine attachment view <ATTACHMENT-ID>                                  # 添�
 # チケットの添付ファイル管理
 redmine issue list-attachments <ISSUE-ID>                               # 添付ファイル一覧表示
 redmine issue attachments <ISSUE-ID>                                     # list-attachmentsのエイリアス
-redmine issue download-attachments <ISSUE-ID> --interactive             # 対話的に選択してダウンロード
+redmine issue download-attachments <ISSUE-ID>                            # 対話的に選択してダウンロード（デフォルト動作）
 redmine issue download-attachments <ISSUE-ID> --all                     # すべての添付ファイルをダウンロード
 redmine issue download-attachments <ISSUE-ID> --all --output ./files/   # 出力先を指定して一括ダウンロード
 
