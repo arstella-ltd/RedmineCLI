@@ -788,4 +788,35 @@ AnsiConsole.Write(table);
 - 遅延初期化による起動高速化
 - 必要最小限のモジュールのみロード
 - 設定ファイルの効率的な読み込み
-- ランタイム依存の排除による軽量化（バイナリサイズ: 15MB、要件の10MB以下は警告対応後に達成見込み）
+- ランタイム依存の排除による軽量化（バイナリサイズ: 約7MB、要件の10MB以下を達成）
+
+## CI/CDアーキテクチャ
+
+### GitHub Actions構成
+- **build-and-test.yml**: PRとプッシュ時の自動テストとビルド
+  - マルチプラットフォームテスト（Windows、macOS、Linux）
+  - Native AOTビルドの検証（全プラットフォーム）
+  - コードカバレッジの収集とレポート
+  - パフォーマンスベンチマーク（起動時間測定）
+- **release.yml**: タグプッシュ時の自動リリース
+  - マルチプラットフォームバイナリの生成
+  - 自動リリースノートの作成
+  - Homebrew formulaの更新（安定版のみ）
+
+### ビルドマトリックス
+- **Windows x64**: `win-x64`（Windows Server）
+- **macOS x64**: `osx-x64`（macOS）
+- **macOS ARM64**: `osx-arm64`（macOS）
+- **Linux x64**: `linux-x64`（Ubuntu）
+- **Linux ARM64**: `linux-arm64`（Ubuntu ARM64ネイティブランナー）
+
+### Native AOT最適化設定
+- **StripSymbols=true**: シンボル情報を削除してバイナリサイズを削減
+- **OptimizationPreference=Size**: サイズ最適化を優先
+- **InvariantGlobalization=false**: ローカライゼーション機能を保持
+- **IlcGenerateStackTraceData=false**: スタックトレース情報を削除
+
+### Linux ARM64ビルドの特別対応
+- GitHub Actions ARM64ランナー（`ubuntu-24.04-arm`）を使用したネイティブビルド
+- クロスコンパイル不要による安定性とパフォーマンスの向上
+- StripSymbolsを有効化してバイナリサイズを統一（約7MB）
