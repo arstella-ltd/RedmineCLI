@@ -363,6 +363,43 @@
   - **Refactor**: セキュリティとエラー処理の強化
   - _要件: 10（将来機能）_
 
+- [ ] 20. 添付ファイルダウンロード機能の実装（TDD）
+  - **Red**: AttachmentCommandのテストを先に作成
+    - Download_Should_SaveFile_When_ValidAttachmentId
+    - Download_Should_UseOutputPath_When_OutputOptionProvided
+    - Download_Should_ShowProgress_When_Downloading
+    - Download_Should_SanitizeFilename_When_UnsafeCharacters
+    - Download_Should_OverwriteFile_When_ForceOptionProvided
+    - View_Should_ShowMetadata_When_AttachmentIdProvided
+  - **Green**: テストを通すための実装
+    - Attachmentモデルクラスの作成（JSON Source Generator対応）
+    - `attachment download <id>`コマンドの実装
+    - `attachment view <id>`コマンドの実装
+    - HTTPストリーミングダウンロード（進捗表示付き）
+    - ファイル名のサニタイズ処理（パストラバーサル対策）
+    - --output/-o オプションによる保存先指定
+    - --force/-f オプションによる上書き許可
+  - **Refactor**: ダウンロード処理の最適化とエラーハンドリング
+  - _要件: 11_
+
+- [ ] 21. チケット添付ファイル管理コマンドの実装（TDD）
+  - **Red**: IssueAttachmentCommandのテストを先に作成
+    - ListAttachments_Should_ShowAttachments_When_IssueHasFiles
+    - ListAttachments_Should_ShowEmptyMessage_When_NoAttachments
+    - DownloadAttachments_Should_PromptSelection_When_DefaultMode
+    - DownloadAttachments_Should_DownloadAll_When_AllOptionProvided
+    - IssueView_Should_IncludeAttachments_When_AttachmentsExist
+  - **Green**: テストを通すための実装
+    - `issue attachment list <id>`コマンドの実装
+    - `issue attachment download <id>`の実装（デフォルトで対話的、gh run downloadと同様）
+    - `issue attachment download <id> --all`の実装
+    - IssueモデルにAttachmentsプロパティを追加
+    - issue viewコマンドでの添付ファイル表示
+    - Spectre.ConsoleのMultiSelectionPromptを使用した対話的選択（デフォルト動作）
+    - 複数ファイルの並行ダウンロード
+  - **Refactor**: UIの改善とパフォーマンス最適化
+  - _要件: 11_
+
 ## 実装メモ
 
 ### タスク2完了（2025-07-20）

@@ -249,6 +249,48 @@ APIキーベースの認証により安全な通信を実現し、設定はYAML�
   - 空コメントエラー：「Comment cannot be empty」
   - その他APIエラー：レスポンスメッセージをそのまま表示
 
+### Attachment Command Design
+- **責任**: チケット添付ファイルのダウンロードと管理
+- **主要コマンド**
+  - `attachment download <attachment-id>`: 特定の添付ファイルをダウンロード
+  - `attachment view <attachment-id>`: 添付ファイルのメタデータ表示
+  - `issue attachment list <issue-id>`: チケットの添付ファイル一覧
+  - `issue attachment download <issue-id>`: 対話的な選択ダウンロード（デフォルト動作）
+  - `issue attachment download <issue-id> --all`: 全添付ファイルの一括ダウンロード
+- **ダウンロード処理フロー**
+  ```
+  1. 添付ファイル情報の取得
+     ↓
+  2. ファイル名のサニタイズ（パストラバーサル対策）
+     ↓
+  3. 出力先の決定（--outputオプションまたはカレントディレクトリ）
+     ↓
+  4. 既存ファイルチェック（--forceオプションで上書き許可）
+     ↓
+  5. HTTPストリーミングダウンロード（プログレス表示付き）
+     ↓
+  6. ファイル保存と完了メッセージ
+  ```
+- **対話的選択フロー**（`issue attachment download`のデフォルト動作）
+  ```
+  1. チケットの添付ファイル一覧取得
+     ↓
+  2. MultiSelectionPromptで複数選択可能（`gh run download`と同様）
+     ↓
+  3. 選択されたファイルを順次ダウンロード
+     ↓
+  4. 各ファイルのダウンロード進捗表示
+  ```
+- **セキュリティ考慮事項**
+  - ファイル名のサニタイズ（`..`や特殊文字の除去）
+  - Content-Dispositionヘッダーの適切な処理
+  - 大容量ファイルのストリーミング処理
+- **エラーハンドリング**
+  - 401 Unauthorized：認証エラー
+  - 403 Forbidden：アクセス権限なし
+  - 404 Not Found：添付ファイルが存在しない
+  - ネットワークエラー：Pollyによるリトライ処理
+
 ### API Client
 - **責任**: Redmine REST APIとの通信
 - **主要機能**
@@ -333,6 +375,9 @@ public class Issue : IEquatable<Issue>
     
     [JsonPropertyName("journals")]
     public List<Journal>? Journals { get; set; }
+    
+    [JsonPropertyName("attachments")]
+    public List<Attachment>? Attachments { get; set; }
 }
 
 // Journal.cs
@@ -374,6 +419,34 @@ public class Project { public int Id { get; set; } public string Name { get; set
 public class IssueStatus { public int Id { get; set; } public string Name { get; set; } }
 public class Priority { public int Id { get; set; } public string Name { get; set; } }
 public class User { public int Id { get; set; } public string Name { get; set; } }
+
+// Attachment.cs (添付ファイル)
+public class Attachment
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+    
+    [JsonPropertyName("filename")]
+    public string Filename { get; set; } = string.Empty;
+    
+    [JsonPropertyName("filesize")]
+    public long Filesize { get; set; }
+    
+    [JsonPropertyName("content_type")]
+    public string ContentType { get; set; } = string.Empty;
+    
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+    
+    [JsonPropertyName("content_url")]
+    public string ContentUrl { get; set; } = string.Empty;
+    
+    [JsonPropertyName("author")]
+    public User? Author { get; set; }
+    
+    [JsonPropertyName("created_on")]
+    public DateTime CreatedOn { get; set; }
+}
 
 // Config.cs (VYaml対応)
 [YamlObject]
@@ -437,6 +510,8 @@ VYamlについては、[YamlObject]属性による自動生成フォーマッタ
 [JsonSerializable(typeof(List<Journal>))]
 [JsonSerializable(typeof(JournalDetail))]
 [JsonSerializable(typeof(List<JournalDetail>))]
+[JsonSerializable(typeof(Attachment))]
+[JsonSerializable(typeof(List<Attachment>))]
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     WriteIndented = true,
@@ -535,6 +610,12 @@ public interface IRedmineApiClient
     Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default);
     
     Task<bool> TestConnectionAsync(string url, string apiKey, CancellationToken cancellationToken = default);
+    
+    Task<Attachment> GetAttachmentAsync(int id, CancellationToken cancellationToken = default);
+    
+    Task<Stream> DownloadAttachmentAsync(int id, CancellationToken cancellationToken = default);
+    
+    Task<Stream> DownloadAttachmentAsync(string contentUrl, CancellationToken cancellationToken = default);
 }
 
 // ITableFormatter.cs
@@ -542,6 +623,8 @@ public interface ITableFormatter
 {
     void FormatIssues(List<Issue> issues);
     void FormatIssueDetails(Issue issue);
+    void FormatAttachments(List<Attachment> attachments);
+    void FormatAttachmentDetails(Attachment attachment);
 }
 
 // IJsonFormatter.cs
