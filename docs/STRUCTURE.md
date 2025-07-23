@@ -67,6 +67,9 @@ RedmineCLI/                           # メインプロジェクトディレク�
 │   ├── CryptoHelper.cs               # 暗号化処理
 │   ├── TimeHelper.cs                 # 時刻変換と相対表示
 │   └── LicenseHelper.cs              # ライセンス情報管理（今後実装）
+├── Extensions/                       # 拡張機能サポート（今後実装）
+│   ├── IExtensionExecutor.cs         # 拡張機能実行インターフェース
+│   └── ExtensionExecutor.cs          # 拡張機能実行実装
 └── Resources/                        # 埋め込みリソース（今後実装）
     └── THIRD-PARTY-NOTICES.txt       # ビルド時埋め込み用
 
@@ -233,3 +236,40 @@ RedmineCLI.IntegrationTests/
 - 例: `GetIssues_ShouldReturnFilteredList_WhenStatusIsSpecified`
 - テストデータ: `Arrange-Act-Assert` パターンを使用
 - ヘルパーメソッド: `Create{ObjectName}`, `Setup{Scenario}`
+
+## 拡張機能ディレクトリ
+
+### 拡張機能の配置場所
+拡張機能は以下の優先順位で検索されます：
+
+1. **ユーザー拡張機能ディレクトリ**
+   - Windows: `%LOCALAPPDATA%\redmine\extensions\`
+   - macOS: `~/.local/share/redmine/extensions/`
+   - Linux: `~/.local/share/redmine/extensions/`
+
+2. **RedmineCLI実行ファイルと同じディレクトリ**
+   - 開発時やポータブル版で便利
+
+3. **PATH環境変数に含まれるディレクトリ**
+   - システム全体で利用可能な拡張機能
+
+### 拡張機能プロジェクトの構造例
+```
+RedmineCLI.Extension.Forum/              # 拡張機能プロジェクト
+├── RedmineCLI.Extension.Forum.csproj    # プロジェクトファイル（Native AOT設定）
+├── Program.cs                           # エントリーポイント
+├── ForumExtension.cs                    # メインロジック
+├── Models/                              # データモデル
+│   ├── Forum.cs
+│   └── ForumPost.cs
+├── Services/                            # サービス層
+│   └── ForumApiClient.cs
+├── README.md                            # 拡張機能の説明
+└── LICENSE                              # ライセンス
+
+# ビルド後の配置例
+~/.local/share/redmine/extensions/
+├── redmine-forum                        # 実行ファイル（Native AOT）
+├── redmine-report                       # 別の拡張機能
+└── redmine-backup                       # さらに別の拡張機能
+```

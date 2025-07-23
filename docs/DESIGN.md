@@ -820,3 +820,103 @@ AnsiConsole.Write(table);
 - GitHub Actions ARM64ランナー（`ubuntu-24.04-arm`）を使用したネイティブビルド
 - クロスコンパイル不要による安定性とパフォーマンスの向上
 - StripSymbolsを有効化してバイナリサイズを統一（約7MB）
+
+## 拡張機能システム
+
+### 概要
+RedmineCLIは、GitHub CLIの拡張機能モデルに基づいた拡張機能システムを提供します。拡張機能は独立した実行ファイルとして実装され、RedmineCLI本体とはプロセス分離により疎結合を実現します。
+
+### アーキテクチャ
+```
+┌──────────────────┐
+│ RedmineCLI本体   │
+├──────────────────┤
+│ Command Parser   │ ← サブコマンドを拡張機能として認識
+├──────────────────┤
+│ Extension Loader │ ← 拡張機能の検索と実行
+├──────────────────┤
+│ Process Manager  │ ← 子プロセスとして拡張機能を起動
+└──────────────────┘
+         ↓ 環境変数経由で情報伝達
+┌──────────────────┐
+│ 拡張機能         │
+│ (redmine-forum)  │ ← 独立したNative AOT実行ファイル
+└──────────────────┘
+```
+
+### 拡張機能の検出と実行フロー
+1. **コマンド解析**: `redmine forum list` → `redmine-forum` を検索
+2. **検索パス**:
+   - `~/.local/share/redmine/extensions/` (Linux/macOS)
+   - `%LOCALAPPDATA%\redmine\extensions\` (Windows)
+   - RedmineCLI実行ファイルと同じディレクトリ
+   - PATH環境変数
+3. **環境変数設定**: REDMINE_URL、REDMINE_API_KEY等を設定
+4. **プロセス起動**: 引数を渡して拡張機能を実行
+5. **結果処理**: 標準出力/エラー出力をそのまま表示
+
+### 拡張機能への環境変数
+```csharp
+// ExtensionExecutor.cs
+public class ExtensionExecutor
+{
+    private readonly IConfigService _configService;
+    
+    public async Task<int> ExecuteAsync(string extensionName, string[] args)
+    {
+        var profile = await _configService.GetActiveProfileAsync();
+        var preferences = await _configService.GetPreferencesAsync();
+        
+        var env = new Dictionary<string, string>
+        {
+            ["REDMINE_URL"] = profile.Url,
+            ["REDMINE_API_KEY"] = profile.ApiKey,
+            ["REDMINE_USER"] = profile.Username,
+            ["REDMINE_PROJECT"] = profile.DefaultProject ?? "",
+            ["REDMINE_CONFIG_DIR"] = _configService.GetConfigDirectory(),
+            ["REDMINE_OUTPUT_FORMAT"] = preferences.DefaultFormat,
+            ["REDMINE_TIME_FORMAT"] = preferences.Time.Format
+        };
+        
+        var processInfo = new ProcessStartInfo
+        {
+            FileName = $"redmine-{extensionName}",
+            Arguments = string.Join(" ", args),
+            UseShellExecute = false
+        };
+        
+        foreach (var (key, value) in env)
+            processInfo.Environment[key] = value;
+            
+        using var process = Process.Start(processInfo);
+        await process.WaitForExitAsync();
+        return process.ExitCode;
+    }
+}
+```
+
+### 拡張機能のNative AOT対応
+拡張機能もRedmineCLI本体と同様にNative AOTでコンパイルすることを推奨：
+
+```xml
+<!-- 拡張機能のプロジェクトファイル -->
+<PropertyGroup>
+    <PublishAot>true</PublishAot>
+    <StripSymbols>true</StripSymbols>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+</PropertyGroup>
+```
+
+### セキュリティとプロセス分離
+- **プロセス分離**: 各拡張機能は独立したプロセスで実行
+- **権限分離**: 拡張機能はRedmineCLI本体とは異なる権限で実行可能
+- **環境変数のみ**: APIキー等の機密情報は環境変数経由でのみ渡される
+- **標準入出力**: 通信は標準入出力のみ（ソケットやIPCなし）
+
+### 拡張機能の開発ガイドライン
+1. **命名規則**: 実行ファイル名は `redmine-<name>` 形式
+2. **引数処理**: System.CommandLineまたは同等のライブラリを使用
+3. **エラー処理**: 適切な終了コードを返す（0=成功、非0=エラー）
+4. **JSON出力**: REDMINE_OUTPUT_FORMAT=jsonの場合はJSON形式で出力
+5. **AOT互換性**: リフレクション最小化、Source Generator使用

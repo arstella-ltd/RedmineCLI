@@ -110,3 +110,16 @@ RedmineCLIは、Redmineのチケット管理をコマンドラインから効率
 5. WHEN 新しい依存関係を追加してビルド THEN THIRD-PARTY-NOTICES.txtが自動的に更新される SHALL
 6. WHEN ライセンス情報を表示 THEN 各ライブラリの著作権表示、ライセンス全文、プロジェクトURLが含まれる SHALL
 7. WHEN 企業のセキュリティ監査で確認 THEN すべての依存関係とそのライセンスが明確に識別できる SHALL
+
+### 要求 10
+**ユーザーストーリー:** 開発者として、RedmineCLIにない機能を追加したいので、プラグイン形式で独自の拡張機能を開発・実行できる
+
+#### 受け入れ基準
+1. WHEN `redmine <extension-name> <args>` を実行 THEN `redmine-<extension-name>` 実行ファイルが検索され実行される SHALL
+2. WHEN 拡張機能が実行される THEN 環境変数経由でRedmineのURL、APIキー、現在のユーザー情報が渡される SHALL
+3. WHEN 拡張機能をビルド THEN Native AOTまたはSelf-Containedとしてコンパイルできる SHALL
+4. WHEN Native AOTでビルドされた拡張機能を実行 THEN 高速起動（< 100ms）を維持する SHALL
+5. WHEN 拡張機能を配置 THEN 所定のディレクトリ（~/.local/share/redmine/extensions/）に置くことで利用可能になる SHALL
+6. WHEN 存在しない拡張機能コマンドを実行 THEN 適切なエラーメッセージが表示される SHALL
+7. WHEN 拡張機能がエラーで終了 THEN RedmineCLI本体は影響を受けずエラーを適切に報告する SHALL
+8. WHEN 拡張機能がJSON出力形式を要求される THEN 環境変数REDMINE_OUTPUT_FORMATで通知される SHALL
