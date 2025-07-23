@@ -30,20 +30,24 @@ public class TableFormatter : ITableFormatter
 
         var table = new Table();
         table.AddColumn("ID");
+        table.AddColumn("Subject");
         table.AddColumn("Priority");
         table.AddColumn("Status");
-        table.AddColumn("Subject");
         table.AddColumn("Assignee");
+        table.AddColumn("Project");
+        table.AddColumn("Due Date");
         table.AddColumn("Updated");
 
         foreach (var issue in issues)
         {
             table.AddRow(
                 issue.Id.ToString(),
+                Markup.Escape(issue.Subject ?? string.Empty),
                 Markup.Escape(issue.Priority?.Name ?? "Normal"),
                 Markup.Escape(issue.Status?.Name ?? "Unknown"),
-                Markup.Escape(issue.Subject ?? string.Empty),
                 Markup.Escape(issue.AssignedTo?.Name ?? "Unassigned"),
+                Markup.Escape(issue.Project?.Name ?? "No Project"),
+                issue.DueDate.HasValue ? _timeHelper.GetLocalTime(issue.DueDate.Value, "yyyy-MM-dd") : "Not set",
                 _timeHelper.FormatTime(issue.UpdatedOn, _timeFormat)
             );
         }
