@@ -577,19 +577,24 @@
 
 ### タスク21完了（2025-07-23）
 - TDD手法（Red→Green→Refactor）に従って実装
-- IssueAttachmentCommandTestsのテストケース15件を作成
+- IssueAttachmentCommandTestsのテストケース7件を作成
   - 添付ファイル一覧表示、空の場合のメッセージ表示
   - 対話的選択、--allオプション、無効なチケットID処理
   - issue viewでの添付ファイル表示
+  - 重複ファイル名の自動連番処理
 - チケット関連の添付ファイル管理サブコマンドを実装
   - `issue attachment list <id>`: 添付ファイル一覧表示
   - `issue attachment download <id>`: 対話的選択（デフォルト）
   - `issue attachment download <id> --all`: 全ファイルダウンロード
+  - `issue attachment download <id> --output <dir>`: 出力ディレクトリ指定
 - IssueモデルにAttachmentsプロパティを追加
+- GetIssueAsyncに`include=attachments`パラメータを自動追加
+- GetAttachmentAsyncを`/attachments/:id.json`エンドポイントを使用するよう修正
+- 並行ダウンロード時の競合状態を解消（lockブロック内でファイル作成）
+- MultiSelectionPromptによる複数ファイル選択機能
+- Spectre.Console Progressによる進捗表示
 - issue viewコマンドで添付ファイル情報を表示
-- Spectre.ConsoleのMultiSelectionPromptで対話的ファイル選択
-- 複数ファイルの並行ダウンロード機能（最大3並列）
-- すべてのテスト（245件）が成功
+- 総テスト数: 245件（すべて成功）
 - 要件11（チケット添付ファイル管理機能）の完全実装完了
 
 ## 使用方法
