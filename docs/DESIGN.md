@@ -777,14 +777,14 @@ services.AddHttpClient<IRedmineApiClient, RedmineApiClient>()
 ### 出力デザイン
 ```
 # テーブル形式の例（英語表示、デフォルト相対時刻）
-ID     STATUS        SUBJECT                           ASSIGNEE      UPDATED
-#1234  New           Implement login functionality     John Doe      about 2 hours ago
-#1235  In Progress   Review database design            Jane Smith    about 3 days ago
+ID     PRIORITY  STATUS        SUBJECT                           ASSIGNEE      UPDATED
+#1234  High      New           Implement login functionality     John Doe      about 2 hours ago
+#1235  Normal    In Progress   Review database design            Jane Smith    about 3 days ago
 
 # テーブル形式の例（--absolute-time オプション使用時）
-ID     STATUS        SUBJECT                           ASSIGNEE      UPDATED
-#1234  New           Implement login functionality     John Doe      2024-01-15 14:30
-#1235  In Progress   Review database design            Jane Smith    2024-01-12 09:15
+ID     PRIORITY  STATUS        SUBJECT                           ASSIGNEE      UPDATED
+#1234  High      New           Implement login functionality     John Doe      2024-01-15 14:30
+#1235  Normal    In Progress   Review database design            Jane Smith    2024-01-12 09:15
 
 # 成功メッセージ
 ✓ Issue #1234 created successfully

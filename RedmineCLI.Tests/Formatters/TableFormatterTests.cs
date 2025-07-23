@@ -200,4 +200,50 @@ public class TableFormatterTests
         var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue));
         exception.Should().BeNull();
     }
+
+    [Fact]
+    public void FormatIssues_Should_IncludePriorityColumn_When_DisplayingIssueList()
+    {
+        // Arrange
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "高優先度のタスク",
+                Status = new IssueStatus { Id = 1, Name = "進行中" },
+                Priority = new Priority { Id = 5, Name = "至急" },
+                AssignedTo = new User { Id = 1, Name = "山田太郎" },
+                Project = new Project { Id = 1, Name = "テストプロジェクト" },
+                UpdatedOn = new DateTime(2024, 1, 1, 10, 0, 0),
+                DueDate = new DateTime(2024, 12, 31)
+            },
+            new Issue
+            {
+                Id = 2,
+                Subject = "通常優先度のタスク",
+                Status = new IssueStatus { Id = 2, Name = "新規" },
+                Priority = new Priority { Id = 3, Name = "通常" },
+                AssignedTo = new User { Id = 2, Name = "佐藤花子" },
+                Project = new Project { Id = 1, Name = "テストプロジェクト" },
+                UpdatedOn = new DateTime(2024, 1, 2, 15, 30, 0),
+                DueDate = null
+            },
+            new Issue
+            {
+                Id = 3,
+                Subject = "優先度未設定のタスク",
+                Status = new IssueStatus { Id = 1, Name = "新規" },
+                Priority = null, // 優先度が設定されていない場合
+                AssignedTo = new User { Id = 3, Name = "鈴木一郎" },
+                Project = new Project { Id = 2, Name = "別プロジェクト" },
+                UpdatedOn = new DateTime(2024, 1, 3, 09, 15, 0),
+                DueDate = new DateTime(2024, 11, 30)
+            }
+        };
+
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.FormatIssues(issues));
+        exception.Should().BeNull();
+    }
 }
