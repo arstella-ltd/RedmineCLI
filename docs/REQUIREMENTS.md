@@ -36,6 +36,7 @@ RedmineCLIは、Redmineのチケット管理をコマンドラインから効率
 13. WHEN `--absolute-time` オプションを指定 THEN 日時はローカルタイムゾーンの絶対時刻で表示される SHALL
 14. WHEN `--json` オプションを指定 THEN 日時はISO 8601形式のUTCで出力される SHALL
 15. WHEN `config set time.format` で設定 THEN 指定された形式（relative/absolute/utc）で日時が表示される SHALL
+16. WHEN チケット一覧を表示 THEN 期日（Due Date）が設定されている場合は表示される SHALL
 
 ### 要求 3
 **ユーザーストーリー:** 開発者として、IDを指定して全情報を表示したいので、チケットの詳細情報を確認できる
@@ -46,6 +47,7 @@ RedmineCLIは、Redmineのチケット管理をコマンドラインから効率
 3. WHEN `--json` オプションを指定 THEN JSON形式で出力される SHALL
 4. WHEN 存在しないIDを指定 THEN エラーメッセージが表示される SHALL
 5. WHEN `--web` または `-w` オプションを指定 THEN 該当チケットの詳細ページをWebブラウザで開く SHALL
+6. WHEN チケットに期日（Due Date）が設定されている THEN 詳細情報に期日が表示される SHALL
 
 ### 要求 4
 **ユーザーストーリー:** 開発者として、必要な情報を入力して登録したいので、新しいチケットを作成できる
