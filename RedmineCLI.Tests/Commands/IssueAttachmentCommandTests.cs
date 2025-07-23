@@ -148,27 +148,9 @@ public class IssueAttachmentCommandTests
             AnsiConsole.Console = console;
             
             // Act
-            int result = -1;
-            try
-            {
-                result = await _issueCommand.DownloadAttachmentsAsync(issueId, false, null, CancellationToken.None);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Exception thrown: {ex.GetType().Name}");
-                Console.WriteLine($"Message: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
-                throw;
-            }
+            var result = await _issueCommand.DownloadAttachmentsAsync(issueId, false, null, CancellationToken.None);
             
             // Assert
-            if (result != 0)
-            {
-                // Output error message for debugging
-                Console.WriteLine("Test failed with exit code: " + result);
-                Console.WriteLine("Console output:");
-                Console.WriteLine(console.Output);
-            }
             result.Should().Be(0);
             console.Output.Should().Contain("Select attachments to download");
             console.Output.Should().Contain("No attachments selected");
@@ -199,7 +181,7 @@ public class IssueAttachmentCommandTests
         
         _apiClient.GetIssueAsync(issueId, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
         _apiClient.DownloadAttachmentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .Returns(new System.IO.MemoryStream(new byte[1024]));
+            .Returns(x => new System.IO.MemoryStream(new byte[1024]));
         
         using var console = new TestConsole();
         console.Profile.Capabilities.Interactive = true;
@@ -319,7 +301,7 @@ public class IssueAttachmentCommandTests
         
         _apiClient.GetIssueAsync(issueId, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
         _apiClient.DownloadAttachmentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .Returns(new System.IO.MemoryStream(new byte[1024]));
+            .Returns(x => new System.IO.MemoryStream(new byte[1024]));
         
         using var console = new TestConsole();
         console.Profile.Capabilities.Interactive = true;
@@ -337,13 +319,6 @@ public class IssueAttachmentCommandTests
             var result = await _issueCommand.DownloadAttachmentsAsync(issueId, true, tempDir, CancellationToken.None);
             
             // Assert
-            if (result != 0)
-            {
-                // Output error message for debugging
-                Console.WriteLine("Test failed with exit code: " + result);
-                Console.WriteLine("Console output:");
-                Console.WriteLine(console.Output);
-            }
             result.Should().Be(0);
             console.Output.Should().Contain("report.pdf");
             console.Output.Should().Contain("report_1.pdf");

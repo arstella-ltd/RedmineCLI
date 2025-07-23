@@ -1372,8 +1372,9 @@ public class IssueCommand
                                 
                                 string fileName;
                                 string filePath;
+                                FileStream? fileStream = null;
                                 
-                                // Generate unique filename if needed (thread-safe)
+                                // Generate unique filename and create file (thread-safe)
                                 lock (filenameLock)
                                 {
                                     fileName = attachment.Filename;
@@ -1390,11 +1391,25 @@ public class IssueCommand
                                     }
                                     
                                     usedFilenames.Add(filePath);
+                                    // Create file inside the lock to avoid race conditions
+                                    fileStream = File.Create(filePath);
                                 }
                                 
-                                using (var fileStream = File.Create(filePath))
+                                try
                                 {
-                                    await stream.CopyToAsync(fileStream);
+                                    using (fileStream)
+                                    {
+                                        await stream.CopyToAsync(fileStream);
+                                    }
+                                }
+                                catch
+                                {
+                                    // Clean up on error
+                                    lock (filenameLock)
+                                    {
+                                        usedFilenames.Remove(filePath);
+                                    }
+                                    throw;
                                 }
                                 
                                 task.Increment(100);
