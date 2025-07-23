@@ -69,7 +69,7 @@ jobs:
             rid: linux-x64
             output: redmine
           - name: "Linux ARM64"
-            os: ubuntu-24.04-arm64
+            os: ubuntu-24.04-arm
             rid: linux-arm64
             output: redmine
 
