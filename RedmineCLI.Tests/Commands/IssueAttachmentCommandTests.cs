@@ -17,6 +17,7 @@ using Xunit;
 
 namespace RedmineCLI.Tests.Commands;
 
+[Collection("AnsiConsole")]
 public class IssueAttachmentCommandTests
 {
     private readonly IRedmineApiClient _apiClient;

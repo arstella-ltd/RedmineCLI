@@ -23,7 +23,6 @@ public class AttachmentCommandTests
     private readonly IRedmineApiClient _apiClient;
     private readonly ITableFormatter _tableFormatter;
     private readonly IJsonFormatter _jsonFormatter;
-    private readonly TestConsole _console;
     private readonly AttachmentCommand _attachmentCommand;
 
     public AttachmentCommandTests()
@@ -33,7 +32,6 @@ public class AttachmentCommandTests
         _apiClient = Substitute.For<IRedmineApiClient>();
         _tableFormatter = Substitute.For<ITableFormatter>();
         _jsonFormatter = Substitute.For<IJsonFormatter>();
-        _console = new TestConsole();
 
         var profile = new Profile
         {
@@ -58,6 +56,7 @@ public class AttachmentCommandTests
     public async Task Download_Should_SaveFile_When_ValidAttachmentId()
     {
         // Arrange
+        using var console = new TestConsole();
         var attachment = new Attachment
         {
             Id = 123,
@@ -74,7 +73,7 @@ public class AttachmentCommandTests
         _apiClient.DownloadAttachmentAsync(123).Returns(stream);
 
         var command = _attachmentCommand.CreateCommand(
-            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, _console);
+            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, console);
 
         // Act
         var result = await InvokeCommandAsync(command, new[] { "download", "123" });
@@ -90,6 +89,7 @@ public class AttachmentCommandTests
     public async Task Download_Should_UseOutputPath_When_OutputOptionProvided()
     {
         // Arrange
+        using var console = new TestConsole();
         var attachment = new Attachment
         {
             Id = 123,
@@ -107,7 +107,7 @@ public class AttachmentCommandTests
         _fileSystem.AddDirectory("/downloads");
 
         var command = _attachmentCommand.CreateCommand(
-            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, _console);
+            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, console);
 
         // Act
         var result = await InvokeCommandAsync(command, new[] { "download", "123", "--output", "/downloads/" });
@@ -121,6 +121,7 @@ public class AttachmentCommandTests
     public async Task Download_Should_ShowProgress_When_Downloading()
     {
         // Arrange
+        using var console = new TestConsole();
         var attachment = new Attachment
         {
             Id = 123,
@@ -137,14 +138,14 @@ public class AttachmentCommandTests
         _apiClient.DownloadAttachmentAsync(123).Returns(stream);
 
         var command = _attachmentCommand.CreateCommand(
-            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, _console);
+            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, console);
 
         // Act
         var result = await InvokeCommandAsync(command, new[] { "download", "123" });
 
         // Assert
         result.Should().Be(0);
-        var output = _console.Output;
+        var output = console.Output;
         output.Should().Contain("Downloaded to:"); // Check for success message instead
     }
 
@@ -152,6 +153,7 @@ public class AttachmentCommandTests
     public async Task Download_Should_SanitizeFilename_When_UnsafeCharacters()
     {
         // Arrange
+        using var console = new TestConsole();
         var attachment = new Attachment
         {
             Id = 123,
@@ -168,7 +170,7 @@ public class AttachmentCommandTests
         _apiClient.DownloadAttachmentAsync(123).Returns(stream);
 
         var command = _attachmentCommand.CreateCommand(
-            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, _console);
+            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, console);
 
         // Act
         var result = await InvokeCommandAsync(command, new[] { "download", "123" });
@@ -183,6 +185,7 @@ public class AttachmentCommandTests
     public async Task Download_Should_OverwriteFile_When_ForceOptionProvided()
     {
         // Arrange
+        using var console = new TestConsole();
         var attachment = new Attachment
         {
             Id = 123,
@@ -202,7 +205,7 @@ public class AttachmentCommandTests
         _apiClient.DownloadAttachmentAsync(123).Returns(stream);
 
         var command = _attachmentCommand.CreateCommand(
-            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, _console);
+            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, console);
 
         // Act
         var result = await InvokeCommandAsync(command, new[] { "download", "123", "--force" });
@@ -217,6 +220,7 @@ public class AttachmentCommandTests
     public async Task View_Should_ShowMetadata_When_AttachmentIdProvided()
     {
         // Arrange
+        using var console = new TestConsole();
         var attachment = new Attachment
         {
             Id = 123,
@@ -232,7 +236,7 @@ public class AttachmentCommandTests
         _apiClient.GetAttachmentAsync(123).Returns(attachment);
 
         var command = _attachmentCommand.CreateCommand(
-            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, _console);
+            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, console);
 
         // Act
         var result = await InvokeCommandAsync(command, new[] { "view", "123" });
@@ -246,6 +250,7 @@ public class AttachmentCommandTests
     public async Task Download_Should_ReturnError_When_FileExistsAndNoForce()
     {
         // Arrange
+        using var console = new TestConsole();
         var attachment = new Attachment
         {
             Id = 123,
@@ -261,14 +266,14 @@ public class AttachmentCommandTests
         _apiClient.GetAttachmentAsync(123).Returns(attachment);
 
         var command = _attachmentCommand.CreateCommand(
-            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, _console);
+            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, console);
 
         // Act
         var result = await InvokeCommandAsync(command, new[] { "download", "123" });
 
         // Assert
         result.Should().Be(1);
-        var output = _console.Output;
+        var output = console.Output;
         output.Should().Contain("already exists");
         output.Should().Contain("--force");
     }
@@ -277,6 +282,7 @@ public class AttachmentCommandTests
     public async Task Download_Should_HandleNetworkError_When_DownloadFails()
     {
         // Arrange
+        using var console = new TestConsole();
         _apiClient.GetAttachmentAsync(123).Returns(new Attachment
         {
             Id = 123,
@@ -290,14 +296,14 @@ public class AttachmentCommandTests
             new HttpRequestException("Network error")));
 
         var command = _attachmentCommand.CreateCommand(
-            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, _console);
+            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, console);
 
         // Act
         var result = await InvokeCommandAsync(command, new[] { "download", "123" });
 
         // Assert
         result.Should().Be(1);
-        var output = _console.Output;
+        var output = console.Output;
         output.Should().Contain("Error");
         output.Should().Contain("Network error");
     }
@@ -306,6 +312,7 @@ public class AttachmentCommandTests
     public async Task View_Should_FormatAsJson_When_JsonOptionProvided()
     {
         // Arrange
+        using var console = new TestConsole();
         var attachment = new Attachment
         {
             Id = 123,
@@ -321,7 +328,7 @@ public class AttachmentCommandTests
         _apiClient.GetAttachmentAsync(123).Returns(attachment);
 
         var command = _attachmentCommand.CreateCommand(
-            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, _console);
+            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, console);
 
         // Act
         var result = await InvokeCommandAsync(command, new[] { "view", "123", "--json" });

@@ -27,14 +27,12 @@ public class AuthCommandTests
     private readonly IRedmineApiClient _apiClient;
     private readonly ILogger<AuthCommand> _logger;
     private readonly AuthCommand _authCommand;
-    private readonly TestConsole _console;
 
     public AuthCommandTests()
     {
         _configService = Substitute.For<IConfigService>();
         _apiClient = Substitute.For<IRedmineApiClient>();
         _logger = Substitute.For<ILogger<AuthCommand>>();
-        _console = new TestConsole();
 
         _authCommand = new AuthCommand(_configService, _apiClient, _logger);
     }

@@ -10,6 +10,7 @@ using Xunit;
 
 namespace RedmineCLI.Tests.Formatters;
 
+[Collection("AnsiConsole")]
 public class TableFormatterTests
 {
     private readonly TableFormatter _formatter;
