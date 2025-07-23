@@ -334,6 +334,35 @@
     - 「テストが書けない設計は悪い設計」の原則の徹底
   - _要件: 全体的な基盤_
 
+- [ ] 18. 拡張機能システムの実装（TDD）
+  - **Red**: ExtensionExecutorのテストを先に作成
+    - Execute_Should_RunExtension_When_ExtensionExists
+    - Execute_Should_PassEnvironmentVariables_When_ProfileActive
+    - Execute_Should_ReturnError_When_ExtensionNotFound
+    - Execute_Should_PropagateExitCode_When_ExtensionFails
+  - **Green**: テストを通すための実装
+    - ExtensionExecutorクラスの実装
+    - 拡張機能の検索ロジック（複数パス対応）
+    - 環境変数の設定と子プロセス起動
+    - 標準出力/エラー出力のパススルー
+    - System.CommandLineへの統合（未知のコマンドを拡張機能として処理）
+  - **Refactor**: エラーハンドリングとパフォーマンスの最適化
+  - _要件: 10_
+
+- [ ] 19. 拡張機能管理コマンドの実装（将来機能）
+  - **Red**: ExtensionCommandのテストを先に作成
+    - Install_Should_DownloadAndExtract_When_ValidUrl
+    - List_Should_ShowInstalledExtensions_When_Called
+    - Remove_Should_DeleteExtension_When_Exists
+    - Update_Should_ReplaceExtension_When_NewVersionAvailable
+  - **Green**: テストを通すための実装
+    - `extension install`コマンド：GitHubリリースからダウンロード
+    - `extension list`コマンド：インストール済み拡張機能の一覧
+    - `extension remove`コマンド：拡張機能の削除
+    - `extension update`コマンド：拡張機能の更新
+  - **Refactor**: セキュリティとエラー処理の強化
+  - _要件: 10（将来機能）_
+
 ## 実装メモ
 
 ### タスク2完了（2025-07-20）
