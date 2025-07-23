@@ -1,9 +1,11 @@
 using System.CommandLine;
 using System.IO.Abstractions;
+
 using RedmineCLI.ApiClient;
 using RedmineCLI.Exceptions;
 using RedmineCLI.Formatters;
 using RedmineCLI.Services;
+
 using Spectre.Console;
 
 namespace RedmineCLI.Commands;
@@ -19,15 +21,15 @@ public class AttachmentCommand
         IAnsiConsole? console = null)
     {
         var attachmentCommand = new Command("attachment", "Manage attachments");
-        
+
         // attachment download <id>
         var downloadCommand = CreateDownloadCommand(configService, apiClient, fileSystem ?? new FileSystem(), console ?? AnsiConsole.Console);
         attachmentCommand.Add(downloadCommand);
-        
+
         // attachment view <id>
         var viewCommand = CreateViewCommand(configService, apiClient, tableFormatter, jsonFormatter);
         attachmentCommand.Add(viewCommand);
-        
+
         return attachmentCommand;
     }
 
@@ -38,15 +40,15 @@ public class AttachmentCommand
         IAnsiConsole console)
     {
         var command = new Command("download", "Download an attachment");
-        
+
         var idArg = new Argument<int>("id");
         idArg.Description = "Attachment ID";
         command.Add(idArg);
-        
+
         var outputOption = new Option<string?>("--output") { Description = "Output directory path" };
         outputOption.Aliases.Add("-o");
         command.Add(outputOption);
-        
+
         var forceOption = new Option<bool>("--force") { Description = "Overwrite existing file" };
         forceOption.Aliases.Add("-f");
         command.Add(forceOption);
@@ -56,7 +58,7 @@ public class AttachmentCommand
             var attachmentId = parseResult.GetValue(idArg);
             var outputPath = parseResult.GetValue(outputOption);
             var force = parseResult.GetValue(forceOption);
-            
+
             try
             {
                 var profile = await configService.GetActiveProfileAsync();
@@ -69,10 +71,10 @@ public class AttachmentCommand
 
                 // Get attachment metadata
                 var attachment = await apiClient.GetAttachmentAsync(attachmentId);
-                
+
                 // Sanitize filename
                 var sanitizedFilename = SanitizeFilename(attachment.Filename);
-                
+
                 // Determine output path
                 string fullPath;
                 if (!string.IsNullOrEmpty(outputPath))
@@ -82,7 +84,7 @@ public class AttachmentCommand
                     {
                         console.MarkupLine($"[red]Error: Directory '{directory}' does not exist.[/]");
                         Environment.ExitCode = 1;
-                    return;
+                        return;
                     }
                     fullPath = fileSystem.Path.Combine(directory, sanitizedFilename);
                 }
@@ -90,7 +92,7 @@ public class AttachmentCommand
                 {
                     fullPath = fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), sanitizedFilename);
                 }
-                
+
                 // Check if file exists
                 if (fileSystem.File.Exists(fullPath) && !force)
                 {
@@ -98,7 +100,7 @@ public class AttachmentCommand
                     Environment.ExitCode = 1;
                     return;
                 }
-                
+
                 // Download with progress
                 await console.Progress()
                     .StartAsync(async ctx =>
@@ -107,13 +109,13 @@ public class AttachmentCommand
                         {
                             AutoStart = true
                         });
-                        
+
                         try
                         {
                             // Download the file
                             using var stream = await apiClient.DownloadAttachmentAsync(attachmentId);
                             using var fileStream = fileSystem.File.Create(fullPath);
-                            
+
                             // Copy with progress tracking if size is known
                             if (attachment.Filesize > 0)
                             {
@@ -121,7 +123,7 @@ public class AttachmentCommand
                                 var buffer = new byte[8192];
                                 var totalRead = 0L;
                                 int read;
-                                
+
                                 while ((read = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                                 {
                                     await fileStream.WriteAsync(buffer, 0, read);
@@ -135,7 +137,7 @@ public class AttachmentCommand
                                 task.IsIndeterminate = true;
                                 await stream.CopyToAsync(fileStream);
                             }
-                            
+
                             task.Value = task.MaxValue;
                         }
                         catch (Exception)
@@ -144,7 +146,7 @@ public class AttachmentCommand
                             throw;
                         }
                     });
-                
+
                 console.MarkupLine($"[green]✓[/] Downloaded to: {fullPath}");
             }
             catch (HttpRequestException ex)
@@ -158,7 +160,7 @@ public class AttachmentCommand
                 Environment.ExitCode = 1;
             }
         });
-        
+
         return command;
     }
 
@@ -169,11 +171,11 @@ public class AttachmentCommand
         IJsonFormatter jsonFormatter)
     {
         var command = new Command("view", "View attachment metadata");
-        
+
         var idArg = new Argument<int>("id");
         idArg.Description = "Attachment ID";
         command.Add(idArg);
-        
+
         var jsonOption = new Option<bool>("--json") { Description = "Format output as JSON" };
         command.Add(jsonOption);
 
@@ -181,7 +183,7 @@ public class AttachmentCommand
         {
             var attachmentId = parseResult.GetValue(idArg);
             var isJson = parseResult.GetValue(jsonOption);
-            
+
             try
             {
                 var profile = await configService.GetActiveProfileAsync();
@@ -193,7 +195,7 @@ public class AttachmentCommand
                 }
 
                 var attachment = await apiClient.GetAttachmentAsync(attachmentId);
-                
+
                 if (isJson)
                 {
                     jsonFormatter.FormatAttachmentDetails(attachment);
@@ -214,7 +216,7 @@ public class AttachmentCommand
                 Environment.ExitCode = 1;
             }
         });
-        
+
         return command;
     }
 
@@ -222,26 +224,26 @@ public class AttachmentCommand
     {
         // First, extract just the filename from any path
         var baseName = Path.GetFileName(filename);
-        
+
         // If GetFileName returns empty (e.g., for paths ending with separator), use the original
         if (string.IsNullOrEmpty(baseName))
         {
             baseName = filename;
         }
-        
+
         // Remove invalid characters
         var invalidChars = Path.GetInvalidFileNameChars();
         var sanitized = string.Join("", baseName.Split(invalidChars));
-        
+
         // Remove any remaining path traversal attempts
         sanitized = sanitized.Replace("..", "");
-        
+
         // If filename is empty after sanitization, use a default
         if (string.IsNullOrWhiteSpace(sanitized))
         {
             sanitized = "attachment";
         }
-        
+
         return sanitized;
     }
 }

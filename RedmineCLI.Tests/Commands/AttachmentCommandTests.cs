@@ -3,15 +3,20 @@ using System.CommandLine.Invocation;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Text;
+
 using FluentAssertions;
+
 using NSubstitute;
+
 using RedmineCLI.ApiClient;
 using RedmineCLI.Commands;
 using RedmineCLI.Exceptions;
 using RedmineCLI.Formatters;
 using RedmineCLI.Models;
 using RedmineCLI.Services;
+
 using Spectre.Console.Testing;
+
 using Xunit;
 
 namespace RedmineCLI.Tests.Commands;
@@ -65,10 +70,10 @@ public class AttachmentCommandTests
             ContentType = "application/pdf",
             ContentUrl = "https://redmine.example.com/attachments/download/123/test-file.pdf"
         };
-        
+
         var fileContent = Encoding.UTF8.GetBytes("Test file content");
         var stream = new MemoryStream(fileContent);
-        
+
         _apiClient.GetAttachmentAsync(123).Returns(attachment);
         _apiClient.DownloadAttachmentAsync(123).Returns(stream);
 
@@ -98,10 +103,10 @@ public class AttachmentCommandTests
             ContentType = "application/pdf",
             ContentUrl = "https://redmine.example.com/attachments/download/123/test-file.pdf"
         };
-        
+
         var fileContent = Encoding.UTF8.GetBytes("Test file content");
         var stream = new MemoryStream(fileContent);
-        
+
         _apiClient.GetAttachmentAsync(123).Returns(attachment);
         _apiClient.DownloadAttachmentAsync(123).Returns(stream);
         _fileSystem.AddDirectory("/downloads");
@@ -130,10 +135,10 @@ public class AttachmentCommandTests
             ContentType = "application/zip",
             ContentUrl = "https://redmine.example.com/attachments/download/123/large-file.zip"
         };
-        
+
         var fileContent = new byte[1024 * 1024]; // 1MB
         var stream = new MemoryStream(fileContent);
-        
+
         _apiClient.GetAttachmentAsync(123).Returns(attachment);
         _apiClient.DownloadAttachmentAsync(123).Returns(stream);
 
@@ -162,10 +167,10 @@ public class AttachmentCommandTests
             ContentType = "text/plain",
             ContentUrl = "https://redmine.example.com/attachments/download/123/passwd"
         };
-        
+
         var fileContent = Encoding.UTF8.GetBytes("Test file content");
         var stream = new MemoryStream(fileContent);
-        
+
         _apiClient.GetAttachmentAsync(123).Returns(attachment);
         _apiClient.DownloadAttachmentAsync(123).Returns(stream);
 
@@ -194,13 +199,13 @@ public class AttachmentCommandTests
             ContentType = "text/plain",
             ContentUrl = "https://redmine.example.com/attachments/download/123/existing-file.txt"
         };
-        
+
         // Create existing file
         _fileSystem.AddFile("existing-file.txt", new MockFileData("Old content"));
-        
+
         var newContent = Encoding.UTF8.GetBytes("New content");
         var stream = new MemoryStream(newContent);
-        
+
         _apiClient.GetAttachmentAsync(123).Returns(attachment);
         _apiClient.DownloadAttachmentAsync(123).Returns(stream);
 
@@ -232,7 +237,7 @@ public class AttachmentCommandTests
             CreatedOn = new DateTime(2024, 1, 15, 10, 30, 0, DateTimeKind.Utc),
             ContentUrl = "https://redmine.example.com/attachments/download/123/document.pdf"
         };
-        
+
         _apiClient.GetAttachmentAsync(123).Returns(attachment);
 
         var command = _attachmentCommand.CreateCommand(
@@ -259,10 +264,10 @@ public class AttachmentCommandTests
             ContentType = "text/plain",
             ContentUrl = "https://redmine.example.com/attachments/download/123/existing-file.txt"
         };
-        
+
         // Create existing file
         _fileSystem.AddFile("existing-file.txt", new MockFileData("Old content"));
-        
+
         _apiClient.GetAttachmentAsync(123).Returns(attachment);
 
         var command = _attachmentCommand.CreateCommand(
@@ -291,7 +296,7 @@ public class AttachmentCommandTests
             ContentType = "text/plain",
             ContentUrl = "https://redmine.example.com/attachments/download/123/test.txt"
         });
-        
+
         _apiClient.DownloadAttachmentAsync(123).Returns(Task.FromException<Stream>(
             new HttpRequestException("Network error")));
 
@@ -324,7 +329,7 @@ public class AttachmentCommandTests
             CreatedOn = new DateTime(2024, 1, 15, 10, 30, 0, DateTimeKind.Utc),
             ContentUrl = "https://redmine.example.com/attachments/download/123/document.pdf"
         };
-        
+
         _apiClient.GetAttachmentAsync(123).Returns(attachment);
 
         var command = _attachmentCommand.CreateCommand(

@@ -167,7 +167,7 @@ public class Program
 
         // License Helper
         services.AddSingleton<ILicenseHelper, LicenseHelper>();
-        
+
         // File System
         services.AddSingleton<IFileSystem, FileSystem>();
     }

@@ -201,26 +201,26 @@ public class IssueCommand
 
         // Attachment command
         var attachmentCommand = new Command("attachment", "Manage issue attachments");
-        
+
         // Attachment list subcommand
         var attachmentListCommand = new Command("list", "List attachments of an issue");
         var attachmentListIdArgument = new Argument<int>("ID");
         attachmentListIdArgument.Description = "Issue ID";
         var attachmentListJsonOption = new Option<bool>("--json") { Description = "Output in JSON format" };
-        
+
         attachmentListCommand.Add(attachmentListIdArgument);
         attachmentListCommand.Add(attachmentListJsonOption);
-        
+
         attachmentListCommand.SetAction(async (parseResult) =>
         {
             var id = parseResult.GetValue(attachmentListIdArgument);
             var json = parseResult.GetValue(attachmentListJsonOption);
-            
+
             Environment.ExitCode = await issueCommand.ListAttachmentsAsync(id, json, CancellationToken.None);
         });
-        
+
         attachmentCommand.Add(attachmentListCommand);
-        
+
         // Attachment download subcommand
         var attachmentDownloadCommand = new Command("download", "Download attachments from an issue");
         var attachmentDownloadIdArgument = new Argument<int>("ID");
@@ -228,20 +228,20 @@ public class IssueCommand
         var attachmentDownloadAllOption = new Option<bool>("--all") { Description = "Download all attachments" };
         var attachmentDownloadOutputOption = new Option<string?>("--output") { Description = "Output directory (default: current directory)" };
         attachmentDownloadOutputOption.Aliases.Add("-o");
-        
+
         attachmentDownloadCommand.Add(attachmentDownloadIdArgument);
         attachmentDownloadCommand.Add(attachmentDownloadAllOption);
         attachmentDownloadCommand.Add(attachmentDownloadOutputOption);
-        
+
         attachmentDownloadCommand.SetAction(async (parseResult) =>
         {
             var id = parseResult.GetValue(attachmentDownloadIdArgument);
             var all = parseResult.GetValue(attachmentDownloadAllOption);
             var output = parseResult.GetValue(attachmentDownloadOutputOption);
-            
+
             Environment.ExitCode = await issueCommand.DownloadAttachmentsAsync(id, all, output, CancellationToken.None);
         });
-        
+
         attachmentCommand.Add(attachmentDownloadCommand);
         command.Add(attachmentCommand);
 
@@ -1363,23 +1363,23 @@ public class IssueCommand
                     foreach (var attachment in attachmentsToDownload)
                     {
                         var task = ctx.AddTask($"[green]Downloading {attachment.Filename}[/]");
-                        
+
                         downloadTasks.Add(Task.Run(async () =>
                         {
                             try
                             {
                                 using var stream = await _apiClient.DownloadAttachmentAsync(attachment.Id, cancellationToken);
-                                
+
                                 string fileName;
                                 string filePath;
                                 FileStream? fileStream = null;
-                                
+
                                 // Generate unique filename and create file (thread-safe)
                                 lock (filenameLock)
                                 {
                                     fileName = attachment.Filename;
                                     filePath = Path.Combine(outputDirectory, fileName);
-                                    
+
                                     var counter = 1;
                                     while (File.Exists(filePath) || usedFilenames.Contains(filePath))
                                     {
@@ -1389,12 +1389,12 @@ public class IssueCommand
                                         filePath = Path.Combine(outputDirectory, fileName);
                                         counter++;
                                     }
-                                    
+
                                     usedFilenames.Add(filePath);
                                     // Create file inside the lock to avoid race conditions
                                     fileStream = File.Create(filePath);
                                 }
-                                
+
                                 try
                                 {
                                     using (fileStream)
@@ -1411,10 +1411,10 @@ public class IssueCommand
                                     }
                                     throw;
                                 }
-                                
+
                                 task.Increment(100);
                                 Interlocked.Increment(ref downloadedCount);
-                                
+
                                 AnsiConsole.MarkupLine($"[green]✓[/] Downloaded {Markup.Escape(attachment.Filename)} as {Markup.Escape(fileName)}");
                             }
                             catch (Exception ex)

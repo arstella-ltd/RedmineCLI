@@ -2,17 +2,23 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+
 using FluentAssertions;
+
 using Microsoft.Extensions.Logging;
+
 using NSubstitute;
+
 using RedmineCLI.ApiClient;
 using RedmineCLI.Commands;
 using RedmineCLI.Formatters;
 using RedmineCLI.Models;
 using RedmineCLI.Services;
 using RedmineCLI.Utils;
+
 using Spectre.Console;
 using Spectre.Console.Testing;
+
 using Xunit;
 
 namespace RedmineCLI.Tests.Commands;
@@ -43,7 +49,7 @@ public class IssueAttachmentCommandTests
             ApiKey = "test-api-key"
         };
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<RedmineCLI.Models.Profile?>(profile));
-        
+
         // デフォルトの設定
         var preferences = new Preferences
         {
@@ -52,7 +58,7 @@ public class IssueAttachmentCommandTests
         };
         var config = new Config { Preferences = preferences };
         _configService.LoadConfigAsync().Returns(Task.FromResult(config));
-        
+
         _issueCommand = new IssueCommand(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
     }
 
@@ -71,17 +77,17 @@ public class IssueAttachmentCommandTests
                 new() { Id = 2, Filename = "screenshot.png", Filesize = 512000, Author = new User { Name = "Jane Smith" }, CreatedOn = DateTime.UtcNow.AddHours(-6) }
             }
         };
-        
+
         _apiClient.GetIssueAsync(issueId, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
-        
+
         // Act
         var result = await _issueCommand.ListAttachmentsAsync(issueId, false, CancellationToken.None);
-        
+
         // Assert
         result.Should().Be(0);
-        _tableFormatter.Received(1).FormatAttachments(Arg.Is<List<Attachment>>(list => 
-            list.Count == 2 && 
-            list[0].Filename == "document.pdf" && 
+        _tableFormatter.Received(1).FormatAttachments(Arg.Is<List<Attachment>>(list =>
+            list.Count == 2 &&
+            list[0].Filename == "document.pdf" &&
             list[1].Filename == "screenshot.png"));
     }
 
@@ -96,9 +102,9 @@ public class IssueAttachmentCommandTests
             Subject = "Test Issue",
             Attachments = new List<Attachment>()
         };
-        
+
         _apiClient.GetIssueAsync(issueId, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
-        
+
         // Act
         using var console = new TestConsole();
         console.Profile.Capabilities.Interactive = true;
@@ -107,7 +113,7 @@ public class IssueAttachmentCommandTests
         {
             AnsiConsole.Console = console;
             var result = await _issueCommand.ListAttachmentsAsync(issueId, false, CancellationToken.None);
-            
+
             // Assert
             result.Should().Be(0);
             console.Output.Should().Contain("No attachments found for issue #123");
@@ -134,23 +140,23 @@ public class IssueAttachmentCommandTests
                 new() { Id = 2, Filename = "file2.txt", Filesize = 2048 }
             }
         };
-        
+
         _apiClient.GetIssueAsync(issueId, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
-        
+
         using var console = new TestConsole();
         console.Profile.Capabilities.Interactive = true;
         // Simply select with Enter (no selection = empty list)
         console.Input.PushKey(ConsoleKey.Enter);
-        
+
         // Store original console
         var originalConsole = AnsiConsole.Console;
         try
         {
             AnsiConsole.Console = console;
-            
+
             // Act
             var result = await _issueCommand.DownloadAttachmentsAsync(issueId, false, null, CancellationToken.None);
-            
+
             // Assert
             result.Should().Be(0);
             console.Output.Should().Contain("Select attachments to download");
@@ -179,26 +185,26 @@ public class IssueAttachmentCommandTests
                 new() { Id = 3, Filename = "file3.txt", Filesize = 3072 }
             }
         };
-        
+
         _apiClient.GetIssueAsync(issueId, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
         _apiClient.DownloadAttachmentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(x => new System.IO.MemoryStream(new byte[1024]));
-        
+
         using var console = new TestConsole();
         console.Profile.Capabilities.Interactive = true;
-        
+
         // Use temp directory for test
         var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-        
+
         // Store original console
         var originalConsole = AnsiConsole.Console;
         try
         {
             AnsiConsole.Console = console;
-            
+
             // Act
             var result = await _issueCommand.DownloadAttachmentsAsync(issueId, true, tempDir, CancellationToken.None);
-            
+
             // Assert
             result.Should().Be(0);
             await _apiClient.Received(3).DownloadAttachmentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
@@ -211,7 +217,7 @@ public class IssueAttachmentCommandTests
         {
             // Restore original console
             AnsiConsole.Console = originalConsole;
-            
+
             if (Directory.Exists(tempDir))
                 Directory.Delete(tempDir, true);
         }
@@ -234,18 +240,18 @@ public class IssueAttachmentCommandTests
                 new() { Id = 1, Filename = "report.pdf", Filesize = 2048000, Author = new User { Name = "John Doe" }, CreatedOn = DateTime.UtcNow.AddDays(-2) }
             }
         };
-        
+
         _apiClient.GetIssueAsync(issueId, true, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
-        
+
         // Act
         var result = await _issueCommand.ViewAsync(issueId, false, false, false, CancellationToken.None);
-        
+
         // Assert
         result.Should().Be(0);
-        _tableFormatter.Received(1).FormatIssueDetails(Arg.Is<Issue>(i => 
-            i.Id == issueId && 
-            i.Attachments != null && 
-            i.Attachments.Count == 1 && 
+        _tableFormatter.Received(1).FormatIssueDetails(Arg.Is<Issue>(i =>
+            i.Id == issueId &&
+            i.Attachments != null &&
+            i.Attachments.Count == 1 &&
             i.Attachments[0].Filename == "report.pdf"));
     }
 
@@ -260,19 +266,19 @@ public class IssueAttachmentCommandTests
             Subject = "Test Issue",
             Attachments = new List<Attachment>()
         };
-        
+
         _apiClient.GetIssueAsync(issueId, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
-        
+
         using var console = new TestConsole();
         console.Profile.Capabilities.Interactive = true;
         var originalConsole = AnsiConsole.Console;
         try
         {
             AnsiConsole.Console = console;
-            
+
             // Act
             var result = await _issueCommand.DownloadAttachmentsAsync(issueId, false, null, CancellationToken.None);
-            
+
             // Assert
             result.Should().Be(0);
             console.Output.Should().Contain("No attachments found for issue #123");
@@ -299,26 +305,26 @@ public class IssueAttachmentCommandTests
                 new() { Id = 2, Filename = "report.pdf", Filesize = 2048 } // 同じファイル名
             }
         };
-        
+
         _apiClient.GetIssueAsync(issueId, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
         _apiClient.DownloadAttachmentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(x => new System.IO.MemoryStream(new byte[1024]));
-        
+
         using var console = new TestConsole();
         console.Profile.Capabilities.Interactive = true;
-        
+
         // Use temp directory for test
         var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-        
+
         // Store original console
         var originalConsole = AnsiConsole.Console;
         try
         {
             AnsiConsole.Console = console;
-            
+
             // Act
             var result = await _issueCommand.DownloadAttachmentsAsync(issueId, true, tempDir, CancellationToken.None);
-            
+
             // Assert
             result.Should().Be(0);
             console.Output.Should().Contain("report.pdf");
@@ -328,7 +334,7 @@ public class IssueAttachmentCommandTests
         {
             // Restore original console
             AnsiConsole.Console = originalConsole;
-            
+
             if (Directory.Exists(tempDir))
                 Directory.Delete(tempDir, true);
         }
