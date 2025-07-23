@@ -239,7 +239,7 @@ public class AttachmentCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _tableFormatter.Received(1).FormatAttachmentDetailsAsync(attachment);
+        _tableFormatter.Received(1).FormatAttachmentDetails(attachment);
     }
 
     [Fact]
@@ -328,6 +328,6 @@ public class AttachmentCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _jsonFormatter.Received(1).FormatAttachmentDetailsAsync(attachment);
+        _jsonFormatter.Received(1).FormatAttachmentDetails(attachment);
     }
 }

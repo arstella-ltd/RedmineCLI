@@ -6,6 +6,7 @@ public interface IJsonFormatter
 {
     void FormatIssues(List<Issue> issues);
     void FormatIssueDetails(Issue issue);
-    Task FormatAttachmentsAsync(List<Attachment> attachments);
-    Task FormatAttachmentDetailsAsync(Attachment attachment);
+    void FormatAttachments(List<Attachment> attachments);
+    void FormatAttachmentDetails(Attachment attachment);
+    void FormatObject<T>(T obj);
 }

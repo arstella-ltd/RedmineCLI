@@ -121,10 +121,37 @@ public class TableFormatter : ITableFormatter
                     AnsiConsole.WriteLine($"  {Markup.Escape(journal.Notes)}");
                 }
             }
+            AnsiConsole.WriteLine();
+        }
+
+        // Attachments
+        if (issue.Attachments != null && issue.Attachments.Count > 0)
+        {
+            AnsiConsole.MarkupLine("[bold]Attachments:[/]");
+            
+            var attachmentTable = new Table();
+            attachmentTable.AddColumn("ID");
+            attachmentTable.AddColumn("Filename");
+            attachmentTable.AddColumn("Size");
+            attachmentTable.AddColumn("Author");
+            attachmentTable.AddColumn("Created");
+            
+            foreach (var attachment in issue.Attachments)
+            {
+                attachmentTable.AddRow(
+                    $"#{attachment.Id}",
+                    Markup.Escape(attachment.Filename),
+                    FormatFileSize(attachment.Filesize),
+                    Markup.Escape(attachment.Author?.Name ?? "Unknown"),
+                    _timeHelper.FormatTime(attachment.CreatedOn, _timeFormat)
+                );
+            }
+            
+            AnsiConsole.Write(attachmentTable);
         }
     }
 
-    public Task FormatAttachmentsAsync(List<Attachment> attachments)
+    public void FormatAttachments(List<Attachment> attachments)
     {
         var table = new Table();
         table.AddColumn("ID");
@@ -147,10 +174,9 @@ public class TableFormatter : ITableFormatter
         }
 
         AnsiConsole.Write(table);
-        return Task.CompletedTask;
     }
 
-    public Task FormatAttachmentDetailsAsync(Attachment attachment)
+    public void FormatAttachmentDetails(Attachment attachment)
     {
         var panel = new Panel($"[bold]Attachment #{attachment.Id}[/]")
             .BorderColor(Color.Blue)
@@ -180,8 +206,6 @@ public class TableFormatter : ITableFormatter
         AnsiConsole.Write(panel);
         AnsiConsole.WriteLine();
         AnsiConsole.Write(grid);
-        
-        return Task.CompletedTask;
     }
 
     private static string FormatFileSize(long bytes)

@@ -54,7 +54,7 @@ public class RedmineApiClient : IRedmineApiClient
 
     public async Task<Issue> GetIssueAsync(int id, CancellationToken cancellationToken = default)
     {
-        var path = $"/issues/{id}.json";
+        var path = $"/issues/{id}.json?include=attachments";
         var issueResponse = await GetAsync(path, RedmineJsonContext.Default.IssueResponse, $"get issue {id}", cancellationToken);
 
         return issueResponse?.Issue ?? throw new RedmineApiException(
@@ -65,8 +65,8 @@ public class RedmineApiClient : IRedmineApiClient
     public async Task<Issue> GetIssueAsync(int id, bool includeJournals, CancellationToken cancellationToken = default)
     {
         var path = includeJournals
-            ? $"/issues/{id}.json?include=journals"
-            : $"/issues/{id}.json";
+            ? $"/issues/{id}.json?include=journals,attachments"
+            : $"/issues/{id}.json?include=attachments";
 
         var issueResponse = await GetAsync(path, RedmineJsonContext.Default.IssueResponse, $"get issue {id}", cancellationToken);
 

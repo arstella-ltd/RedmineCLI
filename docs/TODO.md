@@ -382,7 +382,7 @@
   - **Refactor**: ダウンロード処理の最適化とエラーハンドリング
   - _要件: 11_
 
-- [ ] 21. チケット添付ファイル管理コマンドの実装（TDD）
+- [x] 21. チケット添付ファイル管理コマンドの実装（TDD）
   - **Red**: IssueAttachmentCommandのテストを先に作成
     - ListAttachments_Should_ShowAttachments_When_IssueHasFiles
     - ListAttachments_Should_ShowEmptyMessage_When_NoAttachments
@@ -574,6 +574,23 @@
 - Environment.Exit()をEnvironment.ExitCodeに変更（テスタビリティ向上）
 - すべてのテスト（230件）が成功
 - 要件11（添付ファイルダウンロード機能）の部分実装完了
+
+### タスク21完了（2025-07-23）
+- TDD手法（Red→Green→Refactor）に従って実装
+- IssueAttachmentCommandTestsのテストケース15件を作成
+  - 添付ファイル一覧表示、空の場合のメッセージ表示
+  - 対話的選択、--allオプション、無効なチケットID処理
+  - issue viewでの添付ファイル表示
+- チケット関連の添付ファイル管理サブコマンドを実装
+  - `issue attachment list <id>`: 添付ファイル一覧表示
+  - `issue attachment download <id>`: 対話的選択（デフォルト）
+  - `issue attachment download <id> --all`: 全ファイルダウンロード
+- IssueモデルにAttachmentsプロパティを追加
+- issue viewコマンドで添付ファイル情報を表示
+- Spectre.ConsoleのMultiSelectionPromptで対話的ファイル選択
+- 複数ファイルの並行ダウンロード機能（最大3並列）
+- すべてのテスト（245件）が成功
+- 要件11（チケット添付ファイル管理機能）の完全実装完了
 
 ## 使用方法
 

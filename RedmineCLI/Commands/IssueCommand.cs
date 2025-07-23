@@ -2,6 +2,7 @@ using System.CommandLine;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 using Microsoft.Extensions.Logging;
 
@@ -197,6 +198,52 @@ public class IssueCommand
         });
 
         command.Add(commentCommand);
+
+        // Attachment command
+        var attachmentCommand = new Command("attachment", "Manage issue attachments");
+        
+        // Attachment list subcommand
+        var attachmentListCommand = new Command("list", "List attachments of an issue");
+        var attachmentListIdArgument = new Argument<int>("ID");
+        attachmentListIdArgument.Description = "Issue ID";
+        var attachmentListJsonOption = new Option<bool>("--json") { Description = "Output in JSON format" };
+        
+        attachmentListCommand.Add(attachmentListIdArgument);
+        attachmentListCommand.Add(attachmentListJsonOption);
+        
+        attachmentListCommand.SetAction(async (parseResult) =>
+        {
+            var id = parseResult.GetValue(attachmentListIdArgument);
+            var json = parseResult.GetValue(attachmentListJsonOption);
+            
+            Environment.ExitCode = await issueCommand.ListAttachmentsAsync(id, json, CancellationToken.None);
+        });
+        
+        attachmentCommand.Add(attachmentListCommand);
+        
+        // Attachment download subcommand
+        var attachmentDownloadCommand = new Command("download", "Download attachments from an issue");
+        var attachmentDownloadIdArgument = new Argument<int>("ID");
+        attachmentDownloadIdArgument.Description = "Issue ID";
+        var attachmentDownloadAllOption = new Option<bool>("--all") { Description = "Download all attachments" };
+        var attachmentDownloadOutputOption = new Option<string?>("--output") { Description = "Output directory (default: current directory)" };
+        attachmentDownloadOutputOption.Aliases.Add("-o");
+        
+        attachmentDownloadCommand.Add(attachmentDownloadIdArgument);
+        attachmentDownloadCommand.Add(attachmentDownloadAllOption);
+        attachmentDownloadCommand.Add(attachmentDownloadOutputOption);
+        
+        attachmentDownloadCommand.SetAction(async (parseResult) =>
+        {
+            var id = parseResult.GetValue(attachmentDownloadIdArgument);
+            var all = parseResult.GetValue(attachmentDownloadAllOption);
+            var output = parseResult.GetValue(attachmentDownloadOutputOption);
+            
+            Environment.ExitCode = await issueCommand.DownloadAttachmentsAsync(id, all, output, CancellationToken.None);
+        });
+        
+        attachmentCommand.Add(attachmentDownloadCommand);
+        command.Add(attachmentCommand);
 
         return command;
     }
@@ -1207,5 +1254,210 @@ public class IssueCommand
         {
             AnsiConsole.MarkupLine($"[green]✓[/] {action} to issue #{issueId}");
         }
+    }
+
+    public async Task<int> ListAttachmentsAsync(int issueId, bool json, CancellationToken cancellationToken)
+    {
+        try
+        {
+            _logger.LogDebug("Listing attachments for issue {IssueId}", issueId);
+
+            var issue = await _apiClient.GetIssueAsync(issueId, cancellationToken);
+
+            if (issue.Attachments == null || issue.Attachments.Count == 0)
+            {
+                AnsiConsole.MarkupLine($"[yellow]No attachments found for issue #{issueId}[/]");
+                return 0;
+            }
+
+            if (json)
+            {
+                _jsonFormatter.FormatObject(issue.Attachments);
+            }
+            else
+            {
+                _tableFormatter.FormatAttachments(issue.Attachments);
+            }
+
+            return 0;
+        }
+        catch (RedmineApiException ex)
+        {
+            _logger.LogError(ex, "Failed to list attachments for issue {IssueId}", issueId);
+            AnsiConsole.MarkupLine($"[red]Error: {ex.Message}[/]");
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error listing attachments for issue {IssueId}", issueId);
+            AnsiConsole.MarkupLine("[red]Error: An unexpected error occurred[/]");
+            return 1;
+        }
+    }
+
+    public async Task<int> DownloadAttachmentsAsync(int issueId, bool all, string? outputDirectory, CancellationToken cancellationToken)
+    {
+        try
+        {
+            _logger.LogDebug("Downloading attachments for issue {IssueId}", issueId);
+
+            var issue = await _apiClient.GetIssueAsync(issueId, cancellationToken);
+
+            if (issue.Attachments == null || issue.Attachments.Count == 0)
+            {
+                AnsiConsole.MarkupLine($"[yellow]No attachments found for issue #{issueId}[/]");
+                return 0;
+            }
+
+            List<Attachment> attachmentsToDownload;
+
+            if (all)
+            {
+                attachmentsToDownload = issue.Attachments;
+            }
+            else
+            {
+                // Interactive selection using MultiSelectionPrompt
+                attachmentsToDownload = AnsiConsole.Prompt(
+                    new MultiSelectionPrompt<Attachment>()
+                        .Title("Select attachments to download:")
+                        .NotRequired()
+                        .UseConverter(a => $"{a.Filename} ({FormatFileSize(a.Filesize)})")
+                        .AddChoices(issue.Attachments));
+
+                if (attachmentsToDownload.Count == 0)
+                {
+                    AnsiConsole.MarkupLine("[yellow]No attachments selected[/]");
+                    return 0;
+                }
+            }
+
+            // Set output directory
+            outputDirectory ??= Directory.GetCurrentDirectory();
+            if (!Directory.Exists(outputDirectory))
+            {
+                Directory.CreateDirectory(outputDirectory);
+            }
+
+            var downloadedCount = 0;
+            var errors = new List<string>();
+            var errorLock = new object();
+
+            // Track used filenames to avoid conflicts
+            var usedFilenames = new HashSet<string>();
+            var filenameLock = new object();
+
+            // Download attachments with progress
+            await AnsiConsole.Progress()
+                .Columns(new ProgressColumn[]
+                {
+                    new TaskDescriptionColumn(),
+                    new ProgressBarColumn(),
+                    new PercentageColumn(),
+                    new SpinnerColumn()
+                })
+                .StartAsync(async ctx =>
+                {
+                    var downloadTasks = new List<Task>();
+
+                    foreach (var attachment in attachmentsToDownload)
+                    {
+                        var task = ctx.AddTask($"[green]Downloading {attachment.Filename}[/]");
+                        
+                        downloadTasks.Add(Task.Run(async () =>
+                        {
+                            try
+                            {
+                                using var stream = await _apiClient.DownloadAttachmentAsync(attachment.Id, cancellationToken);
+                                
+                                string fileName;
+                                string filePath;
+                                
+                                // Generate unique filename if needed (thread-safe)
+                                lock (filenameLock)
+                                {
+                                    fileName = attachment.Filename;
+                                    filePath = Path.Combine(outputDirectory, fileName);
+                                    
+                                    var counter = 1;
+                                    while (File.Exists(filePath) || usedFilenames.Contains(filePath))
+                                    {
+                                        var fileNameWithoutExt = Path.GetFileNameWithoutExtension(attachment.Filename);
+                                        var extension = Path.GetExtension(attachment.Filename);
+                                        fileName = $"{fileNameWithoutExt}_{counter}{extension}";
+                                        filePath = Path.Combine(outputDirectory, fileName);
+                                        counter++;
+                                    }
+                                    
+                                    usedFilenames.Add(filePath);
+                                }
+                                
+                                using (var fileStream = File.Create(filePath))
+                                {
+                                    await stream.CopyToAsync(fileStream);
+                                }
+                                
+                                task.Increment(100);
+                                Interlocked.Increment(ref downloadedCount);
+                                
+                                AnsiConsole.MarkupLine($"[green]✓[/] Downloaded {Markup.Escape(attachment.Filename)} as {Markup.Escape(fileName)}");
+                            }
+                            catch (Exception ex)
+                            {
+                                task.StopTask();
+                                lock (errorLock)
+                                {
+                                    errors.Add($"{attachment.Filename}: {ex.Message}");
+                                }
+                                _logger.LogError(ex, "Failed to download attachment {AttachmentId}", attachment.Id);
+                            }
+                        }));
+                    }
+
+                    await Task.WhenAll(downloadTasks);
+                });
+
+            if (downloadedCount > 0)
+            {
+                AnsiConsole.MarkupLine($"[green]Downloaded {downloadedCount} attachment{(downloadedCount > 1 ? "s" : "")}[/]");
+            }
+
+            if (errors.Count > 0)
+            {
+                AnsiConsole.MarkupLine("[red]Failed to download:[/]");
+                foreach (var error in errors)
+                {
+                    AnsiConsole.MarkupLine($"  [red]✗[/] {Markup.Escape(error)}");
+                }
+                return 1;
+            }
+
+            return 0;
+        }
+        catch (RedmineApiException ex)
+        {
+            _logger.LogError(ex, "Failed to download attachments for issue {IssueId}", issueId);
+            AnsiConsole.MarkupLine($"[red]Error: {ex.Message}[/]");
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error downloading attachments for issue {IssueId}", issueId);
+            AnsiConsole.MarkupLine("[red]Error: An unexpected error occurred[/]");
+            return 1;
+        }
+    }
+
+    private static string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.#} {sizes[order]}";
     }
 }

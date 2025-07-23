@@ -28,17 +28,29 @@ public class JsonFormatter : IJsonFormatter
         AnsiConsole.WriteLine(json);
     }
 
-    public Task FormatAttachmentsAsync(List<Attachment> attachments)
+    public void FormatAttachments(List<Attachment> attachments)
     {
         var json = JsonSerializer.Serialize(attachments, RedmineJsonContext.Default.ListAttachment);
         AnsiConsole.WriteLine(json);
-        return Task.CompletedTask;
     }
 
-    public Task FormatAttachmentDetailsAsync(Attachment attachment)
+    public void FormatAttachmentDetails(Attachment attachment)
     {
         var json = JsonSerializer.Serialize(attachment, RedmineJsonContext.Default.Attachment);
         AnsiConsole.WriteLine(json);
-        return Task.CompletedTask;
+    }
+
+    public void FormatObject<T>(T obj)
+    {
+        if (obj is List<Attachment> attachments)
+        {
+            var json = JsonSerializer.Serialize(attachments, RedmineJsonContext.Default.ListAttachment);
+            AnsiConsole.WriteLine(json);
+        }
+        else
+        {
+            // For now, just convert to string for unknown types
+            AnsiConsole.WriteLine(obj?.ToString() ?? "null");
+        }
     }
 }

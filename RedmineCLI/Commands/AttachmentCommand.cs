@@ -196,11 +196,11 @@ public class AttachmentCommand
                 
                 if (isJson)
                 {
-                    await jsonFormatter.FormatAttachmentDetailsAsync(attachment);
+                    jsonFormatter.FormatAttachmentDetails(attachment);
                 }
                 else
                 {
-                    await tableFormatter.FormatAttachmentDetailsAsync(attachment);
+                    tableFormatter.FormatAttachmentDetails(attachment);
                 }
             }
             catch (RedmineApiException ex) when (ex.StatusCode == 404)
