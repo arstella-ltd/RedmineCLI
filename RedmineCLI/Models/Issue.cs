@@ -42,6 +42,9 @@ public class Issue : IEquatable<Issue>
     [JsonPropertyName("journals")]
     public List<Journal>? Journals { get; set; }
 
+    [JsonPropertyName("attachments")]
+    public List<Attachment>? Attachments { get; set; }
+
     public void Validate()
     {
         if (string.IsNullOrWhiteSpace(Subject))

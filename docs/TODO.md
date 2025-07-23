@@ -363,7 +363,7 @@
   - **Refactor**: セキュリティとエラー処理の強化
   - _要件: 10（将来機能）_
 
-- [ ] 20. 添付ファイルダウンロード機能の実装（TDD）
+- [x] 20. 添付ファイルダウンロード機能の実装（TDD）
   - **Red**: AttachmentCommandのテストを先に作成
     - Download_Should_SaveFile_When_ValidAttachmentId
     - Download_Should_UseOutputPath_When_OutputOptionProvided
@@ -382,7 +382,7 @@
   - **Refactor**: ダウンロード処理の最適化とエラーハンドリング
   - _要件: 11_
 
-- [ ] 21. チケット添付ファイル管理コマンドの実装（TDD）
+- [x] 21. チケット添付ファイル管理コマンドの実装（TDD）
   - **Red**: IssueAttachmentCommandのテストを先に作成
     - ListAttachments_Should_ShowAttachments_When_IssueHasFiles
     - ListAttachments_Should_ShowEmptyMessage_When_NoAttachments
@@ -562,6 +562,40 @@
   - 単数・複数形の処理をFormatDurationメソッドで統一
 - TimeHelperTestsのテストケースを更新（"about"形式に対応）
 - テストケース17件すべてが成功
+
+### タスク20完了（2025-07-23）
+- TDD手法（Red→Green→Refactor）に従って実装
+- AttachmentCommandTestsのテストケース9件を作成
+  - ファイルダウンロード、出力パス指定、進捗表示、ファイル名サニタイズ
+  - 上書き確認、メタデータ表示、エラーハンドリング
+- AttachmentCommand（download/viewサブコマンド）の実装
+- RedmineApiClientに添付ファイル関連メソッドを追加
+- TableFormatterに添付ファイル表示機能を実装（ファイルサイズの人間向け表示を含む）
+- Environment.Exit()をEnvironment.ExitCodeに変更（テスタビリティ向上）
+- すべてのテスト（230件）が成功
+- 要件11（添付ファイルダウンロード機能）の部分実装完了
+
+### タスク21完了（2025-07-23）
+- TDD手法（Red→Green→Refactor）に従って実装
+- IssueAttachmentCommandTestsのテストケース7件を作成
+  - 添付ファイル一覧表示、空の場合のメッセージ表示
+  - 対話的選択、--allオプション、無効なチケットID処理
+  - issue viewでの添付ファイル表示
+  - 重複ファイル名の自動連番処理
+- チケット関連の添付ファイル管理サブコマンドを実装
+  - `issue attachment list <id>`: 添付ファイル一覧表示
+  - `issue attachment download <id>`: 対話的選択（デフォルト）
+  - `issue attachment download <id> --all`: 全ファイルダウンロード
+  - `issue attachment download <id> --output <dir>`: 出力ディレクトリ指定
+- IssueモデルにAttachmentsプロパティを追加
+- GetIssueAsyncに`include=attachments`パラメータを自動追加
+- GetAttachmentAsyncを`/attachments/:id.json`エンドポイントを使用するよう修正
+- 並行ダウンロード時の競合状態を解消（lockブロック内でファイル作成）
+- MultiSelectionPromptによる複数ファイル選択機能
+- Spectre.Console Progressによる進捗表示
+- issue viewコマンドで添付ファイル情報を表示
+- 総テスト数: 245件（すべて成功）
+- 要件11（チケット添付ファイル管理機能）の完全実装完了
 
 ## 使用方法
 

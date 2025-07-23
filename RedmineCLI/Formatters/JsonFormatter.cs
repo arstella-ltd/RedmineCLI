@@ -27,4 +27,30 @@ public class JsonFormatter : IJsonFormatter
         var json = JsonSerializer.Serialize(issue, RedmineJsonContext.Default.Issue);
         AnsiConsole.WriteLine(json);
     }
+
+    public void FormatAttachments(List<Attachment> attachments)
+    {
+        var json = JsonSerializer.Serialize(attachments, RedmineJsonContext.Default.ListAttachment);
+        AnsiConsole.WriteLine(json);
+    }
+
+    public void FormatAttachmentDetails(Attachment attachment)
+    {
+        var json = JsonSerializer.Serialize(attachment, RedmineJsonContext.Default.Attachment);
+        AnsiConsole.WriteLine(json);
+    }
+
+    public void FormatObject<T>(T obj)
+    {
+        if (obj is List<Attachment> attachments)
+        {
+            var json = JsonSerializer.Serialize(attachments, RedmineJsonContext.Default.ListAttachment);
+            AnsiConsole.WriteLine(json);
+        }
+        else
+        {
+            // For now, just convert to string for unknown types
+            AnsiConsole.WriteLine(obj?.ToString() ?? "null");
+        }
+    }
 }

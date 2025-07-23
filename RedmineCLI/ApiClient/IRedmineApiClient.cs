@@ -35,4 +35,10 @@ public interface IRedmineApiClient
     Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default);
 
     Task<bool> TestConnectionAsync(string url, string apiKey, CancellationToken cancellationToken = default);
+
+    Task<Attachment> GetAttachmentAsync(int id, CancellationToken cancellationToken = default);
+
+    Task<Stream> DownloadAttachmentAsync(int id, CancellationToken cancellationToken = default);
+
+    Task<Stream> DownloadAttachmentAsync(string contentUrl, CancellationToken cancellationToken = default);
 }

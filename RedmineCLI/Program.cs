@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.IO.Abstractions;
 using System.Linq;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -44,10 +45,13 @@ public class Program
         var issueCommand = IssueCommand.Create(apiClient, configService, tableFormatter, jsonFormatter, issueLogger);
         var configLogger = serviceProvider.GetRequiredService<ILogger<ConfigCommand>>();
         var configCommand = ConfigCommand.Create(configService, configLogger);
+        var fileSystem = serviceProvider.GetRequiredService<IFileSystem>();
+        var attachmentCommand = new AttachmentCommand().CreateCommand(configService, apiClient, tableFormatter, jsonFormatter, fileSystem);
 
         rootCommand.Add(authCommand);
         rootCommand.Add(issueCommand);
         rootCommand.Add(configCommand);
+        rootCommand.Add(attachmentCommand);
 
         // Add global options
         var debugOption = new Option<bool>("--debug");
@@ -163,5 +167,8 @@ public class Program
 
         // License Helper
         services.AddSingleton<ILicenseHelper, LicenseHelper>();
+
+        // File System
+        services.AddSingleton<IFileSystem, FileSystem>();
     }
 }

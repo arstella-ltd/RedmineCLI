@@ -130,16 +130,18 @@ RedmineCLIは、Redmineのチケット管理をコマンドラインから効率
 **ユーザーストーリー:** 開発者として、Redmineチケットに添付されたファイルをCLIから直接ダウンロードしたいので、GUIを使わずに効率的にファイルを取得できる
 
 #### 受け入れ基準
-1. WHEN `redmine issue view <ID>` を実行 THEN チケットに添付されているファイルの一覧（ID、ファイル名、サイズ、アップロード日時）が表示される SHALL
+1. WHEN `redmine issue view <ID>` を実行 THEN チケットに添付されているファイルの一覧（ファイル名、サイズ、作成者、アップロード日時）が表示される SHALL
 2. WHEN `redmine issue attachment list <issue-id>` を実行 THEN 指定チケットの添付ファイル一覧が詳細に表示される SHALL
-3. WHEN `redmine attachment download <attachment-id>` を実行 THEN 指定IDの添付ファイルがカレントディレクトリにダウンロードされる SHALL
-4. WHEN `redmine attachment download <attachment-id> --output <path>` を指定 THEN 指定したパスにファイルが保存される SHALL
-5. WHEN `redmine attachment view <attachment-id>` を実行 THEN 添付ファイルのメタデータ（ファイル名、サイズ、MIME Type、作成者、作成日時）が表示される SHALL
-6. WHEN `redmine issue attachment download <issue-id>` を実行 THEN チケットの添付ファイル一覧から対話的に選択してダウンロードできる SHALL
-7. WHEN `redmine issue attachment download <issue-id> --all` を実行 THEN チケットのすべての添付ファイルが一括でダウンロードされる SHALL
-8. WHEN ダウンロード中 THEN プログレスバーまたは進捗インジケーターが表示される SHALL
-9. WHEN ファイル名に不正な文字が含まれている THEN サニタイズされた安全なファイル名で保存される SHALL
-10. WHEN ダウンロード先に同名ファイルが存在する THEN エラーメッセージを表示し、`--force` オプションで上書きできる SHALL
-11. WHEN 権限がない添付ファイルをダウンロードしようとする THEN 適切なエラーメッセージ（403 Forbidden）が表示される SHALL
-12. WHEN ネットワークエラーが発生 THEN リトライ処理が実行され、最終的に失敗した場合はエラーメッセージが表示される SHALL
-13. WHEN `--json` オプションを指定 THEN 添付ファイル情報がJSON形式で出力される SHALL
+3. WHEN `redmine issue attachment download <issue-id>` を実行 THEN チケットの添付ファイル一覧から対話的に選択してダウンロードできる SHALL
+4. WHEN `redmine issue attachment download <issue-id> --all` を実行 THEN チケットのすべての添付ファイルが一括でダウンロードされる SHALL
+5. WHEN `redmine issue attachment download <issue-id> --output <directory>` または `-o <directory>` を指定 THEN 指定したディレクトリにファイルが保存される SHALL
+6. WHEN ダウンロード中 THEN プログレスバーまたは進捗インジケーターが表示される SHALL
+7. WHEN 複数ファイルの対話的選択時 THEN MultiSelectionPrompt（チェックボックス形式）で複数選択できる SHALL
+8. WHEN ダウンロード先に同名ファイルが存在する THEN 自動的に連番付きのファイル名（例：report_1.pdf）で保存される SHALL
+9. WHEN 複数ファイルを並行ダウンロード中に同名ファイルが存在する THEN スレッドセーフに一意のファイル名が生成される SHALL
+10. WHEN 権限がない添付ファイルをダウンロードしようとする THEN 適切なエラーメッセージ（403 Forbidden）が表示される SHALL
+11. WHEN ネットワークエラーが発生 THEN Pollyによるリトライ処理が実行され、最終的に失敗した場合はエラーメッセージが表示される SHALL
+12. WHEN `--json` オプションを指定 THEN 添付ファイル情報がJSON形式で出力される SHALL
+13. WHEN `GetIssueAsync` を呼び出す THEN `include=attachments` パラメータが自動的に含まれる SHALL
+14. WHEN `attachment view <attachment-id>` を実行 THEN 添付ファイルのメタデータ（ファイル名、サイズ、種類、作成者、作成日時、説明）が表示される SHALL
+15. WHEN `attachment download <attachment-id>` を実行 THEN 添付ファイルIDを直接指定してダウンロードできる SHALL

@@ -18,6 +18,7 @@ using Xunit;
 
 namespace RedmineCLI.Tests;
 
+[Collection("AnsiConsole")]
 public class ProgramTests
 {
     [Fact]

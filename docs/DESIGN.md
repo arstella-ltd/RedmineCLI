@@ -250,46 +250,74 @@ APIキーベースの認証により安全な通信を実現し、設定はYAML�
   - その他APIエラー：レスポンスメッセージをそのまま表示
 
 ### Attachment Command Design
-- **責任**: チケット添付ファイルのダウンロードと管理
+- **責任**: チケット添付ファイルの表示とダウンロード
 - **主要コマンド**
-  - `attachment download <attachment-id>`: 特定の添付ファイルをダウンロード
-  - `attachment view <attachment-id>`: 添付ファイルのメタデータ表示
-  - `issue attachment list <issue-id>`: チケットの添付ファイル一覧
+  - `issue attachment list <issue-id>`: チケットの添付ファイル一覧表示
   - `issue attachment download <issue-id>`: 対話的な選択ダウンロード（デフォルト動作）
   - `issue attachment download <issue-id> --all`: 全添付ファイルの一括ダウンロード
+  - `issue attachment download <issue-id> --output <directory>`: 出力ディレクトリ指定
+- **API統合**
+  - `GetIssueAsync`メソッドに`include=attachments`パラメータを自動追加
+  - チケット取得時に添付ファイル情報も同時に取得
+  - `/attachments/:id.json`エンドポイントでメタデータ取得（GetAttachmentAsync）
 - **ダウンロード処理フロー**
   ```
-  1. 添付ファイル情報の取得
+  1. チケット情報の取得（添付ファイル含む）
      ↓
-  2. ファイル名のサニタイズ（パストラバーサル対策）
+  2. 添付ファイルの存在確認
      ↓
-  3. 出力先の決定（--outputオプションまたはカレントディレクトリ）
+  3. ダウンロードモードの決定（対話的/全選択）
      ↓
-  4. 既存ファイルチェック（--forceオプションで上書き許可）
+  4. 出力ディレクトリの決定（--outputまたはカレント）
      ↓
-  5. HTTPストリーミングダウンロード（プログレス表示付き）
+  5. 並行ダウンロード処理（Progress表示付き）
      ↓
-  6. ファイル保存と完了メッセージ
+  6. ファイル名の重複回避処理（スレッドセーフ）
+     ↓
+  7. 成功/エラーメッセージの表示
   ```
 - **対話的選択フロー**（`issue attachment download`のデフォルト動作）
   ```
   1. チケットの添付ファイル一覧取得
      ↓
-  2. MultiSelectionPromptで複数選択可能（`gh run download`と同様）
+  2. MultiSelectionPromptで複数選択可能
+     - ファイル名とサイズを表示
+     - チェックボックス形式で複数選択
      ↓
-  3. 選択されたファイルを順次ダウンロード
+  3. 選択されたファイルを並行ダウンロード
      ↓
   4. 各ファイルのダウンロード進捗表示
   ```
-- **セキュリティ考慮事項**
-  - ファイル名のサニタイズ（`..`や特殊文字の除去）
-  - Content-Dispositionヘッダーの適切な処理
-  - 大容量ファイルのストリーミング処理
+- **ファイル名重複処理**
+  ```csharp
+  // スレッドセーフな重複ファイル名処理
+  lock (filenameLock)
+  {
+      fileName = attachment.Filename;
+      filePath = Path.Combine(outputDirectory, fileName);
+      
+      var counter = 1;
+      while (File.Exists(filePath) || usedFilenames.Contains(filePath))
+      {
+          fileName = $"{fileNameWithoutExt}_{counter}{extension}";
+          filePath = Path.Combine(outputDirectory, fileName);
+          counter++;
+      }
+      
+      usedFilenames.Add(filePath);
+      fileStream = File.Create(filePath); // lockブロック内でファイル作成
+  }
+  ```
+- **表示フォーマット**
+  - テーブル形式：Spectre.Consoleのテーブルで添付ファイル情報を表示
+  - JSON形式：添付ファイルを含む完全なチケット情報をJSON出力
+  - issue viewコマンドでも添付ファイル一覧を表示
 - **エラーハンドリング**
   - 401 Unauthorized：認証エラー
   - 403 Forbidden：アクセス権限なし
-  - 404 Not Found：添付ファイルが存在しない
+  - 404 Not Found：チケットまたは添付ファイルが存在しない
   - ネットワークエラー：Pollyによるリトライ処理
+  - ファイルアクセスエラー：適切なエラーメッセージと続行処理
 
 ### API Client
 - **責任**: Redmine REST APIとの通信
@@ -627,7 +655,7 @@ public interface ITableFormatter
     void FormatIssues(List<Issue> issues);
     void FormatIssueDetails(Issue issue);
     void FormatAttachments(List<Attachment> attachments);
-    void FormatAttachmentDetails(Attachment attachment);
+    void SetTimeFormat(TimeFormat format);
 }
 
 // IJsonFormatter.cs
@@ -635,6 +663,8 @@ public interface IJsonFormatter
 {
     void FormatIssues(List<Issue> issues);
     void FormatIssueDetails(Issue issue);
+    void FormatAttachments(List<Attachment> attachments);
+    void FormatObject<T>(T obj);
 }
 
 // ITimeHelper.cs

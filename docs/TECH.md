@@ -186,12 +186,17 @@ redmine attachment download <ATTACHMENT-ID>                              # 添�
 redmine attachment download 789 --output ~/Downloads/                    # 出力先を指定（または -o）
 redmine attachment download 789 --force                                  # 既存ファイルを上書き（または -f）
 redmine attachment view <ATTACHMENT-ID>                                  # 添付ファイルのメタデータ表示
+redmine attachment view 789 --json                                      # JSON形式でメタデータ出力
 
 # チケットの添付ファイル管理
 redmine issue attachment list <ISSUE-ID>                                 # 添付ファイル一覧表示
+redmine issue attachment list 123 --json                                # JSON形式で一覧出力
 redmine issue attachment download <ISSUE-ID>                             # 対話的に選択してダウンロード（デフォルト動作）
 redmine issue attachment download <ISSUE-ID> --all                      # すべての添付ファイルをダウンロード
 redmine issue attachment download <ISSUE-ID> --all --output ./files/    # 出力先を指定して一括ダウンロード
+
+# 注: チケット詳細表示時も添付ファイル情報が含まれる
+redmine issue view 123                                                   # 添付ファイル一覧も表示される
 
 # 設定管理
 redmine config set <KEY> <VALUE>

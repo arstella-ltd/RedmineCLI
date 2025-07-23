@@ -121,6 +121,105 @@ public class TableFormatter : ITableFormatter
                     AnsiConsole.WriteLine($"  {Markup.Escape(journal.Notes)}");
                 }
             }
+            AnsiConsole.WriteLine();
         }
+
+        // Attachments
+        if (issue.Attachments != null && issue.Attachments.Count > 0)
+        {
+            AnsiConsole.MarkupLine("[bold]Attachments:[/]");
+
+            var attachmentTable = new Table();
+            attachmentTable.AddColumn("ID");
+            attachmentTable.AddColumn("Filename");
+            attachmentTable.AddColumn("Size");
+            attachmentTable.AddColumn("Author");
+            attachmentTable.AddColumn("Created");
+
+            foreach (var attachment in issue.Attachments)
+            {
+                attachmentTable.AddRow(
+                    $"#{attachment.Id}",
+                    Markup.Escape(attachment.Filename),
+                    FormatFileSize(attachment.Filesize),
+                    Markup.Escape(attachment.Author?.Name ?? "Unknown"),
+                    _timeHelper.FormatTime(attachment.CreatedOn, _timeFormat)
+                );
+            }
+
+            AnsiConsole.Write(attachmentTable);
+        }
+    }
+
+    public void FormatAttachments(List<Attachment> attachments)
+    {
+        var table = new Table();
+        table.AddColumn("ID");
+        table.AddColumn("Filename");
+        table.AddColumn("Size");
+        table.AddColumn("Type");
+        table.AddColumn("Author");
+        table.AddColumn("Created");
+
+        foreach (var attachment in attachments)
+        {
+            table.AddRow(
+                $"#{attachment.Id}",
+                Markup.Escape(attachment.Filename),
+                FormatFileSize(attachment.Filesize),
+                Markup.Escape(attachment.ContentType),
+                Markup.Escape(attachment.Author?.Name ?? "Unknown"),
+                _timeHelper.FormatTime(attachment.CreatedOn, _timeFormat)
+            );
+        }
+
+        AnsiConsole.Write(table);
+    }
+
+    public void FormatAttachmentDetails(Attachment attachment)
+    {
+        var panel = new Panel($"[bold]Attachment #{attachment.Id}[/]")
+            .BorderColor(Color.Blue)
+            .Header($"[blue]{Markup.Escape(attachment.Filename)}[/]");
+
+        var grid = new Grid()
+            .AddColumn()
+            .AddColumn();
+
+        grid.AddRow("[bold]Filename:[/]", Markup.Escape(attachment.Filename));
+        grid.AddRow("[bold]Size:[/]", FormatFileSize(attachment.Filesize));
+        grid.AddRow("[bold]Type:[/]", Markup.Escape(attachment.ContentType));
+
+        if (!string.IsNullOrEmpty(attachment.Description))
+        {
+            grid.AddRow("[bold]Description:[/]", Markup.Escape(attachment.Description));
+        }
+
+        if (attachment.Author != null)
+        {
+            grid.AddRow("[bold]Author:[/]", Markup.Escape(attachment.Author.Name));
+        }
+
+        grid.AddRow("[bold]Created:[/]", _timeHelper.FormatTime(attachment.CreatedOn, _timeFormat));
+        grid.AddRow("[bold]URL:[/]", Markup.Escape(attachment.ContentUrl));
+
+        AnsiConsole.Write(panel);
+        AnsiConsole.WriteLine();
+        AnsiConsole.Write(grid);
+    }
+
+    private static string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        double size = bytes;
+        int order = 0;
+
+        while (size >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            size = size / 1024;
+        }
+
+        return $"{size:0.##} {sizes[order]}";
     }
 }

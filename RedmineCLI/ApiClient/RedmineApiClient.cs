@@ -54,7 +54,7 @@ public class RedmineApiClient : IRedmineApiClient
 
     public async Task<Issue> GetIssueAsync(int id, CancellationToken cancellationToken = default)
     {
-        var path = $"/issues/{id}.json";
+        var path = $"/issues/{id}.json?include=attachments";
         var issueResponse = await GetAsync(path, RedmineJsonContext.Default.IssueResponse, $"get issue {id}", cancellationToken);
 
         return issueResponse?.Issue ?? throw new RedmineApiException(
@@ -65,8 +65,8 @@ public class RedmineApiClient : IRedmineApiClient
     public async Task<Issue> GetIssueAsync(int id, bool includeJournals, CancellationToken cancellationToken = default)
     {
         var path = includeJournals
-            ? $"/issues/{id}.json?include=journals"
-            : $"/issues/{id}.json";
+            ? $"/issues/{id}.json?include=journals,attachments"
+            : $"/issues/{id}.json?include=attachments";
 
         var issueResponse = await GetAsync(path, RedmineJsonContext.Default.IssueResponse, $"get issue {id}", cancellationToken);
 
@@ -414,6 +414,48 @@ public class RedmineApiClient : IRedmineApiClient
         catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "Network error while performing {Operation}", operationName);
+            throw;
+        }
+    }
+
+    public async Task<Attachment> GetAttachmentAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var path = $"/attachments/{id}.json";
+        var attachmentResponse = await GetAsync(path, RedmineJsonContext.Default.AttachmentResponse, $"get attachment {id}", cancellationToken);
+
+        return attachmentResponse?.Attachment ?? throw new RedmineApiException(
+            (int)HttpStatusCode.NotFound,
+            $"Attachment with ID {id} not found");
+    }
+
+    public async Task<Stream> DownloadAttachmentAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var url = $"/attachments/download/{id}";
+        return await DownloadAttachmentAsync(url, cancellationToken);
+    }
+
+    public async Task<Stream> DownloadAttachmentAsync(string contentUrl, CancellationToken cancellationToken = default)
+    {
+        await EnsureAuthenticatedAsync();
+        _logger.LogDebug("Downloading attachment from: {Url}", contentUrl);
+
+        try
+        {
+            // If it's a relative URL, prepend the base URL
+            if (!contentUrl.StartsWith("http"))
+            {
+                var profile = await _configService.GetActiveProfileAsync();
+                contentUrl = profile!.Url.TrimEnd('/') + "/" + contentUrl.TrimStart('/');
+            }
+
+            var response = await _httpClient.GetAsync(contentUrl, cancellationToken);
+            await EnsureSuccessStatusCodeAsync(response);
+
+            return await response.Content.ReadAsStreamAsync(cancellationToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "Network error while downloading attachment");
             throw;
         }
     }

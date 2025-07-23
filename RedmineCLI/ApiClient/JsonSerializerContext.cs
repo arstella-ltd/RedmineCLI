@@ -37,6 +37,10 @@ namespace RedmineCLI.ApiClient;
 [JsonSerializable(typeof(CommentRequest))]
 [JsonSerializable(typeof(CommentData))]
 [JsonSerializable(typeof(UserResponse))]
+[JsonSerializable(typeof(Attachment))]
+[JsonSerializable(typeof(Attachment[]))]
+[JsonSerializable(typeof(List<Attachment>))]
+[JsonSerializable(typeof(AttachmentResponse))]
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     WriteIndented = true,
