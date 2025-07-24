@@ -43,11 +43,20 @@ namespace RedmineCLI.Utils
 
             // Sixelヘッダー
             // P<Ps1>;<Ps2>;<Ps3>q
-            // Ps1: アスペクト比 (0=1:1)
+            // Ps1: アスペクト比 (0=default, 7=1:1, 8=1:1)
             // Ps2: 背景選択 (0=透明, 1=不透明)
-            // Ps3: グリッド拡張 (0=なし)
+            // Ps3: 水平グリッドサイズ (0=なし)
             sb.Append(DCS);
-            sb.Append("0;0;0q");
+            // Windows Terminalとの互換性を考慮
+            sb.Append("8;0;0q");
+            
+            // Raster Attributes を設定（一部のターミナルで使用）
+            // "Pan;Pad;Ph;Pv
+            // Pan: アスペクト比の分子
+            // Pad: アスペクト比の分母
+            // Ph: 水平方向のピクセル数
+            // Pv: 垂直方向のピクセル数
+            sb.AppendFormat("\"1;1;{0};{1}", width, height);
 
             // 画像データを量子化
             var (quantizedData, palette) = QuantizeImage(pixelData, width, height, channels);
@@ -243,13 +252,17 @@ namespace RedmineCLI.Utils
                         // 色選択
                         sb.AppendFormat("#{0}", color);
                         sb.Append(rowData);
-                        sb.Append('$'); // 行頭に戻る
+                        // 最後の色でない場合のみ行頭に戻る
+                        if (color < colorCount - 1)
+                        {
+                            sb.Append('$'); // 行頭に戻る
+                        }
                         bandHasData = true;
                     }
                 }
 
-                // 次の行へ（改行）- データがある場合のみ
-                if (bandHasData)
+                // 次の行へ（改行）
+                if (bandHasData && y + SIXEL_HEIGHT < height)
                 {
                     sb.Append('-');
                 }
