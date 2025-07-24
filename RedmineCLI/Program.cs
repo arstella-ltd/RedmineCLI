@@ -6,8 +6,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Logging;
 
-using Polly;
-using Polly.Extensions.Http;
 
 using RedmineCLI.ApiClient;
 using RedmineCLI.Commands;
@@ -61,10 +59,10 @@ public class Program
 
         // Note: Built-in --version option is provided by System.CommandLine
 
-        // Add licenses option
-        var licensesOption = new Option<bool>("--licenses");
-        licensesOption.Description = "Show license information";
-        rootCommand.Add(licensesOption);
+        // Add license option
+        var licenseOption = new Option<bool>("--license");
+        licenseOption.Description = "Show license information";
+        rootCommand.Add(licenseOption);
 
         // Create and use CLI configuration (moved up to be in scope)
         var config = new CommandLineConfiguration(rootCommand)
@@ -76,7 +74,7 @@ public class Program
         // Add root command action to handle global options
         rootCommand.SetAction(async (parseResult) =>
         {
-            if (parseResult.GetValue(licensesOption))
+            if (parseResult.GetValue(licenseOption))
             {
                 var licenses = await licenseHelper.GetLicenseInfoAsync();
 

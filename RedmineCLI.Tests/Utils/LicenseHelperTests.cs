@@ -15,7 +15,7 @@ namespace RedmineCLI.Tests.Utils;
 public class LicenseHelperTests
 {
     [Fact]
-    public async Task ShowLicenses_Should_DisplayAllLicenses_When_LicensesOptionProvided()
+    public async Task ShowLicense_Should_DisplayAllLicense_When_LicenseOptionProvided()
     {
         // Arrange
         var licenseHelper = new LicenseHelper();
@@ -76,7 +76,7 @@ public class LicenseHelperTests
     }
 
     [Fact]
-    public async Task EmbedLicenses_Should_IncludeInBinary_When_AotBuild()
+    public async Task EmbedLicense_Should_IncludeInBinary_When_AotBuild()
     {
         // Arrange
         var licenseHelper = new LicenseHelper();

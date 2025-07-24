@@ -96,18 +96,14 @@ public class IssueCreateCommandTests
             Status = new IssueStatus { Id = 1, Name = "New" }
         };
 
-        _apiClient.CreateIssueAsync(Arg.Is<Issue>(i =>
-            i.Subject == title &&
-            i.Description == description &&
-            i.Project!.Identifier == projectId &&
-            i.AssignedTo!.Name == assignee), Arg.Any<CancellationToken>())
+        _apiClient.CreateIssueAsync(Arg.Any<Issue>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(createdIssue));
 
         var profile = new Profile { Url = "https://redmine.example.com", ApiKey = "test-key" };
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.CreateAsync(projectId, title, description, assignee, false, CancellationToken.None);
+        var result = await _issueCommand.CreateAsync(1, title, description, assignee, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);

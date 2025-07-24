@@ -846,19 +846,29 @@ History:
 Please run 'redmine auth login' to set up your credentials
 
 # バージョン情報（--version）
-redmine v1.0.0 (RedmineCLI)
+redmine v0.8.0 (RedmineCLI)
 Built with .NET 9.0 (Native AOT)
 
-Dependencies:
-- System.CommandLine v2.0.0-beta5 (MIT)
-- Spectre.Console v0.49.1 (MIT)
-- VYaml v0.29.0 (MIT)
-
-# ライセンス情報（--licenses）
+# ライセンス情報（--license）
 RedmineCLI - MIT License
 Copyright (c) 2025 Arstella ltd.
 
-Third-party licenses:
+Third-party Dependencies:
+- System.CommandLine v2.0.0-beta6.25358.103 (MIT)
+- Spectre.Console v0.50.0 (MIT)
+- VYaml v1.2.0 (MIT)
+- StbImageSharp v2.30.15 (Public Domain)
+- System.IO.Abstractions v22.0.15 (MIT)
+- System.Security.Cryptography.ProtectedData v9.0.7 (MIT)
+- Microsoft.Extensions.Http v9.0.7 (MIT)
+- Polly.Extensions.Http v3.0.0 (BSD-3-Clause)
+- Microsoft.Extensions.DependencyInjection v9.0.7 (MIT)
+- Microsoft.Extensions.Configuration v9.0.7 (MIT)
+- Microsoft.Extensions.Configuration.Binder v9.0.7 (MIT)
+- Microsoft.Extensions.Logging v9.0.7 (MIT)
+- Microsoft.Extensions.Logging.Console v9.0.7 (MIT)
+- System.Text.Json v9.0.7 (MIT)
+
 See THIRD-PARTY-NOTICES.txt for full license texts.
 ```
 
