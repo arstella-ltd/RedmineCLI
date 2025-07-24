@@ -98,7 +98,7 @@ public class TableFormatter : ITableFormatter
         if (!string.IsNullOrWhiteSpace(issue.Description))
         {
             AnsiConsole.MarkupLine("[bold]Description:[/]");
-            AnsiConsole.WriteLine(Markup.Escape(issue.Description));
+            AnsiConsole.WriteLine(issue.Description);
             AnsiConsole.WriteLine();
 
             // Display inline images if any (when showImages is true)
@@ -134,7 +134,7 @@ public class TableFormatter : ITableFormatter
                 // Show notes
                 if (!string.IsNullOrWhiteSpace(journal.Notes))
                 {
-                    AnsiConsole.WriteLine($"  {Markup.Escape(journal.Notes)}");
+                    AnsiConsole.WriteLine($"  {journal.Notes}");
                     
                     // Display inline images in journal notes (when showImages is true)
                     if (showImages && issue.Attachments != null && issue.Attachments.Count > 0)
