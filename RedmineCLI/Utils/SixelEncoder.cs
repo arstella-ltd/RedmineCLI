@@ -70,22 +70,31 @@ namespace RedmineCLI.Utils
         private (byte[] quantizedData, List<Color> palette) QuantizeImage(
             byte[] pixelData, int width, int height, int channels)
         {
-            // 簡易実装：均等分割による量子化
-            var colors = new HashSet<Color>();
             var pixelCount = width * height;
+            var colorCounts = new Dictionary<Color, int>();
             
-            // 全ピクセルの色を収集
+            // 全ピクセルの色と頻度を収集
             for (int i = 0; i < pixelCount; i++)
             {
                 int idx = i * channels;
                 byte r = pixelData[idx];
                 byte g = channels > 1 ? pixelData[idx + 1] : r;
                 byte b = channels > 2 ? pixelData[idx + 2] : r;
-                colors.Add(new Color(r, g, b));
+                var color = new Color(r, g, b);
+                
+                if (colorCounts.ContainsKey(color))
+                    colorCounts[color]++;
+                else
+                    colorCounts[color] = 1;
             }
             
-            // 色数を制限
-            var palette = colors.Take(_maxColors).ToList();
+            // 頻度の高い色を優先してパレットを作成
+            var palette = colorCounts
+                .OrderByDescending(kv => kv.Value)
+                .Take(_maxColors)
+                .Select(kv => kv.Key)
+                .ToList();
+            
             if (palette.Count == 0)
             {
                 palette.Add(new Color(0, 0, 0)); // 黒を追加

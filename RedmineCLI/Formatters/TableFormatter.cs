@@ -220,6 +220,31 @@ public class TableFormatter : ITableFormatter
         AnsiConsole.Write(panel);
         AnsiConsole.WriteLine();
         AnsiConsole.Write(grid);
+        
+        // 画像ファイルの場合はSixelでインライン表示
+        if (TerminalCapabilityDetector.SupportsSixel() && IsImageType(attachment.ContentType))
+        {
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine("[bold]Preview:[/]");
+            
+            if (_apiClient != null)
+            {
+                var httpClient = (_apiClient as RedmineApiClient)?.GetHttpClient();
+                var apiKey = (_apiClient as RedmineApiClient)?.GetApiKey();
+                
+                if (httpClient != null)
+                {
+                    SixelImageRenderer.RenderActualImage(
+                        attachment.ContentUrl, 
+                        httpClient, 
+                        apiKey, 
+                        attachment.Filename,
+                        400 // 最大幅を400ピクセルに設定
+                    );
+                }
+            }
+            AnsiConsole.WriteLine();
+        }
     }
 
     private static string FormatFileSize(long bytes)
