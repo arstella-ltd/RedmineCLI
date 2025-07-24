@@ -22,8 +22,9 @@ public class JsonFormatter : IJsonFormatter
         AnsiConsole.WriteLine(json);
     }
 
-    public void FormatIssueDetails(Issue issue)
+    public void FormatIssueDetails(Issue issue, bool showImages = false)
     {
+        // showImages parameter is ignored for JSON output
         var json = JsonSerializer.Serialize(issue, RedmineJsonContext.Default.Issue);
         AnsiConsole.WriteLine(json);
     }

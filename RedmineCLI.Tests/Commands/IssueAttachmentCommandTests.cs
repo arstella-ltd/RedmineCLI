@@ -244,7 +244,7 @@ public class IssueAttachmentCommandTests
         _apiClient.GetIssueAsync(issueId, true, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
 
         // Act
-        var result = await _issueCommand.ViewAsync(issueId, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ViewAsync(issueId, false, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -252,7 +252,7 @@ public class IssueAttachmentCommandTests
             i.Id == issueId &&
             i.Attachments != null &&
             i.Attachments.Count == 1 &&
-            i.Attachments[0].Filename == "report.pdf"));
+            i.Attachments[0].Filename == "report.pdf"), false);
     }
 
     [Fact]

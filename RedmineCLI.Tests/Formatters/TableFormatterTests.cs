@@ -68,7 +68,7 @@ public class TableFormatterTests
         };
 
         // Act & Assert - Should not throw exception
-        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue));
+        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue, false));
         exception.Should().BeNull();
     }
 
@@ -110,7 +110,7 @@ public class TableFormatterTests
         };
 
         // Act & Assert - Should not throw exception
-        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue));
+        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue, false));
         exception.Should().BeNull();
     }
 
@@ -202,7 +202,7 @@ public class TableFormatterTests
         };
 
         // Act & Assert - Should not throw exception
-        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue));
+        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue, false));
         exception.Should().BeNull();
     }
 
@@ -308,7 +308,7 @@ public class TableFormatterTests
         };
 
         // Act & Assert - 画像表示機能が実装されていてもエラーが発生しないことを確認
-        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue));
+        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue, false));
         exception.Should().BeNull();
     }
 
@@ -343,7 +343,7 @@ public class TableFormatterTests
         };
 
         // Act & Assert - 参照されている画像が見つからなくてもエラーが発生しないことを確認
-        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue));
+        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue, false));
         exception.Should().BeNull();
     }
 
@@ -390,7 +390,7 @@ public class TableFormatterTests
         };
 
         // Act & Assert - Sixelレンダリング機能が呼ばれてもエラーが発生しないことを確認
-        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue));
+        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue, false));
         exception.Should().BeNull();
     }
 
@@ -436,7 +436,7 @@ public class TableFormatterTests
         };
 
         // Act & Assert - PDFは画像として表示されないことを確認
-        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue));
+        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue, false));
         exception.Should().BeNull();
     }
 
@@ -502,7 +502,7 @@ public class TableFormatterTests
         };
 
         // Act & Assert
-        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue));
+        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue, false));
         exception.Should().BeNull();
     }
 }

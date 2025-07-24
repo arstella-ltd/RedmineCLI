@@ -479,12 +479,12 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issue));
 
         // Act
-        var result = await _issueCommand.ViewAsync(issueId, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ViewAsync(issueId, false, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
         await _apiClient.Received(1).GetIssueAsync(issueId, true, Arg.Any<CancellationToken>());
-        _tableFormatter.Received(1).FormatIssueDetails(issue);
+        _tableFormatter.Received(1).FormatIssueDetails(issue, false);
     }
 
     [Fact]
@@ -535,12 +535,12 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issue));
 
         // Act
-        var result = await _issueCommand.ViewAsync(issueId, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ViewAsync(issueId, false, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
         await _apiClient.Received(1).GetIssueAsync(issueId, true, Arg.Any<CancellationToken>());
-        _tableFormatter.Received(1).FormatIssueDetails(issue);
+        _tableFormatter.Received(1).FormatIssueDetails(issue, false);
     }
 
     [Fact]
@@ -552,13 +552,13 @@ public class IssueCommandTests
             .Returns(Task.FromException<Issue>(new RedmineApiException(404, "Issue not found")));
 
         // Act
-        var result = await _issueCommand.ViewAsync(issueId, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ViewAsync(issueId, false, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
         await _apiClient.Received(1).GetIssueAsync(issueId, true, Arg.Any<CancellationToken>());
-        _tableFormatter.DidNotReceive().FormatIssueDetails(Arg.Any<Issue>());
-        _jsonFormatter.DidNotReceive().FormatIssueDetails(Arg.Any<Issue>());
+        _tableFormatter.DidNotReceive().FormatIssueDetails(Arg.Any<Issue>(), Arg.Any<bool>());
+        _jsonFormatter.DidNotReceive().FormatIssueDetails(Arg.Any<Issue>(), Arg.Any<bool>());
     }
 
     [Fact]
@@ -582,13 +582,13 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issue));
 
         // Act
-        var result = await _issueCommand.ViewAsync(issueId, true, false, false, CancellationToken.None);
+        var result = await _issueCommand.ViewAsync(issueId, true, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
         await _apiClient.Received(1).GetIssueAsync(issueId, true, Arg.Any<CancellationToken>());
-        _jsonFormatter.Received(1).FormatIssueDetails(issue);
-        _tableFormatter.DidNotReceive().FormatIssueDetails(Arg.Any<Issue>());
+        _jsonFormatter.Received(1).FormatIssueDetails(issue, false);
+        _tableFormatter.DidNotReceive().FormatIssueDetails(Arg.Any<Issue>(), Arg.Any<bool>());
     }
 
     [Fact]
@@ -600,7 +600,7 @@ public class IssueCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.ViewAsync(issueId, false, true, false, CancellationToken.None);
+        var result = await _issueCommand.ViewAsync(issueId, false, true, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -617,7 +617,7 @@ public class IssueCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(null));
 
         // Act
-        var result = await _issueCommand.ViewAsync(issueId, false, true, false, CancellationToken.None);
+        var result = await _issueCommand.ViewAsync(issueId, false, true, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
