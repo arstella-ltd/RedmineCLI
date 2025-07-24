@@ -49,7 +49,7 @@ namespace RedmineCLI.Utils
             sb.Append(DCS);
             // Windows Terminalとの互換性を考慮
             sb.Append("8;0;0q");
-            
+
             // Raster Attributes を設定（一部のターミナルで使用）
             // "Pan;Pad;Ph;Pv
             // Pan: アスペクト比の分子
