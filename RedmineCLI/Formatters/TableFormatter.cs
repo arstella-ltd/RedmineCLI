@@ -127,6 +127,12 @@ public class TableFormatter : ITableFormatter
                 if (!string.IsNullOrWhiteSpace(journal.Notes))
                 {
                     AnsiConsole.WriteLine($"  {Markup.Escape(journal.Notes)}");
+                    
+                    // Display inline images in journal notes
+                    if (issue.Attachments != null && issue.Attachments.Count > 0)
+                    {
+                        DisplayInlineImages(journal.Notes, issue.Attachments, "Comment Images");
+                    }
                 }
             }
             AnsiConsole.WriteLine();
@@ -253,7 +259,37 @@ public class TableFormatter : ITableFormatter
         }
 
         AnsiConsole.MarkupLine("[bold]Inline Images:[/]");
+        DisplayImages(imageAttachments);
+        AnsiConsole.WriteLine();
+    }
 
+    private void DisplayInlineImages(string? text, List<Attachment> attachments, string title = "Inline Images")
+    {
+        if (_apiClient == null || attachments.Count == 0 || string.IsNullOrWhiteSpace(text))
+        {
+            return;
+        }
+
+        // Detect image references in text
+        var imageReferences = _imageDetector.DetectImageReferences(text);
+        if (imageReferences.Count == 0)
+        {
+            return;
+        }
+
+        // Find matching image attachments
+        var imageAttachments = _imageDetector.FindMatchingAttachments(attachments, imageReferences);
+        if (imageAttachments.Count == 0)
+        {
+            return;
+        }
+
+        AnsiConsole.MarkupLine($"[bold]{title}:[/]");
+        DisplayImages(imageAttachments);
+    }
+
+    private void DisplayImages(List<Attachment> imageAttachments)
+    {
         foreach (var attachment in imageAttachments)
         {
             AnsiConsole.WriteLine();
@@ -263,16 +299,30 @@ public class TableFormatter : ITableFormatter
             // Sixelプロトコル対応ターミナルの場合は画像を表示
             if (TerminalCapabilityDetector.SupportsSixel() && IsImageType(attachment.ContentType))
             {
-                // Sixel画像のプレースホルダーを表示（簡易実装）
-                SixelImageRenderer.OutputImagePlaceholder(attachment.Filename, 60, 30);
+                // APIクライアントが利用可能な場合は実際の画像を表示
+                if (_apiClient != null)
+                {
+                    var httpClient = (_apiClient as RedmineApiClient)?.GetHttpClient();
+                    var apiKey = (_apiClient as RedmineApiClient)?.GetApiKey();
+                    
+                    if (httpClient != null)
+                    {
+                        SixelImageRenderer.RenderActualImage(
+                            attachment.ContentUrl, 
+                            httpClient, 
+                            apiKey, 
+                            attachment.Filename,
+                            400 // 最大幅を400ピクセルに設定
+                        );
+                    }
+                    // HTTPクライアントが取得できない場合はスキップ
+                }
+                // APIクライアントがない場合はスキップ
                 AnsiConsole.WriteLine();
-                AnsiConsole.MarkupLine($"[dim]   (Sixel preview - actual image download requires API key)[/]");
             }
 
             AnsiConsole.MarkupLine($"[dim]   URL: {Markup.Escape(attachment.ContentUrl)}[/]");
         }
-
-        AnsiConsole.WriteLine();
     }
 
     private static bool IsImageType(string contentType)

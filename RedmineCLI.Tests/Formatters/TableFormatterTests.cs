@@ -439,4 +439,70 @@ public class TableFormatterTests
         var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue));
         exception.Should().BeNull();
     }
+
+    [Fact]
+    public void FormatIssueDetails_Should_DisplayInlineImages_In_JournalNotes()
+    {
+        // Arrange
+        var issue = new Issue
+        {
+            Id = 456,
+            Subject = "コメント内画像テスト",
+            Description = "チケットの説明",
+            Status = new IssueStatus { Id = 1, Name = "新規" },
+            Priority = new Priority { Id = 2, Name = "通常" },
+            AssignedTo = new User { Id = 1, Name = "テストユーザー" },
+            Project = new Project { Id = 1, Name = "テストプロジェクト" },
+            CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0),
+            UpdatedOn = new DateTime(2024, 1, 3, 16, 0, 0),
+            Journals = new List<Journal>
+            {
+                new Journal
+                {
+                    Id = 1,
+                    User = new User { Id = 2, Name = "コメント投稿者" },
+                    CreatedOn = new DateTime(2024, 1, 2, 14, 0, 0),
+                    Notes = @"以下のスクリーンショットを確認してください:
+![エラー画面](error-screenshot.png)
+
+修正版:
+{{thumbnail(fixed-version.png)}}"
+                },
+                new Journal
+                {
+                    Id = 2,
+                    User = new User { Id = 3, Name = "別のユーザー" },
+                    CreatedOn = new DateTime(2024, 1, 3, 16, 0, 0),
+                    Notes = "画像参照なしのコメント"
+                }
+            },
+            Attachments = new List<Attachment>
+            {
+                new Attachment
+                {
+                    Id = 10,
+                    Filename = "error-screenshot.png",
+                    ContentType = "image/png",
+                    ContentUrl = "https://example.com/attachments/10",
+                    Filesize = 204800,
+                    Author = new User { Id = 2, Name = "コメント投稿者" },
+                    CreatedOn = new DateTime(2024, 1, 2, 13, 50, 0)
+                },
+                new Attachment
+                {
+                    Id = 11,
+                    Filename = "fixed-version.png",
+                    ContentType = "image/png",
+                    ContentUrl = "https://example.com/attachments/11",
+                    Filesize = 153600,
+                    Author = new User { Id = 2, Name = "コメント投稿者" },
+                    CreatedOn = new DateTime(2024, 1, 2, 13, 55, 0)
+                }
+            }
+        };
+
+        // Act & Assert
+        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue));
+        exception.Should().BeNull();
+    }
 }
