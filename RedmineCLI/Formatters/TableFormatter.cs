@@ -162,7 +162,7 @@ public class TableFormatter : ITableFormatter
 
             AnsiConsole.Write(attachmentTable);
         }
-        
+
         // Show image notification at the end if not displaying images
         if (!showImages)
         {
@@ -230,7 +230,7 @@ public class TableFormatter : ITableFormatter
         AnsiConsole.Write(panel);
         AnsiConsole.WriteLine();
         AnsiConsole.Write(grid);
-        
+
         // 画像ファイルの場合はSixelでインライン表示 (showImagesがtrueの場合のみ)
         if (TerminalCapabilityDetector.SupportsSixel() && IsImageType(attachment.ContentType))
         {
@@ -238,18 +238,18 @@ public class TableFormatter : ITableFormatter
             {
                 AnsiConsole.WriteLine();
                 AnsiConsole.MarkupLine("[bold]Preview:[/]");
-                
+
                 if (_apiClient != null)
                 {
                     var httpClient = (_apiClient as RedmineApiClient)?.GetHttpClient();
                     var apiKey = (_apiClient as RedmineApiClient)?.GetApiKey();
-                    
+
                     if (httpClient != null)
                     {
                         SixelImageRenderer.RenderActualImage(
-                            attachment.ContentUrl, 
-                            httpClient, 
-                            apiKey, 
+                            attachment.ContentUrl,
+                            httpClient,
+                            apiKey,
                             attachment.Filename,
                             200 // 最大幅を200ピクセルに設定
                         );
@@ -262,7 +262,7 @@ public class TableFormatter : ITableFormatter
                 // Show notification at the end
             }
         }
-        
+
         // Show image notification at the end if not displaying images
         if (!showImages && TerminalCapabilityDetector.SupportsSixel() && IsImageType(attachment.ContentType))
         {
@@ -286,7 +286,7 @@ public class TableFormatter : ITableFormatter
         return $"{size:0.##} {sizes[order]}";
     }
 
-    
+
     private void CheckAndNotifyImageOption(Issue issue)
     {
         if (_apiClient == null || issue.Attachments == null || issue.Attachments.Count == 0)

@@ -38,14 +38,14 @@ namespace RedmineCLI.Utils
 
                 // 画像データを取得
                 var imageData = response.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult();
-                
+
                 // StbImageSharpで画像をデコード
                 var decoded = StbImageSharpImageDecoder.DecodeImage(imageData);
-                
+
                 if (decoded.HasValue)
                 {
                     var (pixelData, width, height) = decoded.Value;
-                    
+
                     // アスペクト比を保ちながらリサイズ
                     if (width > maxWidth)
                     {
@@ -62,7 +62,7 @@ namespace RedmineCLI.Utils
                     Console.WriteLine($"[Image: {filename}]");
                     return true;
                 }
-                
+
                 return false;
             }
             catch (Exception ex)
@@ -71,7 +71,7 @@ namespace RedmineCLI.Utils
                 return false;
             }
         }
-        
+
         /// <summary>
         /// ピクセルデータをSixel形式で出力
         /// </summary>
@@ -81,7 +81,7 @@ namespace RedmineCLI.Utils
             var sixelData = encoder.Encode(pixelData, width, height, 3);
             Console.Write(sixelData);
         }
-        
+
         /// <summary>
         /// 画像を簡易的にリサイズ（最近傍補間）
         /// </summary>
@@ -89,7 +89,7 @@ namespace RedmineCLI.Utils
             byte[] sourcePixels, int sourceWidth, int sourceHeight, int targetWidth, int targetHeight)
         {
             var targetPixels = new byte[targetWidth * targetHeight * 3];
-            
+
             for (int y = 0; y < targetHeight; y++)
             {
                 for (int x = 0; x < targetWidth; x++)
@@ -97,16 +97,16 @@ namespace RedmineCLI.Utils
                     // 最近傍のピクセルを取得
                     int srcX = x * sourceWidth / targetWidth;
                     int srcY = y * sourceHeight / targetHeight;
-                    
+
                     int srcIdx = (srcY * sourceWidth + srcX) * 3;
                     int dstIdx = (y * targetWidth + x) * 3;
-                    
+
                     targetPixels[dstIdx + 0] = sourcePixels[srcIdx + 0];
                     targetPixels[dstIdx + 1] = sourcePixels[srcIdx + 1];
                     targetPixels[dstIdx + 2] = sourcePixels[srcIdx + 2];
                 }
             }
-            
+
             return (targetPixels, targetWidth, targetHeight);
         }
     }

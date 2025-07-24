@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+
 using StbImageSharp;
 
 namespace RedmineCLI.Utils
@@ -17,13 +18,13 @@ namespace RedmineCLI.Utils
             try
             {
                 using var stream = new MemoryStream(imageData);
-                
+
                 // StbImageSharpを使用して画像をデコード
                 ImageResult image = ImageResult.FromStream(stream, ColorComponents.RedGreenBlue);
-                
+
                 if (image == null)
                     return null;
-                
+
                 // StbImageSharpはRGB形式で返すので、そのまま使用可能
                 return (image.Data, image.Width, image.Height);
             }

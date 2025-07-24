@@ -31,7 +31,7 @@ public class RedmineApiClient : IRedmineApiClient
     }
 
     public HttpClient GetHttpClient() => _httpClient;
-    
+
     public string? GetApiKey()
     {
         var profile = _configService.GetActiveProfileAsync().GetAwaiter().GetResult();

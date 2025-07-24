@@ -178,7 +178,7 @@ public class AttachmentCommand
 
         var jsonOption = new Option<bool>("--json") { Description = "Format output as JSON" };
         command.Add(jsonOption);
-        
+
         var imageOption = new Option<bool>("--image") { Description = "Display inline images using Sixel protocol" };
         command.Add(imageOption);
 
