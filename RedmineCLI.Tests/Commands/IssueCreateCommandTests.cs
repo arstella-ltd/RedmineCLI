@@ -107,7 +107,7 @@ public class IssueCreateCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.CreateAsync(projectId, title, description, assignee, false, CancellationToken.None);
+        var result = await _issueCommand.CreateAsync(projectId, title, description, assignee, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
