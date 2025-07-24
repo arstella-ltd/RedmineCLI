@@ -120,7 +120,7 @@ namespace RedmineCLI.Utils
             if (httpClient != null)
             {
                 // サムネイルの場合は小さめに表示
-                int maxWidth = isThumbnail ? 200 : 400;
+                int maxWidth = isThumbnail ? 100 : 200;
                 
                 SixelImageRenderer.RenderActualImage(
                     attachment.ContentUrl, 

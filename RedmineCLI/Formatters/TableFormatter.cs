@@ -251,7 +251,7 @@ public class TableFormatter : ITableFormatter
                             httpClient, 
                             apiKey, 
                             attachment.Filename,
-                            400 // 最大幅を400ピクセルに設定
+                            200 // 最大幅を200ピクセルに設定
                         );
                     }
                 }
