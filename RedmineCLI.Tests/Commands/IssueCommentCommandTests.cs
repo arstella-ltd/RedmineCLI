@@ -83,7 +83,7 @@ public class IssueCommentCommandTests
 
         // Assert
         // For editor mode, it should either succeed (if implemented) or return appropriate error
-        result.Should().BeGreaterOrEqualTo(0);
+        result.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]
