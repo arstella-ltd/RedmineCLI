@@ -9,6 +9,7 @@ Redmineチケットをコマンドラインから管理するための、GitHub 
 - 🌍 **クロスプラットフォーム**: Windows、macOS、Linux対応
 - 🔒 **セキュア**: APIキーによる安全な認証
 - 📦 **軽量**: 10MB以下の単一実行ファイル（.NETランタイム不要）
+- 🖼️ **画像表示**: Sixelプロトコル対応ターミナルでの画像インライン表示
 
 ## インストール
 
@@ -83,6 +84,26 @@ redmine config get default-project
 
 # すべての設定を表示
 redmine config list
+```
+
+## Sixelプロトコルサポート
+
+RedmineCLIは、Sixelプロトコル対応ターミナルでチケットに添付された画像をインライン表示できます。
+
+### 対応ターミナル
+
+- Windows Terminal (v1.22以降)
+- iTerm2
+- WezTerm
+- mlterm
+- xterm (sixel有効化時)
+
+### 有効化方法
+
+Sixelサポートは自動的に検出されますが、手動で有効化する場合は以下の環境変数を設定してください：
+
+```bash
+export SIXEL_SUPPORT=1
 ```
 
 ## 設定ファイル

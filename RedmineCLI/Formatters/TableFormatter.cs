@@ -1,3 +1,4 @@
+using RedmineCLI.ApiClient;
 using RedmineCLI.Models;
 using RedmineCLI.Utils;
 
@@ -8,11 +9,17 @@ namespace RedmineCLI.Formatters;
 public class TableFormatter : ITableFormatter
 {
     private readonly ITimeHelper _timeHelper;
+    private readonly IRedmineApiClient? _apiClient;
+    private readonly ImageReferenceDetector _imageDetector;
+    private readonly InlineImageRenderer _inlineImageRenderer;
     private TimeFormat _timeFormat = TimeFormat.Relative;
 
-    public TableFormatter(ITimeHelper timeHelper)
+    public TableFormatter(ITimeHelper timeHelper, IRedmineApiClient? apiClient = null)
     {
         _timeHelper = timeHelper;
+        _apiClient = apiClient;
+        _imageDetector = new ImageReferenceDetector();
+        _inlineImageRenderer = new InlineImageRenderer(_apiClient);
     }
 
     public void SetTimeFormat(TimeFormat format)
@@ -57,6 +64,11 @@ public class TableFormatter : ITableFormatter
 
     public void FormatIssueDetails(Issue issue)
     {
+        FormatIssueDetails(issue, false);
+    }
+
+    public void FormatIssueDetails(Issue issue, bool showImages)
+    {
         // Basic issue details
         var panel = new Panel(new Markup($"[bold]{Markup.Escape(issue.Subject)}[/]"))
         {
@@ -88,7 +100,7 @@ public class TableFormatter : ITableFormatter
         if (!string.IsNullOrWhiteSpace(issue.Description))
         {
             AnsiConsole.MarkupLine("[bold]Description:[/]");
-            AnsiConsole.WriteLine(Markup.Escape(issue.Description));
+            _inlineImageRenderer.RenderTextWithInlineImages(issue.Description, issue.Attachments, showImages);
             AnsiConsole.WriteLine();
         }
 
@@ -118,7 +130,8 @@ public class TableFormatter : ITableFormatter
                 // Show notes
                 if (!string.IsNullOrWhiteSpace(journal.Notes))
                 {
-                    AnsiConsole.WriteLine($"  {Markup.Escape(journal.Notes)}");
+                    AnsiConsole.Write("  ");
+                    _inlineImageRenderer.RenderTextWithInlineImages(journal.Notes, issue.Attachments, showImages);
                 }
             }
             AnsiConsole.WriteLine();
@@ -149,6 +162,12 @@ public class TableFormatter : ITableFormatter
 
             AnsiConsole.Write(attachmentTable);
         }
+
+        // Show image notification at the end if not displaying images
+        if (!showImages)
+        {
+            CheckAndNotifyImageOption(issue);
+        }
     }
 
     public void FormatAttachments(List<Attachment> attachments)
@@ -178,6 +197,11 @@ public class TableFormatter : ITableFormatter
 
     public void FormatAttachmentDetails(Attachment attachment)
     {
+        FormatAttachmentDetails(attachment, false);
+    }
+
+    public void FormatAttachmentDetails(Attachment attachment, bool showImages)
+    {
         var panel = new Panel($"[bold]Attachment #{attachment.Id}[/]")
             .BorderColor(Color.Blue)
             .Header($"[blue]{Markup.Escape(attachment.Filename)}[/]");
@@ -206,6 +230,45 @@ public class TableFormatter : ITableFormatter
         AnsiConsole.Write(panel);
         AnsiConsole.WriteLine();
         AnsiConsole.Write(grid);
+
+        // 画像ファイルの場合はSixelでインライン表示 (showImagesがtrueの場合のみ)
+        if (IsImageType(attachment.ContentType))
+        {
+            if (showImages)
+            {
+                AnsiConsole.WriteLine();
+                AnsiConsole.MarkupLine("[bold]Preview:[/]");
+
+                if (_apiClient != null)
+                {
+                    var httpClient = (_apiClient as RedmineApiClient)?.GetHttpClient();
+                    var apiKey = (_apiClient as RedmineApiClient)?.GetApiKey();
+
+                    if (httpClient != null)
+                    {
+                        SixelImageRenderer.RenderActualImage(
+                            attachment.ContentUrl,
+                            httpClient,
+                            apiKey,
+                            attachment.Filename,
+                            200 // 最大幅を200ピクセルに設定
+                        );
+                    }
+                }
+                AnsiConsole.WriteLine();
+            }
+            else
+            {
+                // Show notification at the end
+            }
+        }
+
+        // Show image notification at the end if not displaying images
+        if (!showImages && IsImageType(attachment.ContentType))
+        {
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine("[dim]💡 This is an image attachment. Use --image option to display preview (requires DEC Sixel graphics compatible terminal).[/]");
+        }
     }
 
     private static string FormatFileSize(long bytes)
@@ -221,5 +284,53 @@ public class TableFormatter : ITableFormatter
         }
 
         return $"{size:0.##} {sizes[order]}";
+    }
+
+
+    private void CheckAndNotifyImageOption(Issue issue)
+    {
+        if (_apiClient == null || issue.Attachments == null || issue.Attachments.Count == 0)
+        {
+            return;
+        }
+
+        // Check for inline images in description
+        var imageReferences = _imageDetector.DetectImageReferences(issue.Description);
+        if (imageReferences.Count > 0)
+        {
+            var imageAttachments = _imageDetector.FindMatchingAttachments(issue.Attachments, imageReferences);
+            if (imageAttachments.Count > 0)
+            {
+                AnsiConsole.MarkupLine("[dim]💡 This issue contains inline images. Use --image option to display them (requires DEC Sixel graphics compatible terminal).[/]");
+                return;
+            }
+        }
+
+        // Check for inline images in journal notes
+        if (issue.Journals != null)
+        {
+            foreach (var journal in issue.Journals)
+            {
+                if (!string.IsNullOrWhiteSpace(journal.Notes))
+                {
+                    var journalImageRefs = _imageDetector.DetectImageReferences(journal.Notes);
+                    if (journalImageRefs.Count > 0)
+                    {
+                        var journalImageAttachments = _imageDetector.FindMatchingAttachments(issue.Attachments, journalImageRefs);
+                        if (journalImageAttachments.Count > 0)
+                        {
+                            AnsiConsole.MarkupLine("[dim]💡 This issue contains inline images in comments. Use --image option to display them (requires DEC Sixel graphics compatible terminal).[/]");
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    private static bool IsImageType(string contentType)
+    {
+        return contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
     }
 }

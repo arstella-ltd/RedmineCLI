@@ -145,3 +145,7 @@ RedmineCLIは、Redmineのチケット管理をコマンドラインから効率
 13. WHEN `GetIssueAsync` を呼び出す THEN `include=attachments` パラメータが自動的に含まれる SHALL
 14. WHEN `attachment view <attachment-id>` を実行 THEN 添付ファイルのメタデータ（ファイル名、サイズ、種類、作成者、作成日時、説明）が表示される SHALL
 15. WHEN `attachment download <attachment-id>` を実行 THEN 添付ファイルIDを直接指定してダウンロードできる SHALL
+16. WHEN `issue view <ID>` を実行し、チケットの説明文に画像参照（`![](filename.png)` または `{{thumbnail(filename.png)}}`）が含まれる場合 THEN 該当する画像添付ファイルの情報（ファイル名、サイズ、タイプ）が "Inline Images" セクションに表示される SHALL
+17. WHEN 説明文で参照されている画像ファイルが添付ファイルに存在しない場合 THEN 何も表示されずエラーも発生しない SHALL
+18. WHEN ターミナルがSixelプロトコルをサポートしている場合 THEN 画像添付ファイルがSixelプロトコルを使用してターミナル内に表示される SHALL
+19. WHEN 環境変数 `SIXEL_SUPPORT=1` または `SIXEL_SUPPORT=true` が設定されている場合 THEN Sixelサポートが有効になる SHALL

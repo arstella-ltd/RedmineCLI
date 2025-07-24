@@ -30,6 +30,14 @@ public class RedmineApiClient : IRedmineApiClient
         _jsonOptions = new JsonSerializerOptions(RedmineJsonContext.Default.Options);
     }
 
+    public HttpClient GetHttpClient() => _httpClient;
+
+    public string? GetApiKey()
+    {
+        var profile = _configService.GetActiveProfileAsync().GetAwaiter().GetResult();
+        return profile?.ApiKey;
+    }
+
     public async Task<IssuesResponse> GetIssuesAsync(
         int? assignedToId = null,
         int? projectId = null,

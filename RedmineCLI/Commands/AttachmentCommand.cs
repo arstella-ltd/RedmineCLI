@@ -179,10 +179,14 @@ public class AttachmentCommand
         var jsonOption = new Option<bool>("--json") { Description = "Format output as JSON" };
         command.Add(jsonOption);
 
+        var imageOption = new Option<bool>("--image") { Description = "Display inline images using Sixel protocol" };
+        command.Add(imageOption);
+
         command.SetAction(async (parseResult) =>
         {
             var attachmentId = parseResult.GetValue(idArg);
             var isJson = parseResult.GetValue(jsonOption);
+            var showImages = parseResult.GetValue(imageOption);
 
             try
             {
@@ -202,7 +206,7 @@ public class AttachmentCommand
                 }
                 else
                 {
-                    tableFormatter.FormatAttachmentDetails(attachment);
+                    tableFormatter.FormatAttachmentDetails(attachment, showImages);
                 }
             }
             catch (RedmineApiException ex) when (ex.StatusCode == 404)

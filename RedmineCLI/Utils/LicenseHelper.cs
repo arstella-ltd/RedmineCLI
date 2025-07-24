@@ -42,6 +42,13 @@ public class LicenseHelper : ILicenseHelper
             Version = "1.2.0",
             License = "MIT License\n\nCopyright (c) hadashiA\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.",
             ProjectUrl = "https://github.com/hadashiA/VYaml"
+        },
+        ["StbImageSharp"] = new LicenseData
+        {
+            Name = "StbImageSharp",
+            Version = "2.30.15",
+            License = "Public Domain\n\nThis is free and unencumbered software released into the public domain.\n\nAnyone is free to copy, modify, publish, use, compile, sell, or distribute this software, either in source code form or as a compiled binary, for any purpose, commercial or non-commercial, and by any means.\n\nIn jurisdictions that recognize copyright laws, the author or authors of this software dedicate any and all copyright interest in the software to the public domain. We make this dedication for the benefit of the public at large and to the detriment of our heirs and successors. We intend this dedication to be an overt act of relinquishment in perpetuity of all present and future rights to this software under copyright law.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.",
+            ProjectUrl = "https://github.com/StbSharp/StbImageSharp"
         }
     };
 
@@ -111,7 +118,8 @@ public class LicenseHelper : ILicenseHelper
                 { "System.Text.Json", "MIT" },
                 { "System.IO.Abstractions", "MIT" },
                 { "Polly", "BSD-3-Clause" },
-                { "FluentAssertions", "Apache-2.0" }  // for testing
+                { "FluentAssertions", "Apache-2.0" },  // for testing
+                { "StbImageSharp", "Public Domain" }
             };
 
             foreach (var assembly in loadedAssemblies)
@@ -124,7 +132,7 @@ public class LicenseHelper : ILicenseHelper
             }
 
             // Ensure core dependencies are always included
-            foreach (var coreDep in new[] { "System.CommandLine", "Spectre.Console", "VYaml" })
+            foreach (var coreDep in new[] { "System.CommandLine", "Spectre.Console", "VYaml", "StbImageSharp" })
             {
                 if (knownDependencies.ContainsKey(coreDep))
                 {
@@ -146,7 +154,8 @@ public class LicenseHelper : ILicenseHelper
                 { "Microsoft.Extensions.Http", "MIT" },
                 { "Microsoft.Extensions.Logging", "MIT" },
                 { "System.Text.Json", "MIT" },
-                { "System.IO.Abstractions", "MIT" }
+                { "System.IO.Abstractions", "MIT" },
+                { "StbImageSharp", "Public Domain" }
             };
         }
     }

@@ -26,6 +26,7 @@
 - **System.Text.Json** v9.0.0（Source Generator対応）
 - **System.Security.Cryptography.ProtectedData** v9.0.7（Windows DPAPI）
 - **System.IO.Abstractions** v22.0.15
+- **StbImageSharp** v2.30.15（Native AOT対応の画像デコーダー）
 
 ## 開発ツール
 
@@ -170,7 +171,7 @@ redmine issue list -a @me -s open -p myproject # 複数条件の組み合わせ
 redmine issue list --web                        # ブラウザで開く（または -w）
 redmine issue list -a @me --web                # 条件付きでブラウザで開く
 
-redmine issue view <ID> [--json] [--web]
+redmine issue view <ID> [--json] [--web] [--image]  # --imageでSixel画像表示
 redmine issue create [-p PROJECT] [-t TITLE] [--description DESC] [-a USER] [--web]
 redmine issue edit <ID> [-s STATUS] [-a USER/@me] [--done-ratio N] [--web]  # オプション指定時
 redmine issue edit <ID>                                                     # 対話的編集モード
@@ -197,6 +198,7 @@ redmine issue attachment download <ISSUE-ID> --all --output ./files/    # 出力
 
 # 注: チケット詳細表示時も添付ファイル情報が含まれる
 redmine issue view 123                                                   # 添付ファイル一覧も表示される
+redmine issue view 123 --image                                          # Sixelプロトコルでインライン画像表示
 
 # 設定管理
 redmine config set <KEY> <VALUE>
@@ -240,3 +242,11 @@ redmine --licenses
   - macOS: `open` コマンド（$BROWSER未設定時のフォールバック）
   - Linux: `xdg-open` コマンド（$BROWSER未設定時のフォールバック）
 - Redmine WebUIへの別途ログインが必要（APIキー認証とは独立）
+
+### --imageオプション利用時の要件
+- DEC Sixel graphicsプロトコルに対応したターミナルエミュレータ
+  - 対応例: mlterm, Tera Term, RLogin, mintty, iTerm2, wezterm, foot等
+  - 非対応例: Windows Terminal, macOS Terminal.app, gnome-terminal等
+- 画像形式: PNG、JPEG、BMP形式をサポート
+- 表示サイズ: サムネイルは最大幅100px、通常画像は最大幅200px
+- Native AOT対応: StbImageSharpによる完全マネージド実装

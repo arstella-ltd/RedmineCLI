@@ -105,7 +105,7 @@ public class JsonFormatterTests
         };
 
         // Act & Assert - Should not throw exception
-        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue));
+        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue, false));
         exception.Should().BeNull();
     }
 
@@ -127,7 +127,7 @@ public class JsonFormatterTests
         };
 
         // Act & Assert - Should not throw exception
-        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue));
+        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue, false));
         exception.Should().BeNull();
     }
 
@@ -159,7 +159,7 @@ public class JsonFormatterTests
         };
 
         // Act & Assert - Should not throw exception
-        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue));
+        var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue, false));
         exception.Should().BeNull();
     }
 

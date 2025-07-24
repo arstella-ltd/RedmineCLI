@@ -20,6 +20,7 @@
     <!-- IL2055,IL2057,IL2067,IL2070,IL2072,IL2090: VYaml trimming warnings -->
     <!-- IL3050: VYaml and Spectre.Console AOT warnings -->
     <NoWarn>$(NoWarn);IL2104;IL3053;IL2055;IL2057;IL2067;IL2070;IL2072;IL2090;IL3050</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     
     <!-- Versioning -->
     <Version>0.8.0</Version>
@@ -29,6 +30,7 @@
 
   <ItemGroup>
     <!-- Core dependencies (AOT-compatible versions) -->
+    <PackageReference Include="StbImageSharp" Version="2.30.15" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta6.25358.103" />
     <PackageReference Include="Spectre.Console" Version="0.50.0" />
     <PackageReference Include="System.IO.Abstractions" Version="22.0.15" />

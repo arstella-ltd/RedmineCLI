@@ -248,7 +248,7 @@ public class AttachmentCommandTests
 
         // Assert
         result.Should().Be(0);
-        _tableFormatter.Received(1).FormatAttachmentDetails(attachment);
+        _tableFormatter.Received(1).FormatAttachmentDetails(attachment, false);
     }
 
     [Fact]

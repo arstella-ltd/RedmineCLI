@@ -162,7 +162,7 @@ public class Program
         services.AddSingleton<ITimeHelper, TimeHelper>();
 
         // Formatters
-        services.AddSingleton<ITableFormatter, TableFormatter>();
+        services.AddScoped<ITableFormatter, TableFormatter>();
         services.AddSingleton<IJsonFormatter, JsonFormatter>();
 
         // License Helper
