@@ -13,7 +13,14 @@ Redmineチケットをコマンドラインから管理するための、GitHub 
 
 ## インストール
 
-### バイナリから（推奨）
+### Homebrew (macOS/Linux)
+
+```bash
+brew tap arstella-ltd/homebrew-tap
+brew install redmine
+```
+
+### バイナリから
 
 各プラットフォーム向けのバイナリをダウンロードして、パスの通った場所に配置してください。
 
