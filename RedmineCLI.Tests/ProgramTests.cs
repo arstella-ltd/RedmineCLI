@@ -35,10 +35,10 @@ public class ProgramTests
     }
 
     [Fact]
-    public async Task Main_Should_ShowLicenses_When_LicensesOption()
+    public async Task Main_Should_ShowLicense_When_LicenseOption()
     {
         // Arrange
-        var args = new[] { "--licenses" };
+        var args = new[] { "--license" };
 
         // Act
         var result = await Program.Main(args);

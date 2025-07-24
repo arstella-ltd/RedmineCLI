@@ -19,11 +19,14 @@
 - **System.CommandLine** v2.0.0-beta6.25358.103
 - **Spectre.Console** v0.50.0
 - **VYaml** v1.2.0（Native AOT対応、[YamlObject]属性でSource Generator使用）
-- **Microsoft.Extensions.DependencyInjection** v9.0.0
-- **Microsoft.Extensions.Http** v9.0.0
-- **Microsoft.Extensions.Logging** v9.0.0
+- **Microsoft.Extensions.DependencyInjection** v9.0.7
+- **Microsoft.Extensions.Http** v9.0.7
+- **Microsoft.Extensions.Logging** v9.0.7
+- **Microsoft.Extensions.Logging.Console** v9.0.7
+- **Microsoft.Extensions.Configuration** v9.0.7
+- **Microsoft.Extensions.Configuration.Binder** v9.0.7
 - **Polly.Extensions.Http** v3.0.0
-- **System.Text.Json** v9.0.0（Source Generator対応）
+- **System.Text.Json** v9.0.7（Source Generator対応）
 - **System.Security.Cryptography.ProtectedData** v9.0.7（Windows DPAPI）
 - **System.IO.Abstractions** v22.0.15
 - **StbImageSharp** v2.30.15（Native AOT対応の画像デコーダー）
@@ -218,7 +221,7 @@ redmine <COMMAND> --help
 
 # バージョンとライセンス情報
 redmine --version
-redmine --licenses
+redmine --license
 ```
 
 ## ブラウザサポート

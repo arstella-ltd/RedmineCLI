@@ -105,10 +105,10 @@ RedmineCLIは、Redmineのチケット管理をコマンドラインから効率
 **ユーザーストーリー:** 開発者として、使用しているオープンソースライブラリのライセンス情報を確認したいので、法的コンプライアンスを確保し、自分のプロジェクトでの使用可否を判断できる
 
 #### 受け入れ基準
-1. WHEN `redmine --licenses` を実行 THEN RedmineCLI本体のライセンスとすべてのサードパーティライブラリのライセンス情報が表示される SHALL
+1. WHEN `redmine --license` を実行 THEN RedmineCLI本体のライセンスとすべてのサードパーティライブラリのライセンス情報が表示される SHALL
 2. WHEN `redmine --version` を実行 THEN バージョン情報と共に主要な依存ライブラリとそのライセンス種別（MIT、Apache 2.0等）が簡潔に表示される SHALL
 3. WHEN バイナリ配布パッケージをダウンロード THEN THIRD-PARTY-NOTICES.txtファイルが実行ファイルと同じディレクトリに含まれている SHALL
-4. WHEN オフライン環境で `redmine --licenses` を実行 THEN ビルド時に埋め込まれたライセンス情報が表示される SHALL
+4. WHEN オフライン環境で `redmine --license` を実行 THEN ビルド時に埋め込まれたライセンス情報が表示される SHALL
 5. WHEN 新しい依存関係を追加してビルド THEN THIRD-PARTY-NOTICES.txtが自動的に更新される SHALL
 6. WHEN ライセンス情報を表示 THEN 各ライブラリの著作権表示、ライセンス全文、プロジェクトURLが含まれる SHALL
 7. WHEN 企業のセキュリティ監査で確認 THEN すべての依存関係とそのライセンスが明確に識別できる SHALL

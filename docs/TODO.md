@@ -222,14 +222,14 @@
 - [x] 11. ライセンス情報管理機能の実装（TDD）
   - **Red（〜30分）**: ライセンス管理のテストを先に作成
     - ライセンス表示テスト（以下のテストケースを作成）
-      - `ShowLicenses_Should_DisplayAllLicenses_When_LicensesOptionProvided`
+      - `ShowLicense_Should_DisplayAllLicenses_When_LicenseOptionProvided`
       - `ShowVersion_Should_IncludeLicenseInfo_When_VersionOptionProvided`
     - ライセンスファイル生成テスト（以下のテストケースを作成）
       - `GenerateNotices_Should_CreateFile_When_BuildExecuted`
       - `EmbedLicenses_Should_IncludeInBinary_When_AotBuild`
   - **Green（〜1時間）**: テストを通すための実装
     - THIRD-PARTY-NOTICES.txtの作成と管理
-    - --licensesオプションの実装
+    - --licenseオプションの実装
     - --versionコマンドへのライセンス情報追加
     - ビルド時のライセンス情報埋め込み
     - MSBuildタスクによる自動生成
@@ -527,7 +527,7 @@
 ### タスク11完了（2025-07-21）
 - TDD手法（Red→Green→Refactor）に従って実装
 - テストケース4件を作成（ライセンス表示、バージョン情報、ファイル生成、埋め込み）
-- `redmine --licenses`オプションの実装（Spectre.Console美化表示）
+- `redmine --license`オプションの実装（Spectre.Console美化表示）
 - THIRD-PARTY-NOTICES.txtファイルの生成と管理
 - ライセンス情報のキャッシュ機能と動的依存関係検出
 - 正しい権利者情報の調査と修正
@@ -596,6 +596,26 @@
 - issue viewコマンドで添付ファイル情報を表示
 - 総テスト数: 245件（すべて成功）
 - 要件11（チケット添付ファイル管理機能）の完全実装完了
+
+### ライセンスオプション更新（2025-07-24）
+- `--licenses`を`--license`（単数形）に変更（一般的なCLI慣習に準拠）
+- LicenseHelperを更新し、csprojに記載された全14ライブラリを表示
+  - System.CommandLine v2.0.0-beta6.25358.103
+  - Spectre.Console v0.50.0
+  - VYaml v1.2.0
+  - StbImageSharp v2.30.15
+  - System.IO.Abstractions v22.0.15
+  - System.Security.Cryptography.ProtectedData v9.0.7
+  - Microsoft.Extensions.Http v9.0.7
+  - Polly.Extensions.Http v3.0.0（BSD-3-Clause）
+  - Microsoft.Extensions.DependencyInjection v9.0.7
+  - Microsoft.Extensions.Configuration v9.0.7
+  - Microsoft.Extensions.Configuration.Binder v9.0.7
+  - Microsoft.Extensions.Logging v9.0.7
+  - Microsoft.Extensions.Logging.Console v9.0.7
+  - System.Text.Json v9.0.7
+- Program.cs、テスト、ドキュメントを更新
+- ライセンステスト5件が成功
 
 ## 使用方法
 
