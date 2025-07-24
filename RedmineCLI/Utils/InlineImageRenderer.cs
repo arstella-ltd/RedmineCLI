@@ -80,8 +80,9 @@ namespace RedmineCLI.Utils
                     AnsiConsole.Write(beforeText);
                 }
                 
-                // 画像参照を表示
-                AnsiConsole.Write(text.Substring(start, end - start));
+                // 画像参照を色付きで表示
+                var imageRef = text.Substring(start, end - start);
+                AnsiConsole.Markup($"[cyan]{Markup.Escape(imageRef)}[/]");
                 
                 // 画像を表示（showImagesがtrueで、対応する添付ファイルがある場合）
                 if (showImages && TerminalCapabilityDetector.SupportsSixel())
