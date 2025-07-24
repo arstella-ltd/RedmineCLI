@@ -62,6 +62,11 @@ public class TableFormatter : ITableFormatter
 
     public void FormatIssueDetails(Issue issue)
     {
+        FormatIssueDetails(issue, false);
+    }
+
+    public void FormatIssueDetails(Issue issue, bool showImages)
+    {
         // Basic issue details
         var panel = new Panel(new Markup($"[bold]{Markup.Escape(issue.Subject)}[/]"))
         {
@@ -96,8 +101,11 @@ public class TableFormatter : ITableFormatter
             AnsiConsole.WriteLine(Markup.Escape(issue.Description));
             AnsiConsole.WriteLine();
 
-            // Display inline images if any
-            DisplayInlineImages(issue);
+            // Display inline images if any (when showImages is true)
+            if (showImages)
+            {
+                DisplayInlineImages(issue);
+            }
         }
 
         // History/Journals
@@ -128,8 +136,8 @@ public class TableFormatter : ITableFormatter
                 {
                     AnsiConsole.WriteLine($"  {Markup.Escape(journal.Notes)}");
                     
-                    // Display inline images in journal notes
-                    if (issue.Attachments != null && issue.Attachments.Count > 0)
+                    // Display inline images in journal notes (when showImages is true)
+                    if (showImages && issue.Attachments != null && issue.Attachments.Count > 0)
                     {
                         DisplayInlineImages(journal.Notes, issue.Attachments, "Comment Images");
                     }
@@ -163,6 +171,12 @@ public class TableFormatter : ITableFormatter
 
             AnsiConsole.Write(attachmentTable);
         }
+        
+        // Show image notification at the end if not displaying images
+        if (!showImages)
+        {
+            CheckAndNotifyImageOption(issue);
+        }
     }
 
     public void FormatAttachments(List<Attachment> attachments)
@@ -191,6 +205,11 @@ public class TableFormatter : ITableFormatter
     }
 
     public void FormatAttachmentDetails(Attachment attachment)
+    {
+        FormatAttachmentDetails(attachment, false);
+    }
+
+    public void FormatAttachmentDetails(Attachment attachment, bool showImages)
     {
         var panel = new Panel($"[bold]Attachment #{attachment.Id}[/]")
             .BorderColor(Color.Blue)
@@ -221,29 +240,43 @@ public class TableFormatter : ITableFormatter
         AnsiConsole.WriteLine();
         AnsiConsole.Write(grid);
         
-        // 画像ファイルの場合はSixelでインライン表示
+        // 画像ファイルの場合はSixelでインライン表示 (showImagesがtrueの場合のみ)
         if (TerminalCapabilityDetector.SupportsSixel() && IsImageType(attachment.ContentType))
         {
-            AnsiConsole.WriteLine();
-            AnsiConsole.MarkupLine("[bold]Preview:[/]");
-            
-            if (_apiClient != null)
+            if (showImages)
             {
-                var httpClient = (_apiClient as RedmineApiClient)?.GetHttpClient();
-                var apiKey = (_apiClient as RedmineApiClient)?.GetApiKey();
+                AnsiConsole.WriteLine();
+                AnsiConsole.MarkupLine("[bold]Preview:[/]");
                 
-                if (httpClient != null)
+                if (_apiClient != null)
                 {
-                    SixelImageRenderer.RenderActualImage(
-                        attachment.ContentUrl, 
-                        httpClient, 
-                        apiKey, 
-                        attachment.Filename,
-                        400 // 最大幅を400ピクセルに設定
-                    );
+                    var httpClient = (_apiClient as RedmineApiClient)?.GetHttpClient();
+                    var apiKey = (_apiClient as RedmineApiClient)?.GetApiKey();
+                    
+                    if (httpClient != null)
+                    {
+                        SixelImageRenderer.RenderActualImage(
+                            attachment.ContentUrl, 
+                            httpClient, 
+                            apiKey, 
+                            attachment.Filename,
+                            400 // 最大幅を400ピクセルに設定
+                        );
+                    }
                 }
+                AnsiConsole.WriteLine();
             }
+            else
+            {
+                // Show notification at the end
+            }
+        }
+        
+        // Show image notification at the end if not displaying images
+        if (!showImages && TerminalCapabilityDetector.SupportsSixel() && IsImageType(attachment.ContentType))
+        {
             AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine("[dim]💡 This is an image attachment. Use --image option to display preview (requires DEC Sixel graphics compatible terminal).[/]");
         }
     }
 
@@ -286,6 +319,47 @@ public class TableFormatter : ITableFormatter
         AnsiConsole.MarkupLine("[bold]Inline Images:[/]");
         DisplayImages(imageAttachments);
         AnsiConsole.WriteLine();
+    }
+    
+    private void CheckAndNotifyImageOption(Issue issue)
+    {
+        if (_apiClient == null || issue.Attachments == null || issue.Attachments.Count == 0)
+        {
+            return;
+        }
+
+        // Check for inline images in description
+        var imageReferences = _imageDetector.DetectImageReferences(issue.Description);
+        if (imageReferences.Count > 0)
+        {
+            var imageAttachments = _imageDetector.FindMatchingAttachments(issue.Attachments, imageReferences);
+            if (imageAttachments.Count > 0 && TerminalCapabilityDetector.SupportsSixel())
+            {
+                AnsiConsole.MarkupLine("[dim]💡 This issue contains inline images. Use --image option to display them (requires DEC Sixel graphics compatible terminal).[/]");
+                return;
+            }
+        }
+
+        // Check for inline images in journal notes
+        if (issue.Journals != null)
+        {
+            foreach (var journal in issue.Journals)
+            {
+                if (!string.IsNullOrWhiteSpace(journal.Notes))
+                {
+                    var journalImageRefs = _imageDetector.DetectImageReferences(journal.Notes);
+                    if (journalImageRefs.Count > 0)
+                    {
+                        var journalImageAttachments = _imageDetector.FindMatchingAttachments(issue.Attachments, journalImageRefs);
+                        if (journalImageAttachments.Count > 0 && TerminalCapabilityDetector.SupportsSixel())
+                        {
+                            AnsiConsole.MarkupLine("[dim]💡 This issue contains inline images in comments. Use --image option to display them (requires DEC Sixel graphics compatible terminal).[/]");
+                            return;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private void DisplayInlineImages(string? text, List<Attachment> attachments, string title = "Inline Images")
