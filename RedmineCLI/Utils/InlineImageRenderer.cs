@@ -87,7 +87,7 @@ namespace RedmineCLI.Utils
                 AnsiConsole.Markup($"[cyan]{Markup.Escape(imageRef)}[/]");
 
                 // 画像を表示（showImagesがtrueで、対応する添付ファイルがある場合）
-                if (showImages && TerminalCapabilityDetector.SupportsSixel())
+                if (showImages)
                 {
                     var attachment = attachments.FirstOrDefault(a =>
                         a.Filename == filename && _imageDetector.IsImageContentType(a.ContentType));

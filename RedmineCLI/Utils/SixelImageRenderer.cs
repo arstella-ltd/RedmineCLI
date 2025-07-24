@@ -16,10 +16,7 @@ namespace RedmineCLI.Utils
         /// </summary>
         public static bool RenderActualImage(string contentUrl, HttpClient httpClient, string? apiKey, string filename, int maxWidth = 400)
         {
-            if (!TerminalCapabilityDetector.SupportsSixel())
-            {
-                return false;
-            }
+            // Sixel support check is removed - --image option controls display
 
             try
             {

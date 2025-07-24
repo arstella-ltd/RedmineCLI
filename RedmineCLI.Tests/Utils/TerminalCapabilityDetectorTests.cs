@@ -11,25 +11,25 @@ namespace RedmineCLI.Tests.Utils;
 public class TerminalCapabilityDetectorTests
 {
     [Fact]
-    public void SupportsSixel_Should_ReturnFalse_When_OutputIsRedirected()
+    public void SupportsSixel_Should_AlwaysReturnFalse()
     {
-        // CIやパイプ環境では通常Sixelはサポートされない
-        // この環境でのテストは環境依存なのでスキップ可能
+        // SupportsSixelは非推奨となり、常にfalseを返す
         var result = TerminalCapabilityDetector.SupportsSixel();
 
-        // CI環境ではfalseになることを期待
+        // 常にfalseを返すことを確認
         result.Should().BeFalse();
     }
 
     [Fact]
-    public void SupportsSixel_Should_ReturnCachedValue_When_CalledMultipleTimes()
+    public void SupportsSixel_Should_ReturnConsistentValue_When_CalledMultipleTimes()
     {
         // Arrange & Act
         var firstCall = TerminalCapabilityDetector.SupportsSixel();
         var secondCall = TerminalCapabilityDetector.SupportsSixel();
 
         // Assert
-        firstCall.Should().Be(secondCall);
+        firstCall.Should().BeFalse();
+        secondCall.Should().BeFalse();
     }
 
     [Fact]
@@ -48,26 +48,4 @@ public class TerminalCapabilityDetectorTests
         }
     }
 
-    [Fact]
-    public void SupportsSixel_Should_ReturnTrue_When_SixelSupportEnvironmentVariableIsSet()
-    {
-        // Arrange
-        var originalValue = Environment.GetEnvironmentVariable("SIXEL_SUPPORT");
-        try
-        {
-            Environment.SetEnvironmentVariable("SIXEL_SUPPORT", "1");
-
-            // Sixel detection is cached, so we need to test with a fresh detector
-            // Since it's a static class, we can't easily reset the cache
-            // This test demonstrates the expected behavior
-
-            // Act & Assert
-            // 環境変数が設定されている場合の動作を確認
-            // 実際のテストでは、キャッシュのリセットが必要
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable("SIXEL_SUPPORT", originalValue);
-        }
-    }
 }

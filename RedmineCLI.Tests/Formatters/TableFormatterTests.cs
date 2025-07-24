@@ -348,7 +348,7 @@ public class TableFormatterTests
     }
 
     [Fact]
-    public void FormatIssueDetails_Should_HandleSixelRendering_When_TerminalSupportsSixel()
+    public void FormatIssueDetails_Should_HandleImageDisplay_When_ShowImagesIsTrue()
     {
         // Arrange
         var issue = new Issue

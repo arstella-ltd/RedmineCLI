@@ -232,7 +232,7 @@ public class TableFormatter : ITableFormatter
         AnsiConsole.Write(grid);
 
         // 画像ファイルの場合はSixelでインライン表示 (showImagesがtrueの場合のみ)
-        if (TerminalCapabilityDetector.SupportsSixel() && IsImageType(attachment.ContentType))
+        if (IsImageType(attachment.ContentType))
         {
             if (showImages)
             {
@@ -264,7 +264,7 @@ public class TableFormatter : ITableFormatter
         }
 
         // Show image notification at the end if not displaying images
-        if (!showImages && TerminalCapabilityDetector.SupportsSixel() && IsImageType(attachment.ContentType))
+        if (!showImages && IsImageType(attachment.ContentType))
         {
             AnsiConsole.WriteLine();
             AnsiConsole.MarkupLine("[dim]💡 This is an image attachment. Use --image option to display preview (requires DEC Sixel graphics compatible terminal).[/]");
@@ -299,7 +299,7 @@ public class TableFormatter : ITableFormatter
         if (imageReferences.Count > 0)
         {
             var imageAttachments = _imageDetector.FindMatchingAttachments(issue.Attachments, imageReferences);
-            if (imageAttachments.Count > 0 && TerminalCapabilityDetector.SupportsSixel())
+            if (imageAttachments.Count > 0)
             {
                 AnsiConsole.MarkupLine("[dim]💡 This issue contains inline images. Use --image option to display them (requires DEC Sixel graphics compatible terminal).[/]");
                 return;
@@ -317,7 +317,7 @@ public class TableFormatter : ITableFormatter
                     if (journalImageRefs.Count > 0)
                     {
                         var journalImageAttachments = _imageDetector.FindMatchingAttachments(issue.Attachments, journalImageRefs);
-                        if (journalImageAttachments.Count > 0 && TerminalCapabilityDetector.SupportsSixel())
+                        if (journalImageAttachments.Count > 0)
                         {
                             AnsiConsole.MarkupLine("[dim]💡 This issue contains inline images in comments. Use --image option to display them (requires DEC Sixel graphics compatible terminal).[/]");
                             return;
