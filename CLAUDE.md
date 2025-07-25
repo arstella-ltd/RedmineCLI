@@ -188,3 +188,25 @@ redmine config set <key> <value>  # 設定の変更
 - `docs/TODO.md`: AOT考慮事項を含む実装計画
 - `docs/STRUCTURE.md`: プロジェクト構造（src/ディレクトリなし、フラットレイアウト）
 - `docs/RELEASE.md`: リリースワークフロー、GitHub Actionsの設定、Homebrew更新手順
+- `docs/EXTENSION.md`: 拡張機能システムの仕様
+- `docs/RULES.md`: ドキュメント作成ルール
+- `docs/TEST.md`: ユニットテストガイド
+
+## タスク別参照マップ
+
+以下は、タスクごとに参照すべきドキュメントの順番を示した参照マップです。各タスクを実行する際は、リストされたドキュメントを順番に確認してください。
+
+| タスク | 主要ドキュメント |
+|------|------------------|
+| 新しいコマンドの追加 | REQUIREMENTS.md → DESIGN.md → STRUCTURE.md → TEST.md → TODO.md |
+| 新しいAPIエンドポイントの実装 | DESIGN.md → TECH.md → TEST.md |
+| テストの作成 | TEST.md → CLAUDE.md（テスト方針） → STRUCTURE.md |
+| 拡張機能の開発 | EXTENSION.md → DESIGN.md → TECH.md |
+| AOT最適化/パフォーマンス改善 | CLAUDE.md（AOT考慮事項） → TECH.md → DESIGN.md |
+| エラーハンドリングの改善 | DESIGN.md → REQUIREMENTS.md → TEST.md |
+| 出力フォーマッターの追加 | DESIGN.md → STRUCTURE.md → TEST.md |
+| CI/CDの設定変更 | RELEASE.md → TECH.md |
+| リリース作業 | RELEASE.md → TODO.md → PRODUCT.md |
+| 新機能の企画・設計 | PRODUCT.md → REQUIREMENTS.md → DESIGN.md → TODO.md |
+| ドキュメントの更新 | RULES.md → 対象ドキュメント |
+| バグ修正 | CLAUDE.md（開発ワークフロー） → TEST.md → 関連するドキュメント |
