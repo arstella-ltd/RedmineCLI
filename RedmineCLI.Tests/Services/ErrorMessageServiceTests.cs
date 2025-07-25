@@ -26,8 +26,8 @@ public class ErrorMessageServiceTests
         var (message, suggestion) = _service.GetUserFriendlyMessage(exception);
 
         // Assert
-        message.Should().Be("認証に失敗しました");
-        suggestion.Should().Be("'redmine auth login' を実行して再度認証を行ってください");
+        message.Should().Be("Authentication failed");
+        suggestion.Should().Be("Run 'redmine auth login' to authenticate again");
     }
 
     [Fact]
@@ -40,8 +40,8 @@ public class ErrorMessageServiceTests
         var (message, suggestion) = _service.GetUserFriendlyMessage(exception);
 
         // Assert
-        message.Should().Be("アクセスが拒否されました");
-        suggestion.Should().Be("APIキーの権限を確認してください");
+        message.Should().Be("Access denied");
+        suggestion.Should().Be("Check your API key permissions");
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public class ErrorMessageServiceTests
         var (message, suggestion) = _service.GetUserFriendlyMessage(exception);
 
         // Assert
-        message.Should().Be("プロジェクトが見つかりません");
+        message.Should().Be("Project not found");
         suggestion.Should().Contain("redmine project list");
     }
 
@@ -68,8 +68,8 @@ public class ErrorMessageServiceTests
         var (message, suggestion) = _service.GetUserFriendlyMessage(exception);
 
         // Assert
-        message.Should().Be("チケットが見つかりません");
-        suggestion.Should().Be("チケットIDを確認してください");
+        message.Should().Be("Issue not found");
+        suggestion.Should().Be("Check the issue ID");
     }
 
     [Fact]
@@ -82,8 +82,8 @@ public class ErrorMessageServiceTests
         var (message, suggestion) = _service.GetUserFriendlyMessage(exception);
 
         // Assert
-        message.Should().Be("APIのレート制限に達しました");
-        suggestion.Should().Be("しばらく待ってから再度お試しください");
+        message.Should().Be("API rate limit exceeded");
+        suggestion.Should().Be("Wait a while and try again");
     }
 
     [Fact]
@@ -97,8 +97,8 @@ public class ErrorMessageServiceTests
         var (message, suggestion) = _service.GetUserFriendlyMessage(exception);
 
         // Assert
-        message.Should().Be("サーバーに接続できません");
-        suggestion.Should().Be("ネットワーク接続とRedmineのURLを確認してください");
+        message.Should().Be("Cannot connect to server");
+        suggestion.Should().Be("Check your network connection and Redmine URL");
     }
 
     [Fact]
@@ -111,8 +111,8 @@ public class ErrorMessageServiceTests
         var (message, suggestion) = _service.GetUserFriendlyMessage(exception);
 
         // Assert
-        message.Should().Be("SSL/TLS接続エラーが発生しました");
-        suggestion.Should().Be("証明書の設定を確認してください");
+        message.Should().Be("SSL/TLS connection error occurred");
+        suggestion.Should().Be("Check your certificate settings");
     }
 
     [Fact]
@@ -125,8 +125,8 @@ public class ErrorMessageServiceTests
         var (message, suggestion) = _service.GetUserFriendlyMessage(exception);
 
         // Assert
-        message.Should().Be("APIキーが設定されていません");
-        suggestion.Should().Be("'redmine auth login' を実行して認証を行ってください");
+        message.Should().Be("API key is not configured");
+        suggestion.Should().Be("Run 'redmine auth login' to authenticate");
     }
 
     [Fact]
@@ -139,8 +139,8 @@ public class ErrorMessageServiceTests
         var (message, suggestion) = _service.GetUserFriendlyMessage(exception);
 
         // Assert
-        message.Should().Be("アクティブなプロファイルが設定されていません");
-        suggestion.Should().Be("'redmine config set active_profile <profile-name>' を実行してプロファイルを設定してください");
+        message.Should().Be("No active profile is configured");
+        suggestion.Should().Be("Run 'redmine config set active_profile <profile-name>' to set a profile");
     }
 
     [Fact]
@@ -153,8 +153,8 @@ public class ErrorMessageServiceTests
         var (message, suggestion) = _service.GetUserFriendlyMessage(exception);
 
         // Assert
-        message.Should().Be("リクエストがタイムアウトしました");
-        suggestion.Should().Be("ネットワーク接続を確認して、再度お試しください");
+        message.Should().Be("Request timed out");
+        suggestion.Should().Be("Check your network connection and try again");
     }
 
     [Fact]
