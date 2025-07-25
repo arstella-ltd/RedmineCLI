@@ -62,7 +62,15 @@ public class Program
         licenseOption.Description = "Show license information";
         rootCommand.Add(licenseOption);
 
-        // Create and use CLI configuration (moved up to be in scope)
+        // Add verbose option
+        var verboseOption = new Option<bool>("--verbose");
+        verboseOption.Description = "詳細なエラー情報（スタックトレース）を表示";
+        rootCommand.Add(verboseOption);
+
+        // Get error message service
+        var errorMessageService = serviceProvider.GetRequiredService<IErrorMessageService>();
+
+        // Create and use CLI configuration
         var config = new CommandLineConfiguration(rootCommand)
         {
             // Disable response file processing to allow @me syntax
@@ -127,8 +135,32 @@ public class Program
             // Default action - no specific handling needed
         });
 
-        // Parse and execute
-        return await config.InvokeAsync(args);
+        // Parse and execute with exception handling
+        try
+        {
+            return await config.InvokeAsync(args);
+        }
+        catch (Exception ex)
+        {
+            // Check if verbose mode is requested
+            var isVerbose = args.Contains("--verbose");
+            var (message, suggestion) = errorMessageService.GetUserFriendlyMessage(ex);
+            
+            AnsiConsole.MarkupLine($"[red]Error: {message}[/]");
+            if (!string.IsNullOrEmpty(suggestion))
+            {
+                AnsiConsole.MarkupLine($"[yellow]{suggestion}[/]");
+            }
+
+            if (isVerbose)
+            {
+                AnsiConsole.WriteLine();
+                AnsiConsole.MarkupLine("[dim]--- Debug Information ---[/]");
+                AnsiConsole.WriteLine(ex.ToString());
+            }
+            
+            return 1;
+        }
     }
 
     private static void ConfigureServices(IServiceCollection services)
@@ -165,5 +197,8 @@ public class Program
 
         // File System
         services.AddSingleton<IFileSystem, FileSystem>();
+
+        // Error Message Service
+        services.AddSingleton<IErrorMessageService, ErrorMessageService>();
     }
 }
