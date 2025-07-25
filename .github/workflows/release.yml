@@ -127,15 +127,24 @@ jobs:
     - name: Run tests
       run: dotnet test --configuration Release
 
-    - name: Extract version from tag
-      id: extract_version
+    - name: Extract version from tag (Windows)
+      if: runner.os == 'Windows'
+      id: extract_version_windows
+      shell: pwsh
+      run: |
+        $VERSION = "${{ github.ref_name }}".TrimStart('v')
+        echo "version=$VERSION" >> $env:GITHUB_OUTPUT
+
+    - name: Extract version from tag (Unix)
+      if: runner.os != 'Windows'
+      id: extract_version_unix
       run: |
         VERSION=${GITHUB_REF#refs/tags/v}
         echo "version=$VERSION" >> $GITHUB_OUTPUT
 
     - name: Publish Native AOT
       run: |
-        dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r ${{ matrix.config.rid }} -p:PublishAot=true -p:StripSymbols=true -p:Version=${{ steps.extract_version.outputs.version }} --self-contained -o publish/${{ matrix.config.rid }}
+        dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r ${{ matrix.config.rid }} -p:PublishAot=true -p:StripSymbols=true -p:Version=${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }} --self-contained -o publish/${{ matrix.config.rid }}
 
     - name: Compress binary to zip (Windows)
       if: runner.os == 'Windows'
