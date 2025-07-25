@@ -875,7 +875,9 @@ public class IssueCommand
             var users = await _apiClient.GetUsersAsync(cancellationToken);
             var matchedUser = users.FirstOrDefault(u =>
                 u.Name.Equals(assignee, StringComparison.OrdinalIgnoreCase) ||
-                u.Login?.Equals(assignee, StringComparison.OrdinalIgnoreCase) == true);
+                u.Login?.Equals(assignee, StringComparison.OrdinalIgnoreCase) == true ||
+                (!string.IsNullOrEmpty(u.FirstName) && !string.IsNullOrEmpty(u.LastName) &&
+                 $"{u.FirstName} {u.LastName}".Equals(assignee, StringComparison.OrdinalIgnoreCase)));
 
             if (matchedUser != null)
             {

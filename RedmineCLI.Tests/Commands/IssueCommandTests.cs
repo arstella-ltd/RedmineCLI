@@ -957,4 +957,45 @@ public class IssueCommandTests
         _tableFormatter.Received(1).FormatIssues(issues);
         // Note: We can't easily test console output in unit tests, but the warning should be shown
     }
+
+    [Fact]
+    public async Task List_Should_ResolveDisplayNameToId_When_AssigneeIsFullName()
+    {
+        // Arrange
+        var assigneeDisplayName = "Tanaka Hanako";
+        var users = new List<User>
+        {
+            new User { Id = 1, Name = "Yamada Taro", Login = "yamada", FirstName = "Taro", LastName = "Yamada" },
+            new User { Id = 2, Name = "Tanaka Hanako", Login = "tanaka", FirstName = "Hanako", LastName = "Tanaka" },
+            new User { Id = 3, Name = "Suzuki Jiro", Login = "suzuki", FirstName = "Jiro", LastName = "Suzuki" }
+        };
+        var expectedUserId = "2";
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 10,
+                Subject = "Tanaka's Issue",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                AssignedTo = users[1],
+                Project = new Project { Id = 1, Name = "Test Project" }
+            }
+        };
+
+        _apiClient.GetUsersAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(users));
+        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(assigneeDisplayName, null, null, null, null, false, false, false, null, null, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _apiClient.Received(1).GetUsersAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId),
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
+    }
 }
