@@ -14,6 +14,8 @@ jobs:
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       release_id: ${{ steps.create_release.outputs.id }}
       release_upload_url: ${{ steps.create_release.outputs.upload_url }}
@@ -66,20 +68,20 @@ jobs:
 
     - name: Create Release
       id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${{ github.ref_name }}
-        release_name: RedmineCLI ${{ steps.extract_version.outputs.version }}
+        name: RedmineCLI ${{ steps.extract_version.outputs.version }}
         body: ${{ steps.release_notes.outputs.release_notes }}
         draft: false
         prerelease: ${{ contains(steps.extract_version.outputs.version, '-') }}
+        generate_release_notes: false
 
   build-and-release:
     name: Build and Release - ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
     needs: create-release
+    permissions:
+      contents: write
     strategy:
       matrix:
         config:
@@ -92,12 +94,12 @@ jobs:
             os: macos-latest
             rid: osx-x64
             output: redmine
-            asset_name: redmine-cli-macos-x64
+            asset_name: redmine-cli-osx-x64
           - name: "macOS ARM64"
             os: macos-latest
             rid: osx-arm64
             output: redmine
-            asset_name: redmine-cli-macos-arm64
+            asset_name: redmine-cli-osx-arm64
           - name: "Linux x64"
             os: ubuntu-latest
             rid: linux-x64
@@ -125,93 +127,79 @@ jobs:
     - name: Run tests
       run: dotnet test --configuration Release
 
+    - name: Extract version from tag (Windows)
+      if: runner.os == 'Windows'
+      id: extract_version_windows
+      shell: pwsh
+      run: |
+        $VERSION = "${{ github.ref_name }}".TrimStart('v')
+        echo "version=$VERSION" >> $env:GITHUB_OUTPUT
+
+    - name: Extract version from tag (Unix)
+      if: runner.os != 'Windows'
+      id: extract_version_unix
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
     - name: Publish Native AOT
       run: |
-        dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r ${{ matrix.config.rid }} -p:PublishAot=true -p:StripSymbols=true --self-contained -o publish/${{ matrix.config.rid }}
+        dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r ${{ matrix.config.rid }} -p:PublishAot=true -p:StripSymbols=true -p:Version=${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }} -p:SourceRevisionId= --self-contained -o publish/${{ matrix.config.rid }}
 
-    - name: Compress binary (Unix)
-      if: runner.os != 'Windows'
-      run: |
-        cd publish/${{ matrix.config.rid }}
-        tar -czf ../../${{ matrix.config.asset_name }}.tar.gz ${{ matrix.config.output }}
-        cd ../..
-
-    - name: Compress binary (Windows)
+    - name: Compress binary to zip (Windows)
       if: runner.os == 'Windows'
+      shell: pwsh
       run: |
         cd publish/${{ matrix.config.rid }}
         Compress-Archive -Path ${{ matrix.config.output }} -DestinationPath ../../${{ matrix.config.asset_name }}.zip
         cd ../..
 
-    - name: Upload Release Asset (Unix)
+    - name: Compress binary to zip (Unix)
       if: runner.os != 'Windows'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.release_upload_url }}
-        asset_path: ./${{ matrix.config.asset_name }}.tar.gz
-        asset_name: ${{ matrix.config.asset_name }}.tar.gz
-        asset_content_type: application/gzip
+      run: |
+        cd publish/${{ matrix.config.rid }}
+        zip -j ../../${{ matrix.config.asset_name }}.zip ${{ matrix.config.output }}
+        cd ../..
 
-    - name: Upload Release Asset (Windows)
-      if: runner.os == 'Windows'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Upload Release Assets
+      uses: softprops/action-gh-release@v2
       with:
-        upload_url: ${{ needs.create-release.outputs.release_upload_url }}
-        asset_path: ./${{ matrix.config.asset_name }}.zip
-        asset_name: ${{ matrix.config.asset_name }}.zip
-        asset_content_type: application/zip
+        files: |
+          ${{ matrix.config.asset_name }}.zip
 
   generate-checksums:
     name: Generate Checksums
     runs-on: ubuntu-latest
     needs: [create-release, build-and-release]
+    permissions:
+      contents: write
     
     steps:
     - name: Download release assets
-      uses: actions/github-script@v7
+      uses: robinraju/release-downloader@v1.11
       with:
-        script: |
-          const fs = require('fs');
-          const release = await github.rest.repos.getReleaseByTag({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            tag: context.ref.replace('refs/tags/', '')
-          });
-          
-          for (const asset of release.data.assets) {
-            console.log(`Downloading ${asset.name}...`);
-            const response = await github.request(`GET ${asset.browser_download_url}`, {
-              headers: {
-                'Accept': 'application/octet-stream'
-              }
-            });
-            fs.writeFileSync(asset.name, Buffer.from(response.data));
-          }
+        tag: ${{ github.ref_name }}
+        fileName: "*.zip"
+        out-file-path: "downloads"
     
     - name: Generate checksums
       run: |
-        sha256sum redmine-cli-*.zip redmine-cli-*.tar.gz > checksums.txt || true
+        cd downloads
+        sha256sum *.zip > ../checksums.txt
+        cd ..
         cat checksums.txt
     
     - name: Upload checksums
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v2
       with:
-        upload_url: ${{ needs.create-release.outputs.release_upload_url }}
-        asset_path: ./checksums.txt
-        asset_name: checksums.txt
-        asset_content_type: text/plain
+        files: checksums.txt
+
 
   update-homebrew:
     name: Update Homebrew Formula
     runs-on: ubuntu-latest
     needs: [create-release, build-and-release, generate-checksums]
-    if: "!contains(github.ref_name, '-')" # Only for stable releases
+    if: ${{ !contains(github.ref_name, '-') }} # Only for stable releases
     
     steps:
     - name: Extract version from tag
