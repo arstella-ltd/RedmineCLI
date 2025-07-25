@@ -323,16 +323,17 @@ public class RedmineApiClient : IRedmineApiClient
 
         var queryString = BuildQueryString(queryParams);
         var path = $"/search.json{queryString}";
-        
+
         var response = await GetAsync(path, RedmineJsonContext.Default.SearchResponse, "search", cancellationToken);
-        
+
         // Extract issues from search results
         var issues = new List<Issue>();
         if (response?.Results != null)
         {
             foreach (var result in response.Results)
             {
-                if (result.Type == "issue" && result.Id.HasValue)
+                // Include all issue types (issue, issue-closed, etc.)
+                if (result.Type != null && result.Type.StartsWith("issue") && result.Id.HasValue)
                 {
                     issues.Add(new Issue
                     {
@@ -340,7 +341,8 @@ public class RedmineApiClient : IRedmineApiClient
                         Subject = result.Title ?? string.Empty,
                         Description = result.Description,
                         CreatedOn = result.Datetime ?? DateTime.UtcNow,
-                        UpdatedOn = result.Datetime ?? DateTime.UtcNow
+                        UpdatedOn = result.Datetime ?? DateTime.UtcNow,
+                        SearchResultType = result.Type
                     });
                 }
             }

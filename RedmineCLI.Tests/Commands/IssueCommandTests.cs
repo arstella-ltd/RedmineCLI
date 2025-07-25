@@ -386,6 +386,47 @@ public class IssueCommandTests
         _tableFormatter.Received(1).FormatIssues(searchResults);
     }
 
+    [Fact]
+    public async Task List_Should_DisplayTypeField_When_SearchResultsIncludeClosedIssues()
+    {
+        // Arrange
+        var searchQuery = "課題";
+        var searchResults = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "開いている課題",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                Project = new Project { Id = 1, Name = "Test Project" },
+                SearchResultType = "issue"
+            },
+            new Issue
+            {
+                Id = 2,
+                Subject = "クローズされた課題",
+                Status = new IssueStatus { Id = 5, Name = "Closed" },
+                Project = new Project { Id = 1, Name = "Test Project" },
+                SearchResultType = "issue-closed"
+            }
+        };
+
+        _apiClient.SearchIssuesAsync(searchQuery, null, null, null, 30, null, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(searchResults));
+
+        // Act
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, searchQuery, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _apiClient.Received(1).SearchIssuesAsync(searchQuery, null, null, null, 30, null, Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(searchResults);
+
+        // Verify that the search results include both issue types
+        searchResults.Should().Contain(i => i.SearchResultType == "issue");
+        searchResults.Should().Contain(i => i.SearchResultType == "issue-closed");
+    }
+
     #endregion
 
     #region Command Line Integration Tests

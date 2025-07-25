@@ -36,7 +36,15 @@ public class TableFormatter : ITableFormatter
         }
 
         var table = new Table();
+
+        // Check if any issue has a SearchResultType (indicates search results)
+        bool hasSearchResultType = issues.Any(i => !string.IsNullOrEmpty(i.SearchResultType));
+
         table.AddColumn("ID");
+        if (hasSearchResultType)
+        {
+            table.AddColumn("Type");
+        }
         table.AddColumn("Subject");
         table.AddColumn("Priority");
         table.AddColumn("Status");
@@ -47,16 +55,33 @@ public class TableFormatter : ITableFormatter
 
         foreach (var issue in issues)
         {
-            table.AddRow(
-                issue.Id.ToString(),
-                Markup.Escape(issue.Subject ?? string.Empty),
-                Markup.Escape(issue.Priority?.Name ?? "Normal"),
-                Markup.Escape(issue.Status?.Name ?? "Unknown"),
-                Markup.Escape(issue.AssignedTo?.Name ?? "Unassigned"),
-                Markup.Escape(issue.Project?.Name ?? "No Project"),
-                issue.DueDate.HasValue ? _timeHelper.GetLocalTime(issue.DueDate.Value, "yyyy-MM-dd") : "Not set",
-                _timeHelper.FormatTime(issue.UpdatedOn, _timeFormat)
-            );
+            if (hasSearchResultType)
+            {
+                table.AddRow(
+                    issue.Id.ToString(),
+                    Markup.Escape(issue.SearchResultType ?? "issue"),
+                    Markup.Escape(issue.Subject ?? string.Empty),
+                    Markup.Escape(issue.Priority?.Name ?? "Normal"),
+                    Markup.Escape(issue.Status?.Name ?? "Unknown"),
+                    Markup.Escape(issue.AssignedTo?.Name ?? "Unassigned"),
+                    Markup.Escape(issue.Project?.Name ?? "No Project"),
+                    issue.DueDate.HasValue ? _timeHelper.GetLocalTime(issue.DueDate.Value, "yyyy-MM-dd") : "Not set",
+                    _timeHelper.FormatTime(issue.UpdatedOn, _timeFormat)
+                );
+            }
+            else
+            {
+                table.AddRow(
+                    issue.Id.ToString(),
+                    Markup.Escape(issue.Subject ?? string.Empty),
+                    Markup.Escape(issue.Priority?.Name ?? "Normal"),
+                    Markup.Escape(issue.Status?.Name ?? "Unknown"),
+                    Markup.Escape(issue.AssignedTo?.Name ?? "Unassigned"),
+                    Markup.Escape(issue.Project?.Name ?? "No Project"),
+                    issue.DueDate.HasValue ? _timeHelper.GetLocalTime(issue.DueDate.Value, "yyyy-MM-dd") : "Not set",
+                    _timeHelper.FormatTime(issue.UpdatedOn, _timeFormat)
+                );
+            }
         }
 
         AnsiConsole.Write(table);
