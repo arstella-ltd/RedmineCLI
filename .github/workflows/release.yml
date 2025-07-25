@@ -70,7 +70,7 @@ jobs:
       id: create_release
       uses: softprops/action-gh-release@v2
       with:
-        name: RedmineCLI ${{ steps.extract_version.outputs.version }}
+        name: ${{ github.ref_name }}
         body: ${{ steps.release_notes.outputs.release_notes }}
         draft: false
         prerelease: ${{ contains(steps.extract_version.outputs.version, '-') }}
