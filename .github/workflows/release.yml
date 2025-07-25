@@ -144,7 +144,7 @@ jobs:
 
     - name: Publish Native AOT
       run: |
-        dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r ${{ matrix.config.rid }} -p:PublishAot=true -p:StripSymbols=true -p:Version=${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }} -p:SourceRevisionId= --self-contained -o publish/${{ matrix.config.rid }}
+        dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r ${{ matrix.config.rid }} -p:PublishAot=true -p:StripSymbols=true -p:Version=${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }} -p:IncludeSourceRevisionInInformationalVersion=false --self-contained -o publish/${{ matrix.config.rid }}
 
     - name: Compress binary to zip (Windows)
       if: runner.os == 'Windows'
