@@ -164,6 +164,12 @@ redmine auth logout
 redmine issue list                              # プロジェクトの全オープンチケット（30件、相対時刻表示）
 redmine issue list -a @me                       # 自分に割り当てられたチケット
 redmine issue list --assignee john.doe          # 特定ユーザーのチケット（または -a john.doe）
+                                               # 指定可能な形式：
+                                               #   - ユーザーID: -a 123
+                                               #   - ログイン名: -a tanaka
+                                               #   - 氏名: -a "Tanaka Hanako"
+                                               #   - 表示名（FirstName LastName）: -a "花子 田中"
+                                               #   - 表示名（LastName FirstName）: -a "田中 花子"
 redmine issue list --status closed              # クローズドチケット（または -s closed）
 redmine issue list --status all                 # 全ステータスのチケット（または -s all）
 redmine issue list --project myproject          # 特定プロジェクト（または -p myproject）

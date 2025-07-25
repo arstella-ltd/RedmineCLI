@@ -271,118 +271,139 @@ public class IssueCommand
         string? sort,
         CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Listing issues with filters - Assignee: {Assignee}, Status: {Status}, Project: {Project}, Search: {Search}, Sort: {Sort}",
-            assignee, status, project, search, sort);
-
-        // Handle @me special value
-        assignee = await ResolveAssigneeAsync(assignee, cancellationToken);
-
-        // Handle status special values
-        string? statusFilter = status;
-        if (status == "all")
+        try
         {
-            statusFilter = null; // No status filter means all statuses
-        }
+            _logger.LogDebug("Listing issues with filters - Assignee: {Assignee}, Status: {Status}, Project: {Project}, Search: {Search}, Sort: {Sort}",
+                assignee, status, project, search, sort);
 
-        // Validate sort parameter if provided
-        if (!string.IsNullOrEmpty(sort))
-        {
-            if (!IsValidSortParameter(sort))
+            // Handle @me special value
+            assignee = await ResolveAssigneeAsync(assignee, cancellationToken);
+
+            // Handle status special values
+            string? statusFilter = status;
+            if (status == "all")
             {
-                AnsiConsole.MarkupLine($"[red]Error:[/] Invalid sort parameter: {sort}");
-                AnsiConsole.MarkupLine("[dim]Valid fields: id, subject, status, priority, author, assigned_to, updated_on, created_on, start_date, due_date, done_ratio, category, fixed_version[/]");
-                AnsiConsole.MarkupLine("[dim]Format: field or field:asc or field:desc (e.g., updated_on:desc or priority:desc,id)[/]");
-                return 1;
-            }
-        }
-
-        List<Issue> issues;
-
-        // Use search API if search parameter is provided
-        if (!string.IsNullOrEmpty(search))
-        {
-            // Handle --web option for search
-            if (web)
-            {
-                return await OpenInBrowserAsync(
-                    profile => BuildSearchUrl(profile.Url, search, assignee, statusFilter, project),
-                    "search results",
-                    cancellationToken);
+                statusFilter = null; // No status filter means all statuses
             }
 
-            issues = await _apiClient.SearchIssuesAsync(
-                search,
-                assignee,
-                statusFilter,
-                project,
-                limit ?? 30,
-                offset,
-                sort,
-                cancellationToken);
-        }
-        else
-        {
-            var filter = new IssueFilter
+            // Validate sort parameter if provided
+            if (!string.IsNullOrEmpty(sort))
             {
-                AssignedToId = assignee,
-                StatusId = statusFilter,
-                ProjectId = project,
-                Limit = limit ?? 30, // Default limit to 30
-                Offset = offset,
-                Sort = sort
-            };
-
-            // If no filters are specified, default to open issues
-            if (string.IsNullOrEmpty(assignee) && string.IsNullOrEmpty(status) && string.IsNullOrEmpty(project))
-            {
-                filter.StatusId = "open";
-            }
-
-            // Handle --web option for normal list
-            if (web)
-            {
-                return await OpenInBrowserAsync(
-                    profile => BuildIssuesUrl(profile.Url, filter),
-                    "issues",
-                    cancellationToken);
-            }
-
-            issues = await _apiClient.GetIssuesAsync(filter, cancellationToken);
-        }
-
-        if (json)
-        {
-            _jsonFormatter.FormatIssues(issues);
-        }
-        else
-        {
-            // Determine time format
-            TimeFormat timeFormat = TimeFormat.Relative;
-
-            if (absoluteTime)
-            {
-                timeFormat = TimeFormat.Absolute;
-            }
-            else
-            {
-                // Check config setting
-                var config = await _configService.LoadConfigAsync();
-                if (config.Preferences?.Time?.Format != null)
+                if (!IsValidSortParameter(sort))
                 {
-                    timeFormat = config.Preferences.Time.Format.ToLower() switch
-                    {
-                        "absolute" => TimeFormat.Absolute,
-                        "utc" => TimeFormat.Utc,
-                        _ => TimeFormat.Relative
-                    };
+                    AnsiConsole.MarkupLine($"[red]Error:[/] Invalid sort parameter: {sort}");
+                    AnsiConsole.MarkupLine("[dim]Valid fields: id, subject, status, priority, author, assigned_to, updated_on, created_on, start_date, due_date, done_ratio, category, fixed_version[/]");
+                    AnsiConsole.MarkupLine("[dim]Format: field or field:asc or field:desc (e.g., updated_on:desc or priority:desc,id)[/]");
+                    return 1;
                 }
             }
 
-            _tableFormatter.SetTimeFormat(timeFormat);
-            _tableFormatter.FormatIssues(issues);
-        }
+            List<Issue> issues;
 
-        return 0;
+            // Use search API if search parameter is provided
+            if (!string.IsNullOrEmpty(search))
+            {
+                // Handle --web option for search
+                if (web)
+                {
+                    return await OpenInBrowserAsync(
+                        profile => BuildSearchUrl(profile.Url, search, assignee, statusFilter, project),
+                        "search results",
+                        cancellationToken);
+                }
+
+                issues = await _apiClient.SearchIssuesAsync(
+                    search,
+                    assignee,
+                    statusFilter,
+                    project,
+                    limit ?? 30,
+                    offset,
+                    sort,
+                    cancellationToken);
+            }
+            else
+            {
+                var filter = new IssueFilter
+                {
+                    AssignedToId = assignee,
+                    StatusId = statusFilter,
+                    ProjectId = project,
+                    Limit = limit ?? 30, // Default limit to 30
+                    Offset = offset,
+                    Sort = sort
+                };
+
+                // If no filters are specified, default to open issues
+                if (string.IsNullOrEmpty(assignee) && string.IsNullOrEmpty(status) && string.IsNullOrEmpty(project))
+                {
+                    filter.StatusId = "open";
+                }
+
+                // Handle --web option for normal list
+                if (web)
+                {
+                    return await OpenInBrowserAsync(
+                        profile => BuildIssuesUrl(profile.Url, filter),
+                        "issues",
+                        cancellationToken);
+                }
+
+                issues = await _apiClient.GetIssuesAsync(filter, cancellationToken);
+            }
+
+            if (json)
+            {
+                _jsonFormatter.FormatIssues(issues);
+            }
+            else
+            {
+                // Determine time format
+                TimeFormat timeFormat = TimeFormat.Relative;
+
+                if (absoluteTime)
+                {
+                    timeFormat = TimeFormat.Absolute;
+                }
+                else
+                {
+                    // Check config setting
+                    var config = await _configService.LoadConfigAsync();
+                    if (config.Preferences?.Time?.Format != null)
+                    {
+                        timeFormat = config.Preferences.Time.Format.ToLower() switch
+                        {
+                            "absolute" => TimeFormat.Absolute,
+                            "utc" => TimeFormat.Utc,
+                            _ => TimeFormat.Relative
+                        };
+                    }
+                }
+
+                _tableFormatter.SetTimeFormat(timeFormat);
+                _tableFormatter.FormatIssues(issues);
+            }
+
+            return 0;
+        }
+        catch (ValidationException ex)
+        {
+            _logger.LogError(ex, "Validation error while listing issues");
+            AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+            return 1;
+        }
+        catch (RedmineApiException ex)
+        {
+            _logger.LogError(ex, "API error while listing issues");
+            AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while listing issues");
+            AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+            return 1;
+        }
     }
 
     private static string BuildIssuesUrl(string baseUrl, IssueFilter filter)
@@ -863,7 +884,43 @@ public class IssueCommand
             return currentUser.Id.ToString();
         }
 
-        return assignee;
+        // 数値の場合はそのままIDとして返す
+        if (int.TryParse(assignee, out _))
+        {
+            return assignee;
+        }
+
+        // 文字列の場合はユーザー名として扱い、ユーザーIDを検索する
+        try
+        {
+            var users = await _apiClient.GetUsersAsync(cancellationToken);
+            var matchedUser = users.FirstOrDefault(u =>
+                u.Name.Equals(assignee, StringComparison.OrdinalIgnoreCase) ||
+                u.Login?.Equals(assignee, StringComparison.OrdinalIgnoreCase) == true ||
+                (!string.IsNullOrEmpty(u.FirstName) && !string.IsNullOrEmpty(u.LastName) &&
+                 ($"{u.FirstName} {u.LastName}".Equals(assignee, StringComparison.OrdinalIgnoreCase) ||
+                  $"{u.LastName} {u.FirstName}".Equals(assignee, StringComparison.OrdinalIgnoreCase))));
+
+            if (matchedUser != null)
+            {
+                _logger.LogDebug("Resolved assignee '{Assignee}' to user ID {UserId}", assignee, matchedUser.Id);
+                return matchedUser.Id.ToString();
+            }
+
+            // ユーザーが見つからない場合はエラーをスロー
+            _logger.LogError("Could not find user with name '{Assignee}'", assignee);
+            throw new ValidationException($"User '{assignee}' not found.");
+        }
+        catch (ValidationException)
+        {
+            // ValidationExceptionはそのまま再スロー
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to resolve assignee '{Assignee}'", assignee);
+            throw new ValidationException($"Failed to resolve user '{assignee}': {ex.Message}", ex);
+        }
     }
 
     private static User? ParseAssignee(string? assignee)
@@ -1007,6 +1064,12 @@ public class IssueCommand
             }
 
             return 0;
+        }
+        catch (ValidationException ex)
+        {
+            _logger.LogError(ex, "Validation error while editing issue {IssueId}", issueId);
+            AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+            return 1;
         }
         catch (RedmineApiException ex)
         {

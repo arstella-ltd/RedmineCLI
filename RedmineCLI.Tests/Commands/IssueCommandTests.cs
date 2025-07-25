@@ -200,6 +200,11 @@ public class IssueCommandTests
     {
         // Arrange
         var assignee = "john.doe";
+        var assigneeUserId = "5";
+        var users = new List<User>
+        {
+            new User { Id = 5, Name = "John Doe", Login = "john.doe" }
+        };
         var issues = new List<Issue>
         {
             new Issue
@@ -207,12 +212,14 @@ public class IssueCommandTests
                 Id = 1,
                 Subject = "John's Issue",
                 Status = new IssueStatus { Id = 1, Name = "New" },
-                AssignedTo = new User { Id = 5, Name = "John Doe" },
+                AssignedTo = users[0],
                 Project = new Project { Id = 1, Name = "Test Project" }
             }
         };
 
-        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == assignee), Arg.Any<CancellationToken>())
+        _apiClient.GetUsersAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(users));
+        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == assigneeUserId), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -220,8 +227,9 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
+        await _apiClient.Received(1).GetUsersAsync(Arg.Any<CancellationToken>());
         await _apiClient.Received(1).GetIssuesAsync(
-            Arg.Is<IssueFilter>(f => f.AssignedToId == assignee),
+            Arg.Is<IssueFilter>(f => f.AssignedToId == assigneeUserId),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
     }
@@ -261,9 +269,14 @@ public class IssueCommandTests
     {
         // Arrange
         var assignee = "john.doe";
+        var assigneeUserId = "5";
         var status = "open";
         var project = "my-project";
         var limit = 20;
+        var users = new List<User>
+        {
+            new User { Id = 5, Name = "John Doe", Login = "john.doe" }
+        };
         var issues = new List<Issue>
         {
             new Issue
@@ -271,14 +284,16 @@ public class IssueCommandTests
                 Id = 1,
                 Subject = "Filtered Issue",
                 Status = new IssueStatus { Id = 1, Name = "New" },
-                AssignedTo = new User { Id = 5, Name = "John Doe" },
+                AssignedTo = users[0],
                 Project = new Project { Id = 10, Name = "My Project" }
             }
         };
 
+        _apiClient.GetUsersAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(users));
         _apiClient.GetIssuesAsync(
             Arg.Is<IssueFilter>(f =>
-                f.AssignedToId == assignee &&
+                f.AssignedToId == assigneeUserId &&
                 f.StatusId == status &&
                 f.ProjectId == project &&
                 f.Limit == limit),
@@ -290,9 +305,10 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
+        await _apiClient.Received(1).GetUsersAsync(Arg.Any<CancellationToken>());
         await _apiClient.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f =>
-                f.AssignedToId == assignee &&
+                f.AssignedToId == assigneeUserId &&
                 f.StatusId == status &&
                 f.ProjectId == project &&
                 f.Limit == limit),
@@ -301,17 +317,17 @@ public class IssueCommandTests
     }
 
     [Fact]
-    public async Task List_Should_ThrowException_When_RequestFails()
+    public async Task List_Should_ReturnError_When_RequestFails()
     {
         // Arrange
         _apiClient.GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException<List<Issue>>(new HttpRequestException("API Error")));
 
-        // Act & Assert
-        await Assert.ThrowsAsync<HttpRequestException>(async () =>
-            await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, null, CancellationToken.None)
-        );
+        // Act
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, null, CancellationToken.None);
 
+        // Assert
+        result.Should().Be(1);
         _tableFormatter.DidNotReceive().FormatIssues(Arg.Any<List<Issue>>());
         _jsonFormatter.DidNotReceive().FormatIssues(Arg.Any<List<Issue>>());
     }
@@ -854,4 +870,182 @@ public class IssueCommandTests
     }
 
     #endregion
+
+    [Fact]
+    public async Task List_Should_ResolveUsernameToId_When_AssigneeIsUsername()
+    {
+        // Arrange
+        var assigneeName = "tanaka";
+        var users = new List<User>
+        {
+            new User { Id = 1, Name = "Yamada Taro", Login = "yamada" },
+            new User { Id = 2, Name = "Tanaka Hanako", Login = "tanaka" },
+            new User { Id = 3, Name = "Suzuki Jiro", Login = "suzuki" }
+        };
+        var expectedUserId = "2";
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 10,
+                Subject = "Tanaka's Issue",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                AssignedTo = users[1],
+                Project = new Project { Id = 1, Name = "Test Project" }
+            }
+        };
+
+        _apiClient.GetUsersAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(users));
+        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(assigneeName, null, null, null, null, false, false, false, null, null, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _apiClient.Received(1).GetUsersAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId),
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
+    }
+
+    [Fact]
+    public async Task List_Should_PassNumericIdDirectly_When_AssigneeIsNumeric()
+    {
+        // Arrange
+        var assigneeId = "123";
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "User 123's Issue",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                AssignedTo = new User { Id = 123, Name = "Test User" },
+                Project = new Project { Id = 1, Name = "Test Project" }
+            }
+        };
+
+        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == assigneeId), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(assigneeId, null, null, null, null, false, false, false, null, null, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _apiClient.DidNotReceive().GetUsersAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.AssignedToId == assigneeId),
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
+    }
+
+    [Fact]
+    public async Task List_Should_ReturnError_When_UsernameNotFound()
+    {
+        // Arrange
+        var unknownUser = "nonexistent";
+        var users = new List<User>
+        {
+            new User { Id = 1, Name = "Yamada Taro", Login = "yamada" },
+            new User { Id = 2, Name = "Tanaka Hanako", Login = "tanaka" }
+        };
+
+        _apiClient.GetUsersAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(users));
+
+        // Act
+        var result = await _issueCommand.ListAsync(unknownUser, null, null, null, null, false, false, false, null, null, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(1); // Error code
+        await _apiClient.Received(1).GetUsersAsync(Arg.Any<CancellationToken>());
+        await _apiClient.DidNotReceive().GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task List_Should_ResolveDisplayNameToId_When_AssigneeIsFullName()
+    {
+        // Arrange
+        var assigneeDisplayName = "Tanaka Hanako";
+        var users = new List<User>
+        {
+            new User { Id = 1, Name = "Yamada Taro", Login = "yamada", FirstName = "Taro", LastName = "Yamada" },
+            new User { Id = 2, Name = "Tanaka Hanako", Login = "tanaka", FirstName = "Hanako", LastName = "Tanaka" },
+            new User { Id = 3, Name = "Suzuki Jiro", Login = "suzuki", FirstName = "Jiro", LastName = "Suzuki" }
+        };
+        var expectedUserId = "2";
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 10,
+                Subject = "Tanaka's Issue",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                AssignedTo = users[1],
+                Project = new Project { Id = 1, Name = "Test Project" }
+            }
+        };
+
+        _apiClient.GetUsersAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(users));
+        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(assigneeDisplayName, null, null, null, null, false, false, false, null, null, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _apiClient.Received(1).GetUsersAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId),
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
+    }
+
+    [Fact]
+    public async Task List_Should_ResolveLastNameFirstNameToId_When_AssigneeIsReversedFullName()
+    {
+        // Arrange
+        var assigneeDisplayName = "田中 花子"; // LastName FirstName format
+        var users = new List<User>
+        {
+            new User { Id = 1, Name = "Yamada Taro", Login = "yamada", FirstName = "太郎", LastName = "山田" },
+            new User { Id = 2, Name = "Tanaka Hanako", Login = "tanaka", FirstName = "花子", LastName = "田中" },
+            new User { Id = 3, Name = "Suzuki Jiro", Login = "suzuki", FirstName = "次郎", LastName = "鈴木" }
+        };
+        var expectedUserId = "2";
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 10,
+                Subject = "田中さんのチケット",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                AssignedTo = users[1],
+                Project = new Project { Id = 1, Name = "Test Project" }
+            }
+        };
+
+        _apiClient.GetUsersAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(users));
+        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(assigneeDisplayName, null, null, null, null, false, false, false, null, null, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _apiClient.Received(1).GetUsersAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId),
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
+    }
 }

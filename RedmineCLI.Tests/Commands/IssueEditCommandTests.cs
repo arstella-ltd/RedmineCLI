@@ -94,6 +94,11 @@ public class IssueEditCommandTests
         // Arrange
         var issueId = 456;
         var newAssignee = "john.doe";
+        var assigneeUserId = 5;
+        var users = new List<User>
+        {
+            new User { Id = assigneeUserId, Name = "John Doe", Login = "john.doe" }
+        };
         var currentIssue = new Issue
         {
             Id = issueId,
@@ -105,15 +110,17 @@ public class IssueEditCommandTests
         {
             Id = issueId,
             Subject = "Test Issue",
-            AssignedTo = new User { Id = 5, Name = "John Doe" },
+            AssignedTo = users[0],
             Project = new Project { Id = 1, Name = "Test Project" }
         };
 
+        _apiClient.GetUsersAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(users));
         _apiClient.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
         _apiClient.UpdateIssueAsync(
             issueId,
-            Arg.Is<Issue>(i => i.AssignedTo != null && i.AssignedTo.Name == newAssignee && i.Subject == "Test Issue"),
+            Arg.Is<Issue>(i => i.AssignedTo != null && i.AssignedTo.Id == assigneeUserId && i.Subject == "Test Issue"),
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
@@ -122,10 +129,11 @@ public class IssueEditCommandTests
 
         // Assert
         result.Should().Be(0);
+        await _apiClient.Received(1).GetUsersAsync(Arg.Any<CancellationToken>());
         await _apiClient.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
         await _apiClient.Received(1).UpdateIssueAsync(
             issueId,
-            Arg.Is<Issue>(i => i.AssignedTo != null && i.AssignedTo.Name == newAssignee && i.Subject == "Test Issue"),
+            Arg.Is<Issue>(i => i.AssignedTo != null && i.AssignedTo.Id == assigneeUserId && i.Subject == "Test Issue"),
             Arg.Any<CancellationToken>());
     }
 
@@ -288,7 +296,12 @@ public class IssueEditCommandTests
         var issueId = 777;
         var newStatus = "resolved";
         var newAssignee = "jane.smith";
+        var assigneeUserId = 7;
         var doneRatio = 90;
+        var users = new List<User>
+        {
+            new User { Id = assigneeUserId, Name = "Jane Smith", Login = "jane.smith" }
+        };
         var statusList = new List<IssueStatus>
         {
             new IssueStatus { Id = 1, Name = "New" },
@@ -299,7 +312,7 @@ public class IssueEditCommandTests
             Id = issueId,
             Subject = "Test Issue",
             Status = new IssueStatus { Id = 3, Name = "Resolved" },
-            AssignedTo = new User { Id = 7, Name = "Jane Smith" },
+            AssignedTo = users[0],
             DoneRatio = doneRatio,
             Project = new Project { Id = 1, Name = "Test Project" }
         };
@@ -312,6 +325,8 @@ public class IssueEditCommandTests
             Project = new Project { Id = 1, Name = "Test Project" }
         };
 
+        _apiClient.GetUsersAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(users));
         _apiClient.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
         _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
@@ -320,7 +335,7 @@ public class IssueEditCommandTests
             issueId,
             Arg.Is<Issue>(i =>
                 i.Status != null && i.Status.Id == 3 &&
-                i.AssignedTo != null && i.AssignedTo.Name == newAssignee &&
+                i.AssignedTo != null && i.AssignedTo.Id == assigneeUserId &&
                 i.DoneRatio == doneRatio &&
                 i.Subject == "Test Issue"),
             Arg.Any<CancellationToken>())
@@ -331,12 +346,13 @@ public class IssueEditCommandTests
 
         // Assert
         result.Should().Be(0);
+        await _apiClient.Received(1).GetUsersAsync(Arg.Any<CancellationToken>());
         await _apiClient.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
         await _apiClient.Received(1).UpdateIssueAsync(
             issueId,
             Arg.Is<Issue>(i =>
                 i.Status != null && i.Status.Id == 3 &&
-                i.AssignedTo != null && i.AssignedTo.Name == newAssignee &&
+                i.AssignedTo != null && i.AssignedTo.Id == assigneeUserId &&
                 i.DoneRatio == doneRatio &&
                 i.Subject == "Test Issue"),
             Arg.Any<CancellationToken>());
