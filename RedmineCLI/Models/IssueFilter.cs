@@ -7,4 +7,5 @@ public class IssueFilter
     public string? StatusId { get; set; }
     public int? Limit { get; set; }
     public int? Offset { get; set; }
+    public string? Sort { get; set; }
 }

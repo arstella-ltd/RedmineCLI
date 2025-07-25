@@ -37,6 +37,11 @@ RedmineCLIは、Redmineのチケット管理をコマンドラインから効率
 14. WHEN `--json` オプションを指定 THEN 日時はISO 8601形式のUTCで出力される SHALL
 15. WHEN `config set time.format` で設定 THEN 指定された形式（relative/absolute/utc）で日時が表示される SHALL
 16. WHEN チケット一覧を表示 THEN 期日（Due Date）が設定されている場合は表示される SHALL
+17. WHEN `--sort <field>` オプションを指定 THEN 指定されたフィールドでチケットがソートされる SHALL
+18. WHEN `--sort <field>:asc` または `--sort <field>:desc` を指定 THEN 指定された方向（昇順/降順）でソートされる SHALL
+19. WHEN `--sort` で複数フィールドを指定（例：`--sort priority:desc,id`） THEN 複数条件でソートされる SHALL
+20. WHEN `--sort` で無効なフィールドを指定 THEN エラーメッセージが表示される SHALL
+21. WHEN `--sort` と他のフィルタオプションを組み合わせる THEN フィルタ後の結果がソートされる SHALL
 
 ### 要求 3
 **ユーザーストーリー:** 開発者として、IDを指定して全情報を表示したいので、チケットの詳細情報を確認できる

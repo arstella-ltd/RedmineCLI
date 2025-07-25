@@ -262,7 +262,8 @@ public class RedmineApiClient : IRedmineApiClient
             ["project_id"] = filter.ProjectId,
             ["status_id"] = filter.StatusId,
             ["limit"] = filter.Limit?.ToString(),
-            ["offset"] = filter.Offset?.ToString()
+            ["offset"] = filter.Offset?.ToString(),
+            ["sort"] = filter.Sort
         });
 
         var path = $"/issues.json{queryString}";
@@ -284,6 +285,7 @@ public class RedmineApiClient : IRedmineApiClient
         string? projectId = null,
         int? limit = null,
         int? offset = null,
+        string? sort = null,
         CancellationToken cancellationToken = default)
     {
         var queryParams = new Dictionary<string, string?>
@@ -319,6 +321,11 @@ public class RedmineApiClient : IRedmineApiClient
         if (!string.IsNullOrEmpty(projectId))
         {
             queryParams["project_id"] = projectId;
+        }
+
+        if (!string.IsNullOrEmpty(sort))
+        {
+            queryParams["sort"] = sort;
         }
 
         var queryString = BuildQueryString(queryParams);

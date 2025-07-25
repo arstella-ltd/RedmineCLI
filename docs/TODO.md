@@ -635,6 +635,28 @@
 - すべてのテスト（250件）が成功
 - 要求12（AIエージェント向け情報出力）の完全実装
 
+### issue list --sort オプション実装（2025-07-25）
+- GitHub issue #57 に基づいて実装
+- TDD手法（Red→Green→Refactor）に従って実装
+- 実装内容：
+  - IssueFilterモデルにSortプロパティを追加
+  - RedmineApiClientのGetIssuesAsyncとSearchIssuesAsyncにsortパラメータを追加
+  - IssueCommandに--sortオプションを追加
+  - ソートパラメータの検証機能（IsValidSortParameter）を実装
+- ソート機能の仕様：
+  - 単一フィールドソート（例：--sort updated_on:desc）
+  - 複数フィールドソート（例：--sort priority:desc,id）
+  - 対応フィールド：id, subject, status, priority, author, assigned_to, updated_on, created_on, start_date, due_date, done_ratio, category, fixed_version
+  - 方向指定：asc（昇順）、desc（降順）、指定なしはデフォルトで昇順
+- テストケース5件を追加：
+  - List_Should_SortBySpecifiedField_When_SortOptionProvided
+  - List_Should_SortByMultipleFields_When_MultipleSortFieldsProvided
+  - List_Should_ReturnError_When_InvalidSortFieldProvided
+  - List_Should_ReturnError_When_InvalidSortDirectionProvided
+  - List_Should_ApplySortToSearchResults_When_SearchAndSortProvided
+- すべてのテスト（291件）が成功
+- 要求2の拡張機能として実装完了
+
 ## 使用方法
 
 ### 実行可能ファイル名
