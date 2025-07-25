@@ -64,7 +64,7 @@ public class Program
 
         // Add verbose option
         var verboseOption = new Option<bool>("--verbose");
-        verboseOption.Description = "詳細なエラー情報（スタックトレース）を表示";
+        verboseOption.Description = "Show detailed error information including stack traces";
         rootCommand.Add(verboseOption);
 
         // Get error message service
@@ -145,7 +145,7 @@ public class Program
             // Check if verbose mode is requested
             var isVerbose = args.Contains("--verbose");
             var (message, suggestion) = errorMessageService.GetUserFriendlyMessage(ex);
-            
+
             AnsiConsole.MarkupLine($"[red]Error: {message}[/]");
             if (!string.IsNullOrEmpty(suggestion))
             {
@@ -158,7 +158,7 @@ public class Program
                 AnsiConsole.MarkupLine("[dim]--- Debug Information ---[/]");
                 AnsiConsole.WriteLine(ex.ToString());
             }
-            
+
             return 1;
         }
     }

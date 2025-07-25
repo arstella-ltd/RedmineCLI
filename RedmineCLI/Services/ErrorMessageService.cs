@@ -1,4 +1,5 @@
 using System.Net;
+
 using RedmineCLI.Exceptions;
 
 namespace RedmineCLI.Services;
@@ -16,9 +17,9 @@ public class ErrorMessageService : IErrorMessageService
         {
             RedmineApiException apiEx => GetApiErrorMessage(apiEx),
             HttpRequestException httpEx => GetHttpErrorMessage(httpEx),
-            InvalidOperationException invOpEx when invOpEx.Message.Contains("API key") => 
+            InvalidOperationException invOpEx when invOpEx.Message.Contains("API key") =>
                 ("API key is not configured", "Run 'redmine auth login' to authenticate"),
-            InvalidOperationException invOpEx when invOpEx.Message.Contains("No active profile") => 
+            InvalidOperationException invOpEx when invOpEx.Message.Contains("No active profile") =>
                 ("No active profile is configured", "Run 'redmine config set active_profile <profile-name>' to set a profile"),
             ArgumentException argEx when argEx.Message.Contains("Project ID") =>
                 ("Invalid project ID specified", "Run 'redmine project list' to see available projects"),
@@ -32,9 +33,9 @@ public class ErrorMessageService : IErrorMessageService
     {
         return exception.StatusCode switch
         {
-            (int)HttpStatusCode.Unauthorized => 
+            (int)HttpStatusCode.Unauthorized =>
                 ("Authentication failed", "Run 'redmine auth login' to authenticate again"),
-            (int)HttpStatusCode.Forbidden => 
+            (int)HttpStatusCode.Forbidden =>
                 ("Access denied", "Check your API key permissions"),
             (int)HttpStatusCode.NotFound when exception.Message.Contains("project", StringComparison.OrdinalIgnoreCase) =>
                 ("Project not found", $"The specified project does not exist.\nRun 'redmine project list' to see available projects"),
@@ -55,7 +56,7 @@ public class ErrorMessageService : IErrorMessageService
             return ("Cannot connect to server", "Check your network connection and Redmine URL");
         }
 
-        if (exception.Message.Contains("SSL", StringComparison.OrdinalIgnoreCase) || 
+        if (exception.Message.Contains("SSL", StringComparison.OrdinalIgnoreCase) ||
             exception.Message.Contains("HTTPS", StringComparison.OrdinalIgnoreCase))
         {
             return ("SSL/TLS connection error occurred", "Check your certificate settings");

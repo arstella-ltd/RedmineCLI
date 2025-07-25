@@ -301,17 +301,17 @@ public class IssueCommandTests
     }
 
     [Fact]
-    public async Task List_Should_HandleApiError_When_RequestFails()
+    public async Task List_Should_ThrowException_When_RequestFails()
     {
         // Arrange
         _apiClient.GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException<List<Issue>>(new HttpRequestException("API Error")));
 
-        // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, CancellationToken.None);
+        // Act & Assert
+        await Assert.ThrowsAsync<HttpRequestException>(async () =>
+            await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, CancellationToken.None)
+        );
 
-        // Assert
-        result.Should().Be(1);
         _tableFormatter.DidNotReceive().FormatIssues(Arg.Any<List<Issue>>());
         _jsonFormatter.DidNotReceive().FormatIssues(Arg.Any<List<Issue>>());
     }

@@ -1,7 +1,10 @@
 using System.Net;
+
 using FluentAssertions;
+
 using RedmineCLI.Exceptions;
 using RedmineCLI.Services;
+
 using Xunit;
 
 namespace RedmineCLI.Tests.Services;
