@@ -149,3 +149,13 @@ RedmineCLIは、Redmineのチケット管理をコマンドラインから効率
 17. WHEN 説明文で参照されている画像ファイルが添付ファイルに存在しない場合 THEN 何も表示されずエラーも発生しない SHALL
 18. WHEN ターミナルがSixelプロトコルをサポートしている場合 THEN 画像添付ファイルがSixelプロトコルを使用してターミナル内に表示される SHALL
 19. WHEN 環境変数 `SIXEL_SUPPORT=1` または `SIXEL_SUPPORT=true` が設定されている場合 THEN Sixelサポートが有効になる SHALL
+
+### 要求 12
+**ユーザーストーリー:** AIエージェントの開発者として、RedmineCLIの使い方を理解しやすい形式で取得したいので、LLMs.txt標準に準拠した情報を出力できる
+
+#### 受け入れ基準
+1. WHEN `redmine llms` コマンドを実行 THEN LLMs.txt形式でRedmineCLIの情報が出力される SHALL
+2. WHEN 情報を出力 THEN インストール方法、認証方法、主要コマンド、オプション、機能の説明が含まれる SHALL
+3. WHEN コマンド例を表示 THEN 実際に使用可能な具体的なコマンド例が提供される SHALL
+4. WHEN 出力形式 THEN マークダウン形式で構造化された読みやすい情報が表示される SHALL
+5. WHEN AIエージェントが情報を取得 THEN RedmineCLIの全機能を理解し適切に使用できる SHALL

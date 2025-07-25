@@ -39,7 +39,8 @@ RedmineCLI/                           # メインプロジェクトディレク�
 │   ├── AuthCommand.cs                # 認証コマンド
 │   ├── IssueCommand.cs               # チケットコマンド（list、view、create、edit、comment、attachment サブコマンド含む）
 │   ├── AttachmentCommand.cs          # 添付ファイルコマンド（download、view）
-│   └── ConfigCommand.cs              # 設定コマンド
+│   ├── ConfigCommand.cs              # 設定コマンド
+│   └── LlmsCommand.cs                # AIエージェント向け情報出力コマンド
 ├── Services/                         # サービス層
 │   ├── IRedmineService.cs            # Redmineサービスインターフェース
 │   ├── RedmineService.cs             # Redmineサービス実装（今後実装）
@@ -105,7 +106,8 @@ RedmineCLI.Tests/                     # 単体テストプロジェクト
 │   ├── IssueEditCommandTests.cs      # チケット編集コマンドのテスト（12テストケース）
 │   ├── IssueCommentCommandTests.cs   # チケットコメントコマンドのテスト
 │   ├── IssueAttachmentCommandTests.cs # チケット添付ファイルコマンドのテスト
-│   └── AttachmentCommandTests.cs     # 添付ファイルコマンドのテスト
+│   ├── AttachmentCommandTests.cs     # 添付ファイルコマンドのテスト
+│   └── LlmsCommandTests.cs           # AIエージェント向け情報出力コマンドのテスト
 ├── Formatters/
 │   ├── TableFormatterTests.cs        # テーブルフォーマッターのテスト
 │   └── JsonFormatterTests.cs         # JSONフォーマッターのテスト
@@ -139,6 +141,7 @@ RedmineCLI.IntegrationTests/          # 統合テストプロジェクト
    - IssueCommand: チケット管理（list、view、create、edit、comment、attachment サブコマンド実装済み）
    - AttachmentCommand: 添付ファイル管理（download、view実装済み）
    - ConfigCommand: 設定管理（今後実装）
+   - LlmsCommand: AIエージェント向け情報出力（実装済み）
 3. **Services層**: ビジネスロジックの実装
    - ConfigService: 設定管理（実装済み）
    - RedmineService: チケット操作（今後実装）
