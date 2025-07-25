@@ -20,6 +20,16 @@ brew tap arstella-ltd/homebrew-tap
 brew install redmine
 ```
 
+### Scoop (Windows)
+
+```bash
+# Scoopバケットを追加
+scoop bucket add arstella https://github.com/arstella-ltd/scoop-bucket
+
+# RedmineCLIをインストール
+scoop install redmine
+```
+
 ### mise
 
 [mise](https://mise.jdx.dev/)はasdfプラグインと互換性のある高速なランタイムバージョン管理ツールです。

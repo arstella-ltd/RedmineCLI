@@ -173,9 +173,23 @@ git commit -m "Update RedmineCLI to $VERSION"
 git push origin update-redmine-$VERSION
 ```
 
+## Scoop更新の確認
+
+リリース後、Scoop bucketの自動更新を確認：
+
+1. [scoop-bucket](https://github.com/arstella-ltd/scoop-bucket)リポジトリを確認
+2. GitHub Actionsで`excavator`ワークフローが実行されることを確認
+3. 自動更新が失敗した場合は手動で更新：
+   ```bash
+   # scoop-bucketリポジトリで
+   scoop hash https://github.com/arstella-ltd/RedmineCLI/releases/download/v$VERSION/redmine-cli-win-x64.zip
+   # bucket/redmine.jsonのhashを更新
+   ```
+
 ## 注意事項
 
 - セマンティックバージョニングに従う（MAJOR.MINOR.PATCH）
 - Breaking Changesがある場合はメジャーバージョンを上げる
 - リリース前に必ずテストを実行する
 - リリースノートには日本語で記載する（技術用語は英語可）
+- checksums.txtが正しく生成されることを確認（Scoop自動更新に必要）

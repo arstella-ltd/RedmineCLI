@@ -87,7 +87,7 @@ jobs:
             os: windows-latest
             rid: win-x64
             output: redmine.exe
-            asset_name: redmine-cli-windows-x64.exe
+            asset_name: redmine-cli-win-x64
           - name: "macOS x64"
             os: macos-latest
             rid: osx-x64
@@ -165,10 +165,52 @@ jobs:
         asset_name: ${{ matrix.config.asset_name }}.zip
         asset_content_type: application/zip
 
+  generate-checksums:
+    name: Generate Checksums
+    runs-on: ubuntu-latest
+    needs: [create-release, build-and-release]
+    
+    steps:
+    - name: Download release assets
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const release = await github.rest.repos.getReleaseByTag({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            tag: context.ref.replace('refs/tags/', '')
+          });
+          
+          for (const asset of release.data.assets) {
+            console.log(`Downloading ${asset.name}...`);
+            const response = await github.request(`GET ${asset.browser_download_url}`, {
+              headers: {
+                'Accept': 'application/octet-stream'
+              }
+            });
+            fs.writeFileSync(asset.name, Buffer.from(response.data));
+          }
+    
+    - name: Generate checksums
+      run: |
+        sha256sum redmine-cli-*.zip redmine-cli-*.tar.gz > checksums.txt || true
+        cat checksums.txt
+    
+    - name: Upload checksums
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.release_upload_url }}
+        asset_path: ./checksums.txt
+        asset_name: checksums.txt
+        asset_content_type: text/plain
+
   update-homebrew:
     name: Update Homebrew Formula
     runs-on: ubuntu-latest
-    needs: [create-release, build-and-release]
+    needs: [create-release, build-and-release, generate-checksums]
     if: "!contains(github.ref_name, '-')" # Only for stable releases
     
     steps:
