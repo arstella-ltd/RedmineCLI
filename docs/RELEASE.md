@@ -13,8 +13,7 @@
    - Linux x64/ARM64 (zip形式)
 3. **リリース作成**: GitHubリリースが自動作成（softprops/action-gh-release@v2使用）
 4. **checksums.txt生成**: 全アセットのSHA256ハッシュを自動生成
-5. **Homebrew更新**: 安定版リリース時に自動でFormulaを更新
-6. **Scoop更新**: scoop-bucketリポジトリで6時間ごとに自動チェック
+5. **Scoop更新**: scoop-bucketリポジトリで6時間ごとに自動チェック
 
 ### バージョン表示ルール
 
@@ -56,8 +55,7 @@ GitHub Actionsによって以下が自動的に実行されます：
 
 1. 全プラットフォーム向けのバイナリビルド（zip形式）
 2. リリースの作成（現在は即座に公開）
-3. checksums.txtの生成とアップロード
-4. Homebrew/Scoopの自動更新（安定版のみ）
+3. checksums.txtの生成とアップロード（Scoop自動更新に必要）
 
 ### 4. リリースノートの確認と編集
 
@@ -206,24 +204,30 @@ v0.9.0          # 安定版リリース
    git push origin :refs/tags/$VERSION
    ```
 
-### Homebrew更新が失敗した場合
+### Homebrew更新（手動）
 
-手動で更新PRを作成：
+Homebrew Formulaの更新は手動で行います：
 
 ```bash
 # Homebrew tapリポジトリをクローン
 git clone https://github.com/arstella-ltd/homebrew-tap
 cd homebrew-tap
 
-# Formulaを更新
-# Formula/redmine.rb を編集してバージョンとSHA256を更新
+# macOS x64とARM64のハッシュを取得
+curl -L https://github.com/arstella-ltd/RedmineCLI/releases/download/v$VERSION/redmine-cli-osx-x64.zip | sha256sum
+curl -L https://github.com/arstella-ltd/RedmineCLI/releases/download/v$VERSION/redmine-cli-osx-arm64.zip | sha256sum
 
-# PRを作成
-git checkout -b update-redmine-$VERSION
+# Formula/redmine.rb を編集
+# - version を更新
+# - sha256 を更新（x64とarm64それぞれ）
+
+# 変更をコミット
 git add Formula/redmine.rb
 git commit -m "Update RedmineCLI to $VERSION"
-git push origin update-redmine-$VERSION
+git push origin main
 ```
+
+注意: 現在のGitHub Actionsワークフローには自動更新が含まれていません。
 
 ## Scoop更新の確認
 
