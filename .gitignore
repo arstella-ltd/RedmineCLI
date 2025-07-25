@@ -88,3 +88,4 @@ config.yml
 # Claude settings (local overrides)
 claude/settings.local.json
 EOF < /dev/null
+checksums.txt
