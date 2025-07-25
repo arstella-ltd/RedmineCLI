@@ -123,7 +123,7 @@ public class LlmsCommand
             AnsiConsole.WriteLine("- `-s, --status` : Filter by status (open, closed, all)");
             AnsiConsole.WriteLine("- `-p, --project` : Filter by project ID");
             AnsiConsole.WriteLine("- `-L, --limit` : Number of results to show");
-            AnsiConsole.WriteLine("- `--format` : Output format (table, json)");
+            AnsiConsole.WriteLine("- `--json` : Output in JSON format (default: table)");
             AnsiConsole.WriteLine("- `--web` : Open in web browser");
             AnsiConsole.WriteLine();
             AnsiConsole.WriteLine("## Features");
@@ -132,7 +132,7 @@ public class LlmsCommand
             AnsiConsole.WriteLine("- Cross-platform (Windows, macOS, Linux)");
             AnsiConsole.WriteLine("- Multiple profile support");
             AnsiConsole.WriteLine("- Sixel protocol support for inline image display");
-            AnsiConsole.WriteLine("- Table and JSON output formats");
+            AnsiConsole.WriteLine("- JSON output format option (--json)");
             AnsiConsole.WriteLine("- Editor integration for comments");
             AnsiConsole.WriteLine("- Interactive and non-interactive modes");
             AnsiConsole.WriteLine();

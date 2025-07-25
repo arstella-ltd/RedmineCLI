@@ -139,7 +139,7 @@ public class LlmsCommandTests
             output.Should().Contain("Native AOT");
             output.Should().Contain("Sixel protocol");
             output.Should().Contain("--web");
-            output.Should().Contain("table, json");
+            output.Should().Contain("--json");
 
             return result;
         });
