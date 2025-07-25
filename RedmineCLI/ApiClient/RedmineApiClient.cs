@@ -277,6 +277,78 @@ public class RedmineApiClient : IRedmineApiClient
         return response?.User ?? throw new InvalidOperationException("Failed to get current user");
     }
 
+    public async Task<List<Issue>> SearchIssuesAsync(
+        string searchQuery,
+        string? assignedToId = null,
+        string? statusId = null,
+        string? projectId = null,
+        int? limit = null,
+        int? offset = null,
+        CancellationToken cancellationToken = default)
+    {
+        var queryParams = new Dictionary<string, string?>
+        {
+            ["q"] = searchQuery,
+            ["issues"] = "1", // Search in issues
+            ["limit"] = limit?.ToString(),
+            ["offset"] = offset?.ToString()
+        };
+
+        // Add filters if specified
+        if (!string.IsNullOrEmpty(assignedToId))
+        {
+            queryParams["assigned_to_id"] = assignedToId;
+        }
+
+        if (!string.IsNullOrEmpty(statusId))
+        {
+            if (statusId == "open")
+            {
+                queryParams["open_issues"] = "1";
+            }
+            else if (statusId == "closed")
+            {
+                queryParams["open_issues"] = "0";
+            }
+            else
+            {
+                queryParams["status_id"] = statusId;
+            }
+        }
+
+        if (!string.IsNullOrEmpty(projectId))
+        {
+            queryParams["project_id"] = projectId;
+        }
+
+        var queryString = BuildQueryString(queryParams);
+        var path = $"/search.json{queryString}";
+        
+        var response = await GetAsync(path, RedmineJsonContext.Default.SearchResponse, "search", cancellationToken);
+        
+        // Extract issues from search results
+        var issues = new List<Issue>();
+        if (response?.Results != null)
+        {
+            foreach (var result in response.Results)
+            {
+                if (result.Type == "issue" && result.Id.HasValue)
+                {
+                    issues.Add(new Issue
+                    {
+                        Id = result.Id.Value,
+                        Subject = result.Title ?? string.Empty,
+                        Description = result.Description,
+                        CreatedOn = result.Datetime ?? DateTime.UtcNow,
+                        UpdatedOn = result.Datetime ?? DateTime.UtcNow
+                    });
+                }
+            }
+        }
+
+        return issues;
+    }
+
     private async Task EnsureAuthenticatedAsync()
     {
         var profile = await _configService.GetActiveProfileAsync();

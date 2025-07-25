@@ -41,6 +41,10 @@ namespace RedmineCLI.ApiClient;
 [JsonSerializable(typeof(Attachment[]))]
 [JsonSerializable(typeof(List<Attachment>))]
 [JsonSerializable(typeof(AttachmentResponse))]
+[JsonSerializable(typeof(SearchResponse))]
+[JsonSerializable(typeof(SearchResult))]
+[JsonSerializable(typeof(SearchResult[]))]
+[JsonSerializable(typeof(List<SearchResult>))]
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     WriteIndented = true,
