@@ -49,5 +49,6 @@ public interface IRedmineApiClient
         string? projectId = null,
         int? limit = null,
         int? offset = null,
+        string? sort = null,
         CancellationToken cancellationToken = default);
 }

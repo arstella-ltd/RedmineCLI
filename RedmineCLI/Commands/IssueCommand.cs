@@ -66,6 +66,7 @@ public class IssueCommand
         var absoluteTimeOption = new Option<bool>("--absolute-time") { Description = "Display absolute time instead of relative time" };
         var searchOption = new Option<string?>("--search") { Description = "Search in issue titles and descriptions" };
         searchOption.Aliases.Add("-q");
+        var sortOption = new Option<string?>("--sort") { Description = "Sort by field (e.g., updated_on:desc, priority:desc,id)" };
 
         listCommand.Add(assigneeOption);
         listCommand.Add(statusOption);
@@ -76,6 +77,7 @@ public class IssueCommand
         listCommand.Add(webOption);
         listCommand.Add(absoluteTimeOption);
         listCommand.Add(searchOption);
+        listCommand.Add(sortOption);
 
         listCommand.SetAction(async (parseResult) =>
         {
@@ -88,8 +90,9 @@ public class IssueCommand
             var web = parseResult.GetValue(webOption);
             var absoluteTime = parseResult.GetValue(absoluteTimeOption);
             var search = parseResult.GetValue(searchOption);
+            var sort = parseResult.GetValue(sortOption);
 
-            Environment.ExitCode = await issueCommand.ListAsync(assignee, status, project, limit, offset, json, web, absoluteTime, search, CancellationToken.None);
+            Environment.ExitCode = await issueCommand.ListAsync(assignee, status, project, limit, offset, json, web, absoluteTime, search, sort, CancellationToken.None);
         });
 
         command.Add(listCommand);
@@ -265,10 +268,11 @@ public class IssueCommand
         bool web,
         bool absoluteTime,
         string? search,
+        string? sort,
         CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Listing issues with filters - Assignee: {Assignee}, Status: {Status}, Project: {Project}, Search: {Search}",
-            assignee, status, project, search);
+        _logger.LogDebug("Listing issues with filters - Assignee: {Assignee}, Status: {Status}, Project: {Project}, Search: {Search}, Sort: {Sort}",
+            assignee, status, project, search, sort);
 
         // Handle @me special value
         assignee = await ResolveAssigneeAsync(assignee, cancellationToken);
@@ -278,6 +282,18 @@ public class IssueCommand
         if (status == "all")
         {
             statusFilter = null; // No status filter means all statuses
+        }
+
+        // Validate sort parameter if provided
+        if (!string.IsNullOrEmpty(sort))
+        {
+            if (!IsValidSortParameter(sort))
+            {
+                AnsiConsole.MarkupLine($"[red]Error:[/] Invalid sort parameter: {sort}");
+                AnsiConsole.MarkupLine("[dim]Valid fields: id, subject, status, priority, author, assigned_to, updated_on, created_on, start_date, due_date, done_ratio, category, fixed_version[/]");
+                AnsiConsole.MarkupLine("[dim]Format: field or field:asc or field:desc (e.g., updated_on:desc or priority:desc,id)[/]");
+                return 1;
+            }
         }
 
         List<Issue> issues;
@@ -301,6 +317,7 @@ public class IssueCommand
                 project,
                 limit ?? 30,
                 offset,
+                sort,
                 cancellationToken);
         }
         else
@@ -311,7 +328,8 @@ public class IssueCommand
                 StatusId = statusFilter,
                 ProjectId = project,
                 Limit = limit ?? 30, // Default limit to 30
-                Offset = offset
+                Offset = offset,
+                Sort = sort
             };
 
             // If no filters are specified, default to open issues
@@ -1530,5 +1548,43 @@ public class IssueCommand
             len = len / 1024;
         }
         return $"{len:0.#} {sizes[order]}";
+    }
+
+    private static bool IsValidSortParameter(string sort)
+    {
+        var validFields = new HashSet<string>
+        {
+            "id", "subject", "status", "priority", "author", "assigned_to",
+            "updated_on", "created_on", "start_date", "due_date", "done_ratio",
+            "category", "fixed_version"
+        };
+
+        // Split by comma for multiple sort fields
+        var sortFields = sort.Split(',');
+
+        foreach (var sortField in sortFields)
+        {
+            // Split by colon to get field and direction
+            var parts = sortField.Trim().Split(':');
+
+            if (parts.Length == 0 || parts.Length > 2)
+                return false;
+
+            var field = parts[0].Trim();
+
+            // Check if field is valid
+            if (!validFields.Contains(field))
+                return false;
+
+            // If direction is specified, check if it's valid
+            if (parts.Length == 2)
+            {
+                var direction = parts[1].Trim().ToLower();
+                if (direction != "asc" && direction != "desc")
+                    return false;
+            }
+        }
+
+        return true;
     }
 }
