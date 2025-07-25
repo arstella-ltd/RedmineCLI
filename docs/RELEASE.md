@@ -22,6 +22,8 @@
 - **プレリリース版** (v0.8.1-beta.1): コミットハッシュなし → `0.8.1-beta.1`
 - **開発版** (タグなし): コミットハッシュあり → `0.8.0+abc123...`
 
+リリースビルドでは `-p:IncludeSourceRevisionInInformationalVersion=false` を使用してコミットハッシュを除外します。これにより、リリース版では常にクリーンなバージョン番号が表示されます。
+
 ## 推奨されるリリースプロセス
 
 ### 1. リリース準備
@@ -92,8 +94,10 @@ GitHub Actionsによって以下が自動的に実行されます：
 4. **バージョンの動的設定**
    ```yaml
    -p:Version=${{ steps.extract_version.outputs.version }}
-   -p:SourceRevisionId=  # リリース版ではハッシュなし
+   -p:IncludeSourceRevisionInInformationalVersion=false
    ```
+   - タグからバージョンを自動設定
+   - コミットハッシュを明示的に除外（MSBuild標準プロパティ）
 
 5. **Windows/Unix両対応のバージョン抽出**
    - Windows: PowerShellスクリプト
@@ -233,6 +237,23 @@ git push origin update-redmine-$VERSION
    scoop hash https://github.com/arstella-ltd/RedmineCLI/releases/download/v$VERSION/redmine-cli-win-x64.zip
    # bucket/redmine.jsonのhashを更新
    ```
+
+## バージョン管理の技術詳細
+
+### MSBuildプロパティ
+
+RedmineCLIでは以下のMSBuildプロパティを使用してバージョンを制御：
+
+1. **Version**: 基本バージョン番号（例: `0.8.1`）
+2. **IncludeSourceRevisionInInformationalVersion**: コミットハッシュの付与を制御
+   - `false`: リリースビルド（ハッシュなし）
+   - `true`（デフォルト）: 開発ビルド（ハッシュあり）
+
+### なぜIncludeSourceRevisionInInformationalVersionを使用するか
+
+- **明示的**: 意図が明確（「InformationalVersionにソースリビジョンを含めない」）
+- **標準的**: MSBuildの公式プロパティ
+- **保守性**: 将来のMSBuildバージョンでも互換性が保たれる
 
 ## 注意事項
 
