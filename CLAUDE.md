@@ -187,3 +187,4 @@ redmine config set <key> <value>  # 設定の変更
 - `docs/TECH.md`: 技術スタックと開発コマンド
 - `docs/TODO.md`: AOT考慮事項を含む実装計画
 - `docs/STRUCTURE.md`: プロジェクト構造（src/ディレクトリなし、フラットレイアウト）
+- `docs/RELEASE.md`: リリースワークフロー、GitHub Actionsの設定、Homebrew更新手順
