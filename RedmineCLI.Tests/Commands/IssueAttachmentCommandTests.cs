@@ -116,7 +116,7 @@ public class IssueAttachmentCommandTests
             // Assert console output
             console.Output.Should().Contain("No attachments found for issue #123");
             _tableFormatter.DidNotReceive().FormatAttachments(Arg.Any<List<Attachment>>());
-            
+
             return actualResult;
         });
 
@@ -147,13 +147,13 @@ public class IssueAttachmentCommandTests
         {
             // Simply select with Enter (no selection = empty list)
             console.Input.PushKey(ConsoleKey.Enter);
-            
+
             var actualResult = await _issueCommand.DownloadAttachmentsAsync(issueId, false, null, CancellationToken.None);
 
             // Assert console output
             console.Output.Should().Contain("Select attachments to download");
             console.Output.Should().Contain("No attachments selected");
-            
+
             return actualResult;
         });
 
@@ -192,7 +192,7 @@ public class IssueAttachmentCommandTests
 
             // Assert console output
             console.Output.Should().Contain("Downloaded 3 attachments");
-            
+
             return actualResult;
         });
 
@@ -262,7 +262,7 @@ public class IssueAttachmentCommandTests
             // Assert console output
             console.Output.Should().Contain("No attachments found for issue #123");
             await _apiClient.DidNotReceive().DownloadAttachmentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
-            
+
             return actualResult;
         });
 
@@ -301,7 +301,7 @@ public class IssueAttachmentCommandTests
             // Assert console output
             console.Output.Should().Contain("report.pdf");
             console.Output.Should().Contain("report_1.pdf");
-            
+
             return actualResult;
         });
 

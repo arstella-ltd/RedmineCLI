@@ -168,14 +168,14 @@ public class AuthCommandTests
         var result = await _consoleFixture.ExecuteWithTestConsoleAsync(async console =>
         {
             var actualResult = await _authCommand.StatusAsync();
-            
+
             // Verify console output contains expected messages
             var output = console.Output;
             output.Should().Contain("Authentication Status");
             output.Should().Contain("default");
             output.Should().Contain("https://redmine.example.com");
             output.Should().Contain("Connection successful");
-            
+
             return actualResult;
         });
 

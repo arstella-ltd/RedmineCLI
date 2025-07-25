@@ -1,5 +1,6 @@
 using Spectre.Console;
 using Spectre.Console.Testing;
+
 using Xunit;
 
 namespace RedmineCLI.Tests.TestInfrastructure;
@@ -56,7 +57,7 @@ public class AnsiConsoleTestFixture : IDisposable
         // 非同期操作でもロックを維持するため、SemaphoreSlimを使用
         using var semaphore = new SemaphoreSlim(1, 1);
         await semaphore.WaitAsync();
-        
+
         var testConsole = CreateTestConsole();
         var originalConsole = AnsiConsole.Console;
         try
