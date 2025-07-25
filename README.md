@@ -20,6 +20,21 @@ brew tap arstella-ltd/homebrew-tap
 brew install redmine
 ```
 
+### mise
+
+[mise](https://mise.jdx.dev/)はasdfプラグインと互換性のある高速なランタイムバージョン管理ツールです。
+
+```bash
+# プラグインを追加してインストール
+mise plugin add redmine https://github.com/arstella-ltd/asdf-redmine.git
+mise install redmine@latest
+mise use -g redmine@latest
+
+# または.mise.tomlに記載
+[tools]
+redmine = "latest"
+```
+
 ### バイナリから
 
 各プラットフォーム向けのバイナリをダウンロードして、パスの通った場所に配置してください。
