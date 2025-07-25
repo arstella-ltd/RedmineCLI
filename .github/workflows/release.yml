@@ -194,6 +194,7 @@ jobs:
       with:
         files: checksums.txt
 
+
   update-homebrew:
     name: Update Homebrew Formula
     runs-on: ubuntu-latest
