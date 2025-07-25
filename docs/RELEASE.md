@@ -9,16 +9,18 @@
 1. **トリガー**: `v*`形式のタグがプッシュされると自動的にリリースワークフローが開始
 2. **ビルド**: 以下のプラットフォーム向けにNative AOTでコンパイル
    - Windows x64 (zip形式)
-   - macOS x64/ARM64 (tar.gz形式)
-   - Linux x64/ARM64 (tar.gz形式)
-3. **リリース作成**: GitHubリリースが自動作成（現在は即座に公開）
-4. **Homebrew更新**: 安定版リリース時に自動でFormulaを更新
+   - macOS x64/ARM64 (zip形式)
+   - Linux x64/ARM64 (zip形式)
+3. **リリース作成**: GitHubリリースが自動作成（softprops/action-gh-release@v2使用）
+4. **checksums.txt生成**: 全アセットのSHA256ハッシュを自動生成
+5. **Homebrew更新**: 安定版リリース時に自動でFormulaを更新
+6. **Scoop更新**: scoop-bucketリポジトリで6時間ごとに自動チェック
 
-### 問題点
+### バージョン表示ルール
 
-- リリースが即座に公開される（ドラフトではない）
-- Unix系プラットフォームでtar.gz形式を使用（zipに統一したい）
-- リリースノートがハードコードされている
+- **安定版** (v0.8.1): コミットハッシュなし → `0.8.1`
+- **プレリリース版** (v0.8.1-beta.1): コミットハッシュなし → `0.8.1-beta.1`
+- **開発版** (タグなし): コミットハッシュあり → `0.8.0+abc123...`
 
 ## 推奨されるリリースプロセス
 
@@ -46,102 +48,148 @@ git tag -a $VERSION -m "Release $VERSION"
 git push origin $VERSION
 ```
 
-### 3. ドラフトリリースの確認
+### 3. リリースの確認
 
 GitHub Actionsによって以下が自動的に実行されます：
 
-1. 全プラットフォーム向けのバイナリビルド
-2. ドラフトリリースの作成
-3. ビルド済みバイナリのアップロード
+1. 全プラットフォーム向けのバイナリビルド（zip形式）
+2. リリースの作成（現在は即座に公開）
+3. checksums.txtの生成とアップロード
+4. Homebrew/Scoopの自動更新（安定版のみ）
 
-### 4. リリースノートの編集
+### 4. リリースノートの確認と編集
 
 1. [GitHub Releases](https://github.com/arstella-ltd/RedmineCLI/releases)ページを開く
-2. ドラフトリリースを確認
-3. リリースノートを編集：
+2. 作成されたリリースを確認
+3. 必要に応じてリリースノートを編集：
    - 主な変更点
    - 新機能
    - バグ修正
    - Breaking Changes（ある場合）
 
-### 5. リリースの公開
+## 実装済みの機能
 
-1. リリースノートの編集が完了したら「Publish release」をクリック
-2. Homebrewの自動更新が開始される（安定版のみ）
+### 現在のrelease.ymlの主な機能
 
-## GitHub Actionsワークフローの改善案
+1. **最新のリリースアクション**
+   ```yaml
+   uses: softprops/action-gh-release@v2
+   ```
+   - 権限エラーを回避
+   - より柔軟な設定が可能
 
-### ドラフトリリースの有効化
+2. **全プラットフォームでzip形式に統一済み**
+   - Windows/macOS/Linux全てzip形式
+   - 一貫性のあるアセット管理
 
-`.github/workflows/release.yml`の変更：
+3. **checksums.txt自動生成**
+   ```yaml
+   uses: robinraju/release-downloader@v1.11
+   ```
+   - 全アセットのSHA256ハッシュを含む
+   - Scoop等のパッケージマネージャーで利用
 
-```yaml
-- name: Create Release
-  id: create_release
-  uses: actions/create-release@v1
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  with:
-    tag_name: ${{ github.ref_name }}
-    release_name: RedmineCLI ${{ steps.extract_version.outputs.version }}
-    body: ${{ steps.release_notes.outputs.release_notes }}
-    draft: true  # ← ドラフトとして作成
-    prerelease: ${{ contains(steps.extract_version.outputs.version, '-') }}
+4. **バージョンの動的設定**
+   ```yaml
+   -p:Version=${{ steps.extract_version.outputs.version }}
+   -p:SourceRevisionId=  # リリース版ではハッシュなし
+   ```
+
+5. **Windows/Unix両対応のバージョン抽出**
+   - Windows: PowerShellスクリプト
+   - Unix: Bashスクリプト
+
+### 今後の改善案
+
+1. **ドラフトリリースの有効化**
+   ```yaml
+   draft: true  # 現在はfalse
+   ```
+   - リリースノートを編集する時間を確保
+   - 誤った公開を防ぐ
+
+2. **リリースノートの自動生成**
+   - コミットメッセージから自動生成
+   - Conventional Commitsの活用
+
+## プレリリース版の考え方
+
+### プレリリースの種類と用途
+
+1. **アルファ版** (`v0.9.0-alpha.1`)
+   - 内部テスト用
+   - 新機能の初期実装
+   - 不安定な可能性あり
+   - 限定的な配布
+
+2. **ベータ版** (`v0.9.0-beta.1`)
+   - 公開テスト用
+   - 機能はほぼ完成
+   - フィードバック収集目的
+   - 広く配布
+
+3. **リリース候補版** (`v0.9.0-rc.1`)
+   - 最終テスト用
+   - 安定版とほぼ同等
+   - 最終確認のみ
+   - 本番環境での使用可
+
+### プレリリースの命名規則
+
+```
+v<メジャー>.<マイナー>.<パッチ>-<プレリリース>.<番号>
+
+例:
+- v0.9.0-alpha.1
+- v0.9.0-beta.1
+- v0.9.0-beta.2
+- v0.9.0-rc.1
 ```
 
-### 全プラットフォームでzip形式に統一
-
-Unix系プラットフォームでもzip形式を使用：
-
-```yaml
-- name: Compress binary (Unix)
-  if: runner.os != 'Windows'
-  run: |
-    cd publish/${{ matrix.config.rid }}
-    zip -j ../../${{ matrix.config.asset_name }}.zip ${{ matrix.config.output }}
-    cd ../..
-```
-
-### リリース公開時のHomebrew更新
-
-別ワークフロー（`.github/workflows/homebrew-update.yml`）を追加：
-
-```yaml
-name: Update Homebrew Formula
-
-on:
-  release:
-    types: [published]
-
-jobs:
-  update-homebrew:
-    name: Update Homebrew Formula
-    runs-on: ubuntu-latest
-    if: "!github.event.release.prerelease"
-    
-    steps:
-    - name: Update Homebrew formula
-      uses: dawidd6/action-homebrew-bump-formula@v3
-      with:
-        token: ${{ secrets.HOMEBREW_TOKEN }}
-        formula: redmine
-        tag: ${{ github.event.release.tag_name }}
-        revision: ${{ github.sha }}
-```
-
-## プレリリース版
-
-アルファ版やベータ版をリリースする場合：
+### プレリリースのリリース手順
 
 ```bash
-# プレリリース版のタグ（例: v0.9.0-beta.1）
-git tag -a v0.9.0-beta.1 -m "Release v0.9.0-beta.1"
-git push origin v0.9.0-beta.1
+# プレリリース版のタグを作成
+VERSION=v0.9.0-beta.1
+git tag -a $VERSION -m "Release $VERSION"
+git push origin $VERSION
 ```
 
-プレリリース版の場合：
-- GitHubリリースで「This is a pre-release」にチェック
-- Homebrewの自動更新はスキップされる
+### プレリリース版の特徴
+
+1. **自動化**
+   - GitHub Actionsが自動的にprereleaseフラグを設定
+   - `-`を含むバージョンは自動的にプレリリースとして扱われる
+
+2. **配布**
+   - GitHubリリースページで入手可能
+   - Homebrewの自動更新はスキップ
+   - Scoopは手動更新が必要
+
+3. **バージョン表示**
+   - コミットハッシュなし（例: `0.9.0-beta.1`）
+   - 正式リリースと同じ扱い
+
+### プレリリースの進行例
+
+```bash
+# 新機能開発開始
+v0.9.0-alpha.1  # 初期実装
+v0.9.0-alpha.2  # バグ修正
+v0.9.0-alpha.3  # 機能追加
+
+# ベータテスト開始
+v0.9.0-beta.1   # 公開テスト開始
+v0.9.0-beta.2   # フィードバック反映
+v0.9.0-beta.3   # バグ修正
+
+# リリース候補
+v0.9.0-rc.1     # 最終確認
+v0.9.0-rc.2     # 微調整
+
+# 正式リリース
+v0.9.0          # 安定版リリース
+```
 
 ## トラブルシューティング
 
@@ -173,9 +221,23 @@ git commit -m "Update RedmineCLI to $VERSION"
 git push origin update-redmine-$VERSION
 ```
 
+## Scoop更新の確認
+
+リリース後、Scoop bucketの自動更新を確認：
+
+1. [scoop-bucket](https://github.com/arstella-ltd/scoop-bucket)リポジトリを確認
+2. GitHub Actionsで`excavator`ワークフローが実行されることを確認
+3. 自動更新が失敗した場合は手動で更新：
+   ```bash
+   # scoop-bucketリポジトリで
+   scoop hash https://github.com/arstella-ltd/RedmineCLI/releases/download/v$VERSION/redmine-cli-win-x64.zip
+   # bucket/redmine.jsonのhashを更新
+   ```
+
 ## 注意事項
 
 - セマンティックバージョニングに従う（MAJOR.MINOR.PATCH）
 - Breaking Changesがある場合はメジャーバージョンを上げる
 - リリース前に必ずテストを実行する
 - リリースノートには日本語で記載する（技術用語は英語可）
+- checksums.txtが正しく生成されることを確認（Scoop自動更新に必要）
