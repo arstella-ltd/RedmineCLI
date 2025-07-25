@@ -103,7 +103,7 @@ public class LlmsCommand
             AnsiConsole.WriteLine("- Cross-platform (Windows, macOS, Linux)");
             AnsiConsole.WriteLine("- Multiple profile support");
             AnsiConsole.WriteLine("- Sixel protocol support for inline image display");
-            AnsiConsole.WriteLine("- Table and JSON output formats");
+            AnsiConsole.WriteLine("- JSON output format option (--json)");
             AnsiConsole.WriteLine("- Editor integration for comments");
             AnsiConsole.WriteLine("- Interactive and non-interactive modes");
             AnsiConsole.WriteLine();
