@@ -64,6 +64,8 @@ public class IssueCommand
         var webOption = new Option<bool>("--web") { Description = "Open in web browser" };
         webOption.Aliases.Add("-w");
         var absoluteTimeOption = new Option<bool>("--absolute-time") { Description = "Display absolute time instead of relative time" };
+        var searchOption = new Option<string?>("--search") { Description = "Search in issue titles and descriptions" };
+        searchOption.Aliases.Add("-q");
 
         listCommand.Add(assigneeOption);
         listCommand.Add(statusOption);
@@ -73,6 +75,7 @@ public class IssueCommand
         listCommand.Add(jsonOption);
         listCommand.Add(webOption);
         listCommand.Add(absoluteTimeOption);
+        listCommand.Add(searchOption);
 
         listCommand.SetAction(async (parseResult) =>
         {
@@ -84,8 +87,9 @@ public class IssueCommand
             var json = parseResult.GetValue(jsonOption);
             var web = parseResult.GetValue(webOption);
             var absoluteTime = parseResult.GetValue(absoluteTimeOption);
+            var search = parseResult.GetValue(searchOption);
 
-            Environment.ExitCode = await issueCommand.ListAsync(assignee, status, project, limit, offset, json, web, absoluteTime, CancellationToken.None);
+            Environment.ExitCode = await issueCommand.ListAsync(assignee, status, project, limit, offset, json, web, absoluteTime, search, CancellationToken.None);
         });
 
         command.Add(listCommand);
@@ -260,10 +264,11 @@ public class IssueCommand
         bool json,
         bool web,
         bool absoluteTime,
+        string? search,
         CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Listing issues with filters - Assignee: {Assignee}, Status: {Status}, Project: {Project}",
-            assignee, status, project);
+        _logger.LogDebug("Listing issues with filters - Assignee: {Assignee}, Status: {Status}, Project: {Project}, Search: {Search}",
+            assignee, status, project, search);
 
         // Handle @me special value
         assignee = await ResolveAssigneeAsync(assignee, cancellationToken);
@@ -275,31 +280,57 @@ public class IssueCommand
             statusFilter = null; // No status filter means all statuses
         }
 
-        var filter = new IssueFilter
-        {
-            AssignedToId = assignee,
-            StatusId = statusFilter,
-            ProjectId = project,
-            Limit = limit ?? 30, // Default limit to 30
-            Offset = offset
-        };
+        List<Issue> issues;
 
-        // If no filters are specified, default to open issues
-        if (string.IsNullOrEmpty(assignee) && string.IsNullOrEmpty(status) && string.IsNullOrEmpty(project))
+        // Use search API if search parameter is provided
+        if (!string.IsNullOrEmpty(search))
         {
-            filter.StatusId = "open";
-        }
+            // Handle --web option for search
+            if (web)
+            {
+                return await OpenInBrowserAsync(
+                    profile => BuildSearchUrl(profile.Url, search, assignee, statusFilter, project),
+                    "search results",
+                    cancellationToken);
+            }
 
-        // Handle --web option
-        if (web)
-        {
-            return await OpenInBrowserAsync(
-                profile => BuildIssuesUrl(profile.Url, filter),
-                "issues",
+            issues = await _apiClient.SearchIssuesAsync(
+                search,
+                assignee,
+                statusFilter,
+                project,
+                limit ?? 30,
+                offset,
                 cancellationToken);
         }
+        else
+        {
+            var filter = new IssueFilter
+            {
+                AssignedToId = assignee,
+                StatusId = statusFilter,
+                ProjectId = project,
+                Limit = limit ?? 30, // Default limit to 30
+                Offset = offset
+            };
 
-        var issues = await _apiClient.GetIssuesAsync(filter, cancellationToken);
+            // If no filters are specified, default to open issues
+            if (string.IsNullOrEmpty(assignee) && string.IsNullOrEmpty(status) && string.IsNullOrEmpty(project))
+            {
+                filter.StatusId = "open";
+            }
+
+            // Handle --web option for normal list
+            if (web)
+            {
+                return await OpenInBrowserAsync(
+                    profile => BuildIssuesUrl(profile.Url, filter),
+                    "issues",
+                    cancellationToken);
+            }
+
+            issues = await _apiClient.GetIssuesAsync(filter, cancellationToken);
+        }
 
         if (json)
         {
@@ -400,6 +431,43 @@ public class IssueCommand
             url += "?" + string.Join("&", queryParams);
         }
 
+        return url;
+    }
+
+    private static string BuildSearchUrl(string baseUrl, string searchQuery, string? assignee, string? status, string? project)
+    {
+        var url = $"{baseUrl.TrimEnd('/')}/search";
+        var queryParams = new List<string>
+        {
+            $"q={Uri.EscapeDataString(searchQuery)}",
+            "issues=1", // Search in issues
+            "titles_only=0" // Search in titles and descriptions
+        };
+
+        // Add filters if specified
+        if (!string.IsNullOrEmpty(assignee))
+        {
+            queryParams.Add($"assigned_to_id={Uri.EscapeDataString(assignee)}");
+        }
+
+        if (!string.IsNullOrEmpty(status))
+        {
+            if (status == "open")
+            {
+                queryParams.Add("open_issues=1");
+            }
+            else if (status == "closed")
+            {
+                queryParams.Add("open_issues=0");
+            }
+        }
+
+        if (!string.IsNullOrEmpty(project))
+        {
+            queryParams.Add($"projects={Uri.EscapeDataString(project)}");
+        }
+
+        url += "?" + string.Join("&", queryParams);
         return url;
     }
 

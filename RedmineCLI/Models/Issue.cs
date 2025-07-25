@@ -45,6 +45,10 @@ public class Issue : IEquatable<Issue>
     [JsonPropertyName("attachments")]
     public List<Attachment>? Attachments { get; set; }
 
+    // Used for search results to indicate the type (e.g., "issue", "issue-closed")
+    [JsonPropertyName("type")]
+    public string? SearchResultType { get; set; }
+
     public void Validate()
     {
         if (string.IsNullOrWhiteSpace(Subject))

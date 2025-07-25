@@ -41,4 +41,13 @@ public interface IRedmineApiClient
     Task<Stream> DownloadAttachmentAsync(int id, CancellationToken cancellationToken = default);
 
     Task<Stream> DownloadAttachmentAsync(string contentUrl, CancellationToken cancellationToken = default);
+
+    Task<List<Issue>> SearchIssuesAsync(
+        string searchQuery,
+        string? assignedToId = null,
+        string? statusId = null,
+        string? projectId = null,
+        int? limit = null,
+        int? offset = null,
+        CancellationToken cancellationToken = default);
 }

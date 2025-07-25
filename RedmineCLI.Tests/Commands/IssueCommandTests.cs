@@ -84,7 +84,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -122,7 +122,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, status, null, null, null, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, status, null, null, null, false, false, false, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -155,7 +155,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, limit, offset, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, limit, offset, false, false, false, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -185,7 +185,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, true, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, true, false, false, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -216,7 +216,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(assignee, null, null, null, null, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(assignee, null, null, null, null, false, false, false, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -246,7 +246,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, project, null, null, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, project, null, null, false, false, false, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -286,7 +286,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(assignee, status, project, limit, null, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(assignee, status, project, limit, null, false, false, false, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -309,11 +309,122 @@ public class IssueCommandTests
 
         // Act & Assert
         await Assert.ThrowsAsync<HttpRequestException>(async () =>
-            await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, CancellationToken.None)
+            await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, CancellationToken.None)
         );
 
         _tableFormatter.DidNotReceive().FormatIssues(Arg.Any<List<Issue>>());
         _jsonFormatter.DidNotReceive().FormatIssues(Arg.Any<List<Issue>>());
+    }
+
+    [Fact]
+    public async Task List_Should_SearchIssues_When_SearchParameterIsProvided()
+    {
+        // Arrange
+        var searchQuery = "会議";
+        var searchResults = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "会議の準備",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                Project = new Project { Id = 1, Name = "Test Project" }
+            },
+            new Issue
+            {
+                Id = 2,
+                Subject = "定例会議の議事録",
+                Status = new IssueStatus { Id = 2, Name = "In Progress" },
+                Project = new Project { Id = 1, Name = "Test Project" }
+            }
+        };
+
+        _apiClient.SearchIssuesAsync(searchQuery, null, null, null, 30, null, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(searchResults));
+
+        // Act
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, searchQuery, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _apiClient.Received(1).SearchIssuesAsync(searchQuery, null, null, null, 30, null, Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(searchResults);
+    }
+
+    [Fact]
+    public async Task List_Should_SearchWithFilters_When_SearchAndOtherParametersAreProvided()
+    {
+        // Arrange
+        var searchQuery = "バグ";
+        var assignee = "@me";
+        var status = "open";
+        var currentUser = new User { Id = 1, Name = "Test User" };
+        var searchResults = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 3,
+                Subject = "バグ修正",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                AssignedTo = currentUser,
+                Project = new Project { Id = 1, Name = "Test Project" }
+            }
+        };
+
+        _apiClient.GetCurrentUserAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(currentUser));
+        _apiClient.SearchIssuesAsync(searchQuery, currentUser.Id.ToString(), status, null, 30, null, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(searchResults));
+
+        // Act
+        var result = await _issueCommand.ListAsync(assignee, status, null, null, null, false, false, false, searchQuery, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _apiClient.Received(1).GetCurrentUserAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).SearchIssuesAsync(searchQuery, currentUser.Id.ToString(), status, null, 30, null, Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(searchResults);
+    }
+
+    [Fact]
+    public async Task List_Should_DisplayTypeField_When_SearchResultsIncludeClosedIssues()
+    {
+        // Arrange
+        var searchQuery = "課題";
+        var searchResults = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "開いている課題",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                Project = new Project { Id = 1, Name = "Test Project" },
+                SearchResultType = "issue"
+            },
+            new Issue
+            {
+                Id = 2,
+                Subject = "クローズされた課題",
+                Status = new IssueStatus { Id = 5, Name = "Closed" },
+                Project = new Project { Id = 1, Name = "Test Project" },
+                SearchResultType = "issue-closed"
+            }
+        };
+
+        _apiClient.SearchIssuesAsync(searchQuery, null, null, null, 30, null, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(searchResults));
+
+        // Act
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, searchQuery, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _apiClient.Received(1).SearchIssuesAsync(searchQuery, null, null, null, 30, null, Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(searchResults);
+
+        // Verify that the search results include both issue types
+        searchResults.Should().Contain(i => i.SearchResultType == "issue");
+        searchResults.Should().Contain(i => i.SearchResultType == "issue-closed");
     }
 
     #endregion
@@ -374,7 +485,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync("@me", null, null, null, null, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync("@me", null, null, null, null, false, false, false, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -411,7 +522,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, "all", null, null, null, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, "all", null, null, null, false, false, false, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -429,7 +540,7 @@ public class IssueCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, true, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, true, false, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -444,7 +555,7 @@ public class IssueCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(null));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, true, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, true, false, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
