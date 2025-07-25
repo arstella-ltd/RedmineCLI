@@ -60,6 +60,8 @@ public class IssueCommand
         var limitOption = new Option<int?>("--limit") { Description = "Limit number of results (default: 30)" };
         limitOption.Aliases.Add("-L");
         var offsetOption = new Option<int?>("--offset") { Description = "Offset for pagination" };
+        var searchOption = new Option<string?>("--search") { Description = "Search in title and description" };
+        searchOption.Aliases.Add("-q");
         var jsonOption = new Option<bool>("--json") { Description = "Output in JSON format" };
         var webOption = new Option<bool>("--web") { Description = "Open in web browser" };
         webOption.Aliases.Add("-w");
@@ -70,6 +72,7 @@ public class IssueCommand
         listCommand.Add(projectOption);
         listCommand.Add(limitOption);
         listCommand.Add(offsetOption);
+        listCommand.Add(searchOption);
         listCommand.Add(jsonOption);
         listCommand.Add(webOption);
         listCommand.Add(absoluteTimeOption);
@@ -81,11 +84,12 @@ public class IssueCommand
             var project = parseResult.GetValue(projectOption);
             var limit = parseResult.GetValue(limitOption);
             var offset = parseResult.GetValue(offsetOption);
+            var search = parseResult.GetValue(searchOption);
             var json = parseResult.GetValue(jsonOption);
             var web = parseResult.GetValue(webOption);
             var absoluteTime = parseResult.GetValue(absoluteTimeOption);
 
-            Environment.ExitCode = await issueCommand.ListAsync(assignee, status, project, limit, offset, json, web, absoluteTime, CancellationToken.None);
+            Environment.ExitCode = await issueCommand.ListAsync(assignee, status, project, limit, offset, search, json, web, absoluteTime, CancellationToken.None);
         });
 
         command.Add(listCommand);
@@ -257,6 +261,7 @@ public class IssueCommand
         string? project,
         int? limit,
         int? offset,
+        string? search,
         bool json,
         bool web,
         bool absoluteTime,
@@ -264,8 +269,8 @@ public class IssueCommand
     {
         try
         {
-            _logger.LogDebug("Listing issues with filters - Assignee: {Assignee}, Status: {Status}, Project: {Project}",
-                assignee, status, project);
+            _logger.LogDebug("Listing issues with filters - Assignee: {Assignee}, Status: {Status}, Project: {Project}, Search: {Search}",
+                assignee, status, project, search);
 
             // Handle @me special value
             assignee = await ResolveAssigneeAsync(assignee, cancellationToken);
@@ -282,12 +287,13 @@ public class IssueCommand
                 AssignedToId = assignee,
                 StatusId = statusFilter,
                 ProjectId = project,
+                Search = search,
                 Limit = limit ?? 30, // Default limit to 30
                 Offset = offset
             };
 
             // If no filters are specified, default to open issues
-            if (string.IsNullOrEmpty(assignee) && string.IsNullOrEmpty(status) && string.IsNullOrEmpty(project))
+            if (string.IsNullOrEmpty(assignee) && string.IsNullOrEmpty(status) && string.IsNullOrEmpty(project) && string.IsNullOrEmpty(search))
             {
                 filter.StatusId = "open";
             }
@@ -359,7 +365,8 @@ public class IssueCommand
         // Add set_filter=1 if any filter is specified
         bool hasFilter = !string.IsNullOrEmpty(filter.AssignedToId) ||
                         !string.IsNullOrEmpty(filter.StatusId) ||
-                        !string.IsNullOrEmpty(filter.ProjectId);
+                        !string.IsNullOrEmpty(filter.ProjectId) ||
+                        !string.IsNullOrEmpty(filter.Search);
 
         if (hasFilter)
         {
@@ -397,6 +404,11 @@ public class IssueCommand
         if (!string.IsNullOrEmpty(filter.ProjectId))
         {
             queryParams.Add($"project_id={Uri.EscapeDataString(filter.ProjectId)}");
+        }
+
+        if (!string.IsNullOrEmpty(filter.Search))
+        {
+            queryParams.Add($"q={Uri.EscapeDataString(filter.Search)}");
         }
 
         if (filter.Limit.HasValue)

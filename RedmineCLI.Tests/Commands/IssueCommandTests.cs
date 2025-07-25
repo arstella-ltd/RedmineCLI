@@ -84,7 +84,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, null, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -122,7 +122,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, status, null, null, null, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, status, null, null, null, null, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -155,7 +155,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, limit, offset, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, limit, offset, null, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -185,7 +185,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, true, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, null, true, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -216,7 +216,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(assignee, null, null, null, null, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(assignee, null, null, null, null, null, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -246,7 +246,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, project, null, null, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, project, null, null, null, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -286,7 +286,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(assignee, status, project, limit, null, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(assignee, status, project, limit, null, null, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -308,7 +308,7 @@ public class IssueCommandTests
             .Returns(Task.FromException<List<Issue>>(new HttpRequestException("API Error")));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, null, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -347,6 +347,7 @@ public class IssueCommandTests
         optionNames.Should().Contain("--project");
         optionNames.Should().Contain("--limit");
         optionNames.Should().Contain("--offset");
+        optionNames.Should().Contain("--search");
         optionNames.Should().Contain("--json");
         optionNames.Should().Contain("--absolute-time");
     }
@@ -374,7 +375,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync("@me", null, null, null, null, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync("@me", null, null, null, null, null, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -411,7 +412,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, "all", null, null, null, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, "all", null, null, null, null, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -429,7 +430,7 @@ public class IssueCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, true, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, null, false, true, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -444,11 +445,96 @@ public class IssueCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(null));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, true, false, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, null, false, true, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
         await _configService.Received(1).GetActiveProfileAsync();
+    }
+
+    [Fact]
+    public async Task List_Should_FilterBySearchQuery_When_SearchIsSpecified()
+    {
+        // Arrange
+        var searchQuery = "会議";
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "会議の準備",
+                Description = "明日の会議について準備が必要です",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                Project = new Project { Id = 1, Name = "Test Project" }
+            },
+            new Issue
+            {
+                Id = 2,
+                Subject = "定例会議",
+                Description = "毎週月曜日の定例会議",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                Project = new Project { Id = 1, Name = "Test Project" }
+            }
+        };
+
+        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.Search == searchQuery && f.StatusId == null), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, searchQuery, false, false, false, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _apiClient.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.Search == searchQuery && f.StatusId == null),
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
+    }
+
+    [Fact]
+    public async Task List_Should_CombineSearchWithOtherFilters_When_MultipleOptionsSpecified()
+    {
+        // Arrange
+        var searchQuery = "バグ";
+        var status = "open";
+        var assignee = "@me";
+        var currentUser = new User { Id = 1, Name = "Test User" };
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "バグ修正が必要",
+                Description = "重要なバグが発見されました",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                AssignedTo = currentUser,
+                Project = new Project { Id = 1, Name = "Test Project" }
+            }
+        };
+
+        _apiClient.GetCurrentUserAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(currentUser));
+        _apiClient.GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => 
+                f.Search == searchQuery && 
+                f.StatusId == status && 
+                f.AssignedToId == currentUser.Id.ToString()),
+            Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(assignee, status, null, null, null, searchQuery, false, false, false, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _apiClient.Received(1).GetCurrentUserAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => 
+                f.Search == searchQuery && 
+                f.StatusId == status && 
+                f.AssignedToId == currentUser.Id.ToString()),
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
     }
 
     #endregion

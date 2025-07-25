@@ -70,6 +70,13 @@ redmine issue list
 # 特定のステータスでフィルタ
 redmine issue list --status=open
 
+# キーワードで検索（タイトルと説明文を検索）
+redmine issue list --search "会議"
+redmine issue list -q "バグ修正"
+
+# 複合検索
+redmine issue list --search "会議" --status open --assignee @me
+
 # チケットの詳細を表示
 redmine issue view 12345
 
