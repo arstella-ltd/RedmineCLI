@@ -103,18 +103,34 @@ public class LlmsCommand
             AnsiConsole.WriteLine("- Cross-platform (Windows, macOS, Linux)");
             AnsiConsole.WriteLine("- Multiple profile support");
             AnsiConsole.WriteLine("- Sixel protocol support for inline image display");
+<<<<<<< HEAD
             AnsiConsole.WriteLine("- Table and JSON output formats");
             AnsiConsole.WriteLine("- Editor integration for comments");
             AnsiConsole.WriteLine("- Interactive and non-interactive modes");
             AnsiConsole.WriteLine();
             
+=======
+            AnsiConsole.WriteLine("- JSON output format option (--json)");
+            AnsiConsole.WriteLine("- Editor integration for comments");
+            AnsiConsole.WriteLine("- Interactive and non-interactive modes");
+            AnsiConsole.WriteLine();
+            AnsiConsole.WriteLine("## Configuration Files");
+            AnsiConsole.WriteLine();
+            AnsiConsole.WriteLine("- Windows: `%APPDATA%\\redmine\\config.yml`");
+            AnsiConsole.WriteLine("- macOS/Linux: `~/.config/redmine/config.yml`");
+            AnsiConsole.WriteLine();
+>>>>>>> master
             AnsiConsole.WriteLine("## API Requirements");
             AnsiConsole.WriteLine();
             AnsiConsole.WriteLine("- Redmine REST API v3.0 or higher");
             AnsiConsole.WriteLine("- API key authentication");
             AnsiConsole.WriteLine();
+<<<<<<< HEAD
             
             AnsiConsole.WriteLine("## Example Workflows");
+=======
+            AnsiConsole.WriteLine("## Common Workflows");
+>>>>>>> master
             AnsiConsole.WriteLine();
             AnsiConsole.WriteLine("### Check my assigned issues");
             AnsiConsole.WriteLine("```bash");
@@ -127,6 +143,7 @@ public class LlmsCommand
             AnsiConsole.WriteLine("redmine issue comment 12345 -m \"Fixed in commit abc123\"");
             AnsiConsole.WriteLine("```");
             AnsiConsole.WriteLine();
+<<<<<<< HEAD
             AnsiConsole.WriteLine("### List issues with pagination");
             AnsiConsole.WriteLine("```bash");
             AnsiConsole.WriteLine("redmine issue list --limit 50 --offset 100");
@@ -137,6 +154,13 @@ public class LlmsCommand
             AnsiConsole.WriteLine("redmine issue view 12345 --absolute-time");
             AnsiConsole.WriteLine("```");
             
+=======
+            AnsiConsole.WriteLine("### Create and assign issue");
+            AnsiConsole.WriteLine("```bash");
+            AnsiConsole.WriteLine("redmine issue create --title=\"Bug fix\" --assigned-to=@me");
+            AnsiConsole.WriteLine("```");
+
+>>>>>>> master
             await Task.CompletedTask;
             return 0;
         }
@@ -147,6 +171,7 @@ public class LlmsCommand
             return 1;
         }
     }
+<<<<<<< HEAD
     
     private void DisplayCommand(Command command, string prefix = "")
     {
