@@ -70,6 +70,12 @@ redmine issue list
 # 特定のステータスでフィルタ
 redmine issue list --status=open
 
+# 特定の優先度でフィルタ
+redmine issue list --priority=high
+
+# 複数の優先度でフィルタ（カンマ区切り）
+redmine issue list --priority=high,urgent
+
 # チケットの詳細を表示
 redmine issue view 12345
 

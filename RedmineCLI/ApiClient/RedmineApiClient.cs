@@ -261,6 +261,7 @@ public class RedmineApiClient : IRedmineApiClient
             ["assigned_to_id"] = filter.AssignedToId,
             ["project_id"] = filter.ProjectId,
             ["status_id"] = filter.StatusId,
+            ["priority_id"] = filter.PriorityId,
             ["limit"] = filter.Limit?.ToString(),
             ["offset"] = filter.Offset?.ToString()
         });

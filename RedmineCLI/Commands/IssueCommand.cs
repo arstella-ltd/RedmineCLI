@@ -57,6 +57,8 @@ public class IssueCommand
         statusOption.Aliases.Add("-s");
         var projectOption = new Option<string?>("--project") { Description = "Filter by project (identifier or ID)" };
         projectOption.Aliases.Add("-p");
+        var priorityOption = new Option<string?>("--priority") { Description = "Filter by priority (urgent, high, normal, low, or priority ID)" };
+        priorityOption.Aliases.Add("-P");
         var limitOption = new Option<int?>("--limit") { Description = "Limit number of results (default: 30)" };
         limitOption.Aliases.Add("-L");
         var offsetOption = new Option<int?>("--offset") { Description = "Offset for pagination" };
@@ -68,6 +70,7 @@ public class IssueCommand
         listCommand.Add(assigneeOption);
         listCommand.Add(statusOption);
         listCommand.Add(projectOption);
+        listCommand.Add(priorityOption);
         listCommand.Add(limitOption);
         listCommand.Add(offsetOption);
         listCommand.Add(jsonOption);
@@ -79,13 +82,14 @@ public class IssueCommand
             var assignee = parseResult.GetValue(assigneeOption);
             var status = parseResult.GetValue(statusOption);
             var project = parseResult.GetValue(projectOption);
+            var priority = parseResult.GetValue(priorityOption);
             var limit = parseResult.GetValue(limitOption);
             var offset = parseResult.GetValue(offsetOption);
             var json = parseResult.GetValue(jsonOption);
             var web = parseResult.GetValue(webOption);
             var absoluteTime = parseResult.GetValue(absoluteTimeOption);
 
-            Environment.ExitCode = await issueCommand.ListAsync(assignee, status, project, limit, offset, json, web, absoluteTime, CancellationToken.None);
+            Environment.ExitCode = await issueCommand.ListAsync(assignee, status, project, priority, limit, offset, json, web, absoluteTime, CancellationToken.None);
         });
 
         command.Add(listCommand);
@@ -255,6 +259,7 @@ public class IssueCommand
         string? assignee,
         string? status,
         string? project,
+        string? priority,
         int? limit,
         int? offset,
         bool json,
@@ -264,8 +269,8 @@ public class IssueCommand
     {
         try
         {
-            _logger.LogDebug("Listing issues with filters - Assignee: {Assignee}, Status: {Status}, Project: {Project}",
-                assignee, status, project);
+            _logger.LogDebug("Listing issues with filters - Assignee: {Assignee}, Status: {Status}, Project: {Project}, Priority: {Priority}",
+                assignee, status, project, priority);
 
             // Handle @me special value
             assignee = await ResolveAssigneeAsync(assignee, cancellationToken);
@@ -277,11 +282,15 @@ public class IssueCommand
                 statusFilter = null; // No status filter means all statuses
             }
 
+            // Handle priority special values
+            string? priorityFilter = ResolvePriority(priority);
+
             var filter = new IssueFilter
             {
                 AssignedToId = assignee,
                 StatusId = statusFilter,
                 ProjectId = project,
+                PriorityId = priorityFilter,
                 Limit = limit ?? 30, // Default limit to 30
                 Offset = offset
             };
@@ -359,7 +368,8 @@ public class IssueCommand
         // Add set_filter=1 if any filter is specified
         bool hasFilter = !string.IsNullOrEmpty(filter.AssignedToId) ||
                         !string.IsNullOrEmpty(filter.StatusId) ||
-                        !string.IsNullOrEmpty(filter.ProjectId);
+                        !string.IsNullOrEmpty(filter.ProjectId) ||
+                        !string.IsNullOrEmpty(filter.PriorityId);
 
         if (hasFilter)
         {
@@ -397,6 +407,11 @@ public class IssueCommand
         if (!string.IsNullOrEmpty(filter.ProjectId))
         {
             queryParams.Add($"project_id={Uri.EscapeDataString(filter.ProjectId)}");
+        }
+
+        if (!string.IsNullOrEmpty(filter.PriorityId))
+        {
+            queryParams.Add($"priority_id={Uri.EscapeDataString(filter.PriorityId)}");
         }
 
         if (filter.Limit.HasValue)
@@ -793,6 +808,33 @@ public class IssueCommand
         }
 
         return assignee;
+    }
+
+    private static string? ResolvePriority(string? priority)
+    {
+        if (string.IsNullOrEmpty(priority))
+            return null;
+
+        // Split comma-separated values
+        var priorities = priority.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var resolvedPriorities = new List<string>();
+
+        foreach (var p in priorities)
+        {
+            // Map priority names to IDs
+            var resolved = p.ToLower() switch
+            {
+                "low" => "1",
+                "normal" => "2",
+                "high" => "3",
+                "urgent" => "4",
+                _ => p // Pass through numeric IDs or other values unchanged
+            };
+            resolvedPriorities.Add(resolved);
+        }
+
+        // Join back with commas for API
+        return string.Join(",", resolvedPriorities);
     }
 
     private static User? ParseAssignee(string? assignee)
