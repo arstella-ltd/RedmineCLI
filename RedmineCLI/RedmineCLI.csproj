@@ -24,6 +24,19 @@
     <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
     <MetadataUpdaterSupport>false</MetadataUpdaterSupport>
     <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    
+    <!-- Additional aggressive size optimizations -->
+    <TrimMode>link</TrimMode>
+    <IlcTrimMetadata>true</IlcTrimMetadata>
+    <IlcGenerateMapFile>false</IlcGenerateMapFile>
+    <IlcInstructionSet>native</IlcInstructionSet>
+    
+    <!-- Reduce GC overhead -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <ThreadPoolMinThreads>1</ThreadPoolMinThreads>
+    <ThreadPoolMaxThreads>1</ThreadPoolMaxThreads>
+    
     <!-- Suppress AOT/Trimming warnings for third-party libraries -->
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <!-- IL2104,IL3053: General trimming warnings -->
