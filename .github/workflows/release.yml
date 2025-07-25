@@ -127,9 +127,15 @@ jobs:
     - name: Run tests
       run: dotnet test --configuration Release
 
+    - name: Extract version from tag
+      id: extract_version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
     - name: Publish Native AOT
       run: |
-        dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r ${{ matrix.config.rid }} -p:PublishAot=true -p:StripSymbols=true --self-contained -o publish/${{ matrix.config.rid }}
+        dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r ${{ matrix.config.rid }} -p:PublishAot=true -p:StripSymbols=true -p:Version=${{ steps.extract_version.outputs.version }} --self-contained -o publish/${{ matrix.config.rid }}
 
     - name: Compress binary to zip (Windows)
       if: runner.os == 'Windows'
@@ -183,7 +189,7 @@ jobs:
     name: Update Homebrew Formula
     runs-on: ubuntu-latest
     needs: [create-release, build-and-release, generate-checksums]
-    if: "!contains(github.ref_name, '-')" # Only for stable releases
+    if: ${{ !contains(github.ref_name, '-') }} # Only for stable releases
     
     steps:
     - name: Extract version from tag
