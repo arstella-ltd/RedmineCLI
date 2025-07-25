@@ -614,6 +614,27 @@
 - Program.cs、テスト、ドキュメントを更新
 - ライセンステスト5件が成功
 
+### llmsコマンド実装（2025-07-25）
+- TDD手法（Red→Green→Refactor）に従って実装
+- LlmsCommandTestsのテストケース5件を作成
+  - コマンドの作成と名前確認
+  - 実行成功の確認
+  - 必須セクションの存在確認
+  - 重要なコマンド例の確認
+  - 特殊機能（@me、Native AOT、Sixel等）の説明確認
+- `redmine llms`コマンドの実装
+- LLMs.txt標準に準拠した情報出力
+  - インストール方法（Homebrew）
+  - 認証方法（auth login）
+  - 主要コマンド（issue、attachment、config）
+  - オプション説明（--help、--version、--license等）
+  - 機能紹介（Native AOT、Sixel、マルチプロファイル等）
+  - 設定ファイルパス
+  - API要件
+  - よくある使用例
+- すべてのテスト（250件）が成功
+- 要求12（AIエージェント向け情報出力）の完全実装
+
 ## 使用方法
 
 ### 実行可能ファイル名

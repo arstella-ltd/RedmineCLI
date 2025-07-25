@@ -120,6 +120,20 @@ export SIXEL_SUPPORT=1
 - Windows: `%APPDATA%\redmine\config.yml`
 - macOS/Linux: `~/.config/redmine/config.yml`
 
+## その他のコマンド
+
+```bash
+# ヘルプを表示
+redmine --help
+
+# バージョンとライセンス情報を表示
+redmine --version
+redmine --license
+
+# AIエージェント向けの使用方法情報を出力
+redmine llms
+```
+
 ## 開発
 
 ### 必要な環境
