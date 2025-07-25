@@ -863,6 +863,36 @@ public class IssueCommand
             return currentUser.Id.ToString();
         }
 
+        // 数値の場合はそのままIDとして返す
+        if (int.TryParse(assignee, out _))
+        {
+            return assignee;
+        }
+
+        // 文字列の場合はユーザー名として扱い、ユーザーIDを検索する
+        try
+        {
+            var users = await _apiClient.GetUsersAsync(cancellationToken);
+            var matchedUser = users.FirstOrDefault(u => 
+                u.Name.Equals(assignee, StringComparison.OrdinalIgnoreCase) ||
+                u.Login?.Equals(assignee, StringComparison.OrdinalIgnoreCase) == true);
+
+            if (matchedUser != null)
+            {
+                _logger.LogDebug("Resolved assignee '{Assignee}' to user ID {UserId}", assignee, matchedUser.Id);
+                return matchedUser.Id.ToString();
+            }
+
+            _logger.LogWarning("Could not find user with name '{Assignee}'", assignee);
+            AnsiConsole.MarkupLine($"[yellow]Warning:[/] User '{Markup.Escape(assignee)}' not found. The filter may not work as expected.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to resolve assignee '{Assignee}'", assignee);
+            AnsiConsole.MarkupLine($"[yellow]Warning:[/] Could not resolve user '{Markup.Escape(assignee)}'. Using as-is.");
+        }
+
+        // フォールバック：解決できない場合はそのまま返す
         return assignee;
     }
 
