@@ -145,6 +145,9 @@ redmine --help
 redmine --version
 redmine --license
 
+# 詳細なエラー情報（スタックトレース）を表示
+redmine --verbose <command>
+
 # AIエージェント向けの使用方法情報を出力
 redmine llms
 ```
