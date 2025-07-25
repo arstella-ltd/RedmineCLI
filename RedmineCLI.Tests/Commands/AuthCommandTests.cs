@@ -10,6 +10,7 @@ using RedmineCLI.ApiClient;
 using RedmineCLI.Commands;
 using RedmineCLI.Models;
 using RedmineCLI.Services;
+using RedmineCLI.Tests.TestInfrastructure;
 
 using Spectre.Console;
 using Spectre.Console.Testing;
@@ -20,13 +21,14 @@ using Profile = RedmineCLI.Models.Profile;
 
 namespace RedmineCLI.Tests.Commands;
 
-[Collection("AuthCommand")]
+[Collection("AnsiConsole")]
 public class AuthCommandTests
 {
     private readonly IConfigService _configService;
     private readonly IRedmineApiClient _apiClient;
     private readonly ILogger<AuthCommand> _logger;
     private readonly AuthCommand _authCommand;
+    private readonly AnsiConsoleTestFixture _consoleFixture;
 
     public AuthCommandTests()
     {
@@ -35,6 +37,7 @@ public class AuthCommandTests
         _logger = Substitute.For<ILogger<AuthCommand>>();
 
         _authCommand = new AuthCommand(_configService, _apiClient, _logger);
+        _consoleFixture = new AnsiConsoleTestFixture();
     }
 
     #region Login Tests
@@ -149,11 +152,6 @@ public class AuthCommandTests
     public async Task Status_Should_ShowConnectionState_When_Authenticated()
     {
         // Arrange
-        var configService = Substitute.For<IConfigService>();
-        var apiClient = Substitute.For<IRedmineApiClient>();
-        var logger = Substitute.For<ILogger<AuthCommand>>();
-        var authCommand = new AuthCommand(configService, apiClient, logger);
-
         var testProfile = new Profile
         {
             Name = "default",
@@ -161,18 +159,30 @@ public class AuthCommandTests
             ApiKey = "test-api-key"
         };
 
-        configService.GetActiveProfileAsync()
+        _configService.GetActiveProfileAsync()
             .Returns(Task.FromResult<Profile?>(testProfile));
-        apiClient.TestConnectionAsync(Arg.Any<CancellationToken>())
+        _apiClient.TestConnectionAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(true));
 
-        // Act
-        var result = await authCommand.StatusAsync();
+        // Act & Assert
+        var result = await _consoleFixture.ExecuteWithTestConsoleAsync(async console =>
+        {
+            var actualResult = await _authCommand.StatusAsync();
+
+            // Verify console output contains expected messages
+            var output = console.Output;
+            output.Should().Contain("Authentication Status");
+            output.Should().Contain("default");
+            output.Should().Contain("https://redmine.example.com");
+            output.Should().Contain("Connection successful");
+
+            return actualResult;
+        });
 
         // Assert
         result.Should().Be(0);
-        await configService.Received(1).GetActiveProfileAsync();
-        await apiClient.Received(1).TestConnectionAsync(Arg.Any<CancellationToken>());
+        await _configService.Received(1).GetActiveProfileAsync();
+        await _apiClient.Received(1).TestConnectionAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
