@@ -19,8 +19,13 @@ namespace RedmineCLI;
 
 public class Program
 {
+    private static bool _debugMode = false;
+
     public static async Task<int> Main(string[] args)
     {
+        // Check for debug flag early
+        _debugMode = args.Contains("--debug");
+
         // Create service collection and configure DI
         var services = new ServiceCollection();
         ConfigureServices(services);
@@ -38,9 +43,10 @@ public class Program
         var tableFormatter = serviceProvider.GetRequiredService<ITableFormatter>();
         var jsonFormatter = serviceProvider.GetRequiredService<IJsonFormatter>();
         var licenseHelper = serviceProvider.GetRequiredService<ILicenseHelper>();
+        var errorMessageService = serviceProvider.GetRequiredService<IErrorMessageService>();
 
         var authCommand = AuthCommand.Create(configService, apiClient, authLogger);
-        var issueCommand = IssueCommand.Create(apiClient, configService, tableFormatter, jsonFormatter, issueLogger);
+        var issueCommand = IssueCommand.Create(apiClient, configService, tableFormatter, jsonFormatter, issueLogger, errorMessageService);
         var configLogger = serviceProvider.GetRequiredService<ILogger<ConfigCommand>>();
         var configCommand = ConfigCommand.Create(configService, configLogger);
         var fileSystem = serviceProvider.GetRequiredService<IFileSystem>();
@@ -58,6 +64,11 @@ public class Program
         var licenseOption = new Option<bool>("--license");
         licenseOption.Description = "Show license information";
         rootCommand.Add(licenseOption);
+
+        // Add debug option
+        var debugOption = new Option<bool>("--debug");
+        debugOption.Description = "Show detailed error information including stack traces";
+        rootCommand.Add(debugOption);
 
         // Create and use CLI configuration (moved up to be in scope)
         var config = new CommandLineConfiguration(rootCommand)
@@ -124,8 +135,33 @@ public class Program
             // Default action - no specific handling needed
         });
 
-        // Parse and execute
-        return await config.InvokeAsync(args);
+        // Parse and execute with global exception handling
+        try
+        {
+            return await config.InvokeAsync(args);
+        }
+        catch (Exception ex)
+        {
+            var errorService = serviceProvider.GetRequiredService<IErrorMessageService>();
+            var errorMessage = errorService.GetUserFriendlyMessage(ex);
+            var suggestion = errorService.GetSuggestion(ex);
+
+            AnsiConsole.MarkupLine($"[red]Error:[/] {errorMessage}");
+            
+            if (suggestion != null)
+            {
+                AnsiConsole.MarkupLine($"[yellow]{suggestion}[/]");
+            }
+
+            if (_debugMode)
+            {
+                AnsiConsole.WriteLine();
+                AnsiConsole.MarkupLine("[dim]--- Debug Information ---[/]");
+                AnsiConsole.WriteException(ex);
+            }
+
+            return 1;
+        }
     }
 
     private static void ConfigureServices(IServiceCollection services)
@@ -134,14 +170,26 @@ public class Program
         services.AddLogging(builder =>
         {
             builder.AddConsole();
-            builder.SetMinimumLevel(LogLevel.Warning);
-
-            // Suppress HttpClient logs
-            builder.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
+            
+            // Set log level based on debug mode
+            if (_debugMode)
+            {
+                builder.SetMinimumLevel(LogLevel.Debug);
+                builder.AddFilter("System.Net.Http.HttpClient", LogLevel.Debug);
+            }
+            else
+            {
+                builder.SetMinimumLevel(LogLevel.Error);
+                // Suppress HttpClient logs
+                builder.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
+            }
         });
 
         // Configuration services
         services.AddSingleton<IConfigService, ConfigService>();
+
+        // Error handling
+        services.AddSingleton<IErrorMessageService, ErrorMessageService>();
 
         // HTTP Client (Polly retry policy to be added later)
         services.AddHttpClient<IRedmineApiClient, RedmineApiClient>();

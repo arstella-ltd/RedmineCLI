@@ -32,6 +32,7 @@ public class IssueAttachmentCommandTests
     private readonly ITableFormatter _tableFormatter;
     private readonly IJsonFormatter _jsonFormatter;
     private readonly ILogger<IssueCommand> _logger;
+    private readonly IErrorMessageService _errorMessageService;
     private readonly IssueCommand _issueCommand;
     private readonly AnsiConsoleTestFixture _consoleFixture;
 
@@ -42,6 +43,7 @@ public class IssueAttachmentCommandTests
         _tableFormatter = Substitute.For<ITableFormatter>();
         _jsonFormatter = Substitute.For<IJsonFormatter>();
         _logger = Substitute.For<ILogger<IssueCommand>>();
+        _errorMessageService = Substitute.For<IErrorMessageService>();
 
         // デフォルトのプロファイル設定
         var profile = new RedmineCLI.Models.Profile
@@ -61,7 +63,7 @@ public class IssueAttachmentCommandTests
         var config = new Config { Preferences = preferences };
         _configService.LoadConfigAsync().Returns(Task.FromResult(config));
 
-        _issueCommand = new IssueCommand(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        _issueCommand = new IssueCommand(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger, _errorMessageService);
         _consoleFixture = new AnsiConsoleTestFixture();
     }
 

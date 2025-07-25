@@ -24,6 +24,7 @@ public class IssueEditCommandTests
     private readonly ITableFormatter _tableFormatter;
     private readonly IJsonFormatter _jsonFormatter;
     private readonly ILogger<IssueCommand> _logger;
+    private readonly IErrorMessageService _errorMessageService;
     private readonly IssueCommand _issueCommand;
 
     public IssueEditCommandTests()
@@ -33,8 +34,9 @@ public class IssueEditCommandTests
         _tableFormatter = Substitute.For<ITableFormatter>();
         _jsonFormatter = Substitute.For<IJsonFormatter>();
         _logger = Substitute.For<ILogger<IssueCommand>>();
+        _errorMessageService = Substitute.For<IErrorMessageService>();
 
-        _issueCommand = new IssueCommand(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        _issueCommand = new IssueCommand(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger, _errorMessageService);
     }
 
     [Fact]
@@ -423,7 +425,7 @@ public class IssueEditCommandTests
     public void EditCommand_Should_HaveCorrectOptions_When_Created()
     {
         // Arrange & Act
-        var command = IssueCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = IssueCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger, _errorMessageService);
         var editCommand = command.Subcommands.FirstOrDefault(sc => sc.Name == "edit");
 
         // Assert

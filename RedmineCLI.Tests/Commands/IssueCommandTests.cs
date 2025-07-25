@@ -24,6 +24,7 @@ public class IssueCommandTests
     private readonly ITableFormatter _tableFormatter;
     private readonly IJsonFormatter _jsonFormatter;
     private readonly ILogger<IssueCommand> _logger;
+    private readonly IErrorMessageService _errorMessageService;
     private readonly IssueCommand _issueCommand;
 
     public IssueCommandTests()
@@ -33,6 +34,7 @@ public class IssueCommandTests
         _tableFormatter = Substitute.For<ITableFormatter>();
         _jsonFormatter = Substitute.For<IJsonFormatter>();
         _logger = Substitute.For<ILogger<IssueCommand>>();
+        _errorMessageService = Substitute.For<IErrorMessageService>();
 
         // Setup default config to avoid null reference
         var config = new Config
@@ -43,7 +45,7 @@ public class IssueCommandTests
         };
         _configService.LoadConfigAsync().Returns(Task.FromResult(config));
 
-        _issueCommand = new IssueCommand(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        _issueCommand = new IssueCommand(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger, _errorMessageService);
     }
 
     #region List Command Tests
@@ -301,17 +303,19 @@ public class IssueCommandTests
     }
 
     [Fact]
-    public async Task List_Should_HandleApiError_When_RequestFails()
+    public async Task List_Should_ThrowException_When_RequestFails()
     {
         // Arrange
+        var expectedException = new HttpRequestException("API Error");
         _apiClient.GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromException<List<Issue>>(new HttpRequestException("API Error")));
+            .Returns(Task.FromException<List<Issue>>(expectedException));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, CancellationToken.None);
+        Func<Task> act = async () => await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, CancellationToken.None);
 
         // Assert
-        result.Should().Be(1);
+        await act.Should().ThrowAsync<HttpRequestException>()
+            .WithMessage("API Error");
         _tableFormatter.DidNotReceive().FormatIssues(Arg.Any<List<Issue>>());
         _jsonFormatter.DidNotReceive().FormatIssues(Arg.Any<List<Issue>>());
     }
@@ -324,7 +328,7 @@ public class IssueCommandTests
     public void IssueCommand_Should_RegisterSubcommands_When_Created()
     {
         // Arrange & Act
-        var command = IssueCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = IssueCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger, _errorMessageService);
 
         // Assert
         command.Should().NotBeNull();
@@ -336,7 +340,7 @@ public class IssueCommandTests
     public void ListCommand_Should_HaveCorrectOptions_When_Created()
     {
         // Arrange & Act
-        var command = IssueCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = IssueCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger, _errorMessageService);
         var listCommand = command.Subcommands.First(sc => sc.Name == "list");
 
         // Assert
@@ -628,7 +632,7 @@ public class IssueCommandTests
     public void ViewCommand_Should_HaveCorrectOptions_When_Created()
     {
         // Arrange & Act
-        var command = IssueCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = IssueCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger, _errorMessageService);
         var viewCommand = command.Subcommands.FirstOrDefault(sc => sc.Name == "view");
 
         // Assert

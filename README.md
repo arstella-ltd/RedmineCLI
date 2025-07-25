@@ -48,6 +48,19 @@ RID (Runtime Identifier)
 
 ## 使い方
 
+### グローバルオプション
+
+```bash
+# デバッグモードで実行（詳細なエラー情報とスタックトレースを表示）
+redmine --debug issue list
+
+# ライセンス情報を表示
+redmine --license
+
+# ヘルプを表示
+redmine --help
+```
+
 ### 認証
 
 ```bash

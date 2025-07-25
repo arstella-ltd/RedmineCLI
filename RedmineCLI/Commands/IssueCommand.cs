@@ -23,19 +23,22 @@ public class IssueCommand
     private readonly ITableFormatter _tableFormatter;
     private readonly IJsonFormatter _jsonFormatter;
     private readonly ILogger<IssueCommand> _logger;
+    private readonly IErrorMessageService _errorMessageService;
 
     public IssueCommand(
         IRedmineApiClient apiClient,
         IConfigService configService,
         ITableFormatter tableFormatter,
         IJsonFormatter jsonFormatter,
-        ILogger<IssueCommand> logger)
+        ILogger<IssueCommand> logger,
+        IErrorMessageService errorMessageService)
     {
         _apiClient = apiClient;
         _configService = configService;
         _tableFormatter = tableFormatter;
         _jsonFormatter = jsonFormatter;
         _logger = logger;
+        _errorMessageService = errorMessageService;
     }
 
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(IssueCommand))]
@@ -44,10 +47,11 @@ public class IssueCommand
         IConfigService configService,
         ITableFormatter tableFormatter,
         IJsonFormatter jsonFormatter,
-        ILogger<IssueCommand> logger)
+        ILogger<IssueCommand> logger,
+        IErrorMessageService errorMessageService)
     {
         var command = new Command("issue", "Manage Redmine issues");
-        var issueCommand = new IssueCommand(apiClient, configService, tableFormatter, jsonFormatter, logger);
+        var issueCommand = new IssueCommand(apiClient, configService, tableFormatter, jsonFormatter, logger, errorMessageService);
 
         var listCommand = new Command("list", "List issues with optional filters");
 
@@ -76,16 +80,45 @@ public class IssueCommand
 
         listCommand.SetAction(async (parseResult) =>
         {
-            var assignee = parseResult.GetValue(assigneeOption);
-            var status = parseResult.GetValue(statusOption);
-            var project = parseResult.GetValue(projectOption);
-            var limit = parseResult.GetValue(limitOption);
-            var offset = parseResult.GetValue(offsetOption);
-            var json = parseResult.GetValue(jsonOption);
-            var web = parseResult.GetValue(webOption);
-            var absoluteTime = parseResult.GetValue(absoluteTimeOption);
+            try
+            {
+                var assignee = parseResult.GetValue(assigneeOption);
+                var status = parseResult.GetValue(statusOption);
+                var project = parseResult.GetValue(projectOption);
+                var limit = parseResult.GetValue(limitOption);
+                var offset = parseResult.GetValue(offsetOption);
+                var json = parseResult.GetValue(jsonOption);
+                var web = parseResult.GetValue(webOption);
+                var absoluteTime = parseResult.GetValue(absoluteTimeOption);
 
-            Environment.ExitCode = await issueCommand.ListAsync(assignee, status, project, limit, offset, json, web, absoluteTime, CancellationToken.None);
+                Environment.ExitCode = await issueCommand.ListAsync(assignee, status, project, limit, offset, json, web, absoluteTime, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                var userFriendlyMessage = errorMessageService.GetUserFriendlyMessage(ex);
+                var suggestion = errorMessageService.GetSuggestion(ex);
+                
+                AnsiConsole.MarkupLine($"[red]Error:[/] {userFriendlyMessage}");
+                
+                if (suggestion != null)
+                {
+                    AnsiConsole.MarkupLine($"[yellow]{suggestion}[/]");
+                }
+
+                // Check if debug mode is enabled
+                var args = Environment.GetCommandLineArgs();
+                var debugMode = args.Contains("--debug") || 
+                               Environment.GetEnvironmentVariable("REDMINE_CLI_DEBUG") == "1";
+
+                if (debugMode)
+                {
+                    AnsiConsole.WriteLine();
+                    AnsiConsole.MarkupLine("[dim]--- Debug Information ---[/]");
+                    AnsiConsole.WriteException(ex);
+                }
+                
+                Environment.ExitCode = 1;
+            }
         });
 
         command.Add(listCommand);
@@ -108,13 +141,42 @@ public class IssueCommand
 
         viewCommand.SetAction(async (parseResult) =>
         {
-            var id = parseResult.GetValue(idArgument);
-            var json = parseResult.GetValue(viewJsonOption);
-            var web = parseResult.GetValue(viewWebOption);
-            var absoluteTime = parseResult.GetValue(viewAbsoluteTimeOption);
-            var showImages = parseResult.GetValue(viewImageOption);
+            try
+            {
+                var id = parseResult.GetValue(idArgument);
+                var json = parseResult.GetValue(viewJsonOption);
+                var web = parseResult.GetValue(viewWebOption);
+                var absoluteTime = parseResult.GetValue(viewAbsoluteTimeOption);
+                var showImages = parseResult.GetValue(viewImageOption);
 
-            Environment.ExitCode = await issueCommand.ViewAsync(id, json, web, absoluteTime, showImages, CancellationToken.None);
+                Environment.ExitCode = await issueCommand.ViewAsync(id, json, web, absoluteTime, showImages, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                var userFriendlyMessage = errorMessageService.GetUserFriendlyMessage(ex);
+                var suggestion = errorMessageService.GetSuggestion(ex);
+                
+                AnsiConsole.MarkupLine($"[red]Error:[/] {userFriendlyMessage}");
+                
+                if (suggestion != null)
+                {
+                    AnsiConsole.MarkupLine($"[yellow]{suggestion}[/]");
+                }
+
+                // Check if debug mode is enabled
+                var args = Environment.GetCommandLineArgs();
+                var debugMode = args.Contains("--debug") || 
+                               Environment.GetEnvironmentVariable("REDMINE_CLI_DEBUG") == "1";
+
+                if (debugMode)
+                {
+                    AnsiConsole.WriteLine();
+                    AnsiConsole.MarkupLine("[dim]--- Debug Information ---[/]");
+                    AnsiConsole.WriteException(ex);
+                }
+                
+                Environment.ExitCode = 1;
+            }
         });
 
         command.Add(viewCommand);
@@ -262,93 +324,78 @@ public class IssueCommand
         bool absoluteTime,
         CancellationToken cancellationToken)
     {
-        try
+        _logger.LogDebug("Listing issues with filters - Assignee: {Assignee}, Status: {Status}, Project: {Project}",
+            assignee, status, project);
+
+        // Handle @me special value
+        assignee = await ResolveAssigneeAsync(assignee, cancellationToken);
+
+        // Handle status special values
+        string? statusFilter = status;
+        if (status == "all")
         {
-            _logger.LogDebug("Listing issues with filters - Assignee: {Assignee}, Status: {Status}, Project: {Project}",
-                assignee, status, project);
+            statusFilter = null; // No status filter means all statuses
+        }
 
-            // Handle @me special value
-            assignee = await ResolveAssigneeAsync(assignee, cancellationToken);
+        var filter = new IssueFilter
+        {
+            AssignedToId = assignee,
+            StatusId = statusFilter,
+            ProjectId = project,
+            Limit = limit ?? 30, // Default limit to 30
+            Offset = offset
+        };
 
-            // Handle status special values
-            string? statusFilter = status;
-            if (status == "all")
+        // If no filters are specified, default to open issues
+        if (string.IsNullOrEmpty(assignee) && string.IsNullOrEmpty(status) && string.IsNullOrEmpty(project))
+        {
+            filter.StatusId = "open";
+        }
+
+        // Handle --web option
+        if (web)
+        {
+            return await OpenInBrowserAsync(
+                profile => BuildIssuesUrl(profile.Url, filter),
+                "issues",
+                cancellationToken);
+        }
+
+        var issues = await _apiClient.GetIssuesAsync(filter, cancellationToken);
+
+        if (json)
+        {
+            _jsonFormatter.FormatIssues(issues);
+        }
+        else
+        {
+            // Determine time format
+            TimeFormat timeFormat = TimeFormat.Relative;
+
+            if (absoluteTime)
             {
-                statusFilter = null; // No status filter means all statuses
-            }
-
-            var filter = new IssueFilter
-            {
-                AssignedToId = assignee,
-                StatusId = statusFilter,
-                ProjectId = project,
-                Limit = limit ?? 30, // Default limit to 30
-                Offset = offset
-            };
-
-            // If no filters are specified, default to open issues
-            if (string.IsNullOrEmpty(assignee) && string.IsNullOrEmpty(status) && string.IsNullOrEmpty(project))
-            {
-                filter.StatusId = "open";
-            }
-
-            // Handle --web option
-            if (web)
-            {
-                return await OpenInBrowserAsync(
-                    profile => BuildIssuesUrl(profile.Url, filter),
-                    "issues",
-                    cancellationToken);
-            }
-
-            var issues = await _apiClient.GetIssuesAsync(filter, cancellationToken);
-
-            if (json)
-            {
-                _jsonFormatter.FormatIssues(issues);
+                timeFormat = TimeFormat.Absolute;
             }
             else
             {
-                // Determine time format
-                TimeFormat timeFormat = TimeFormat.Relative;
-
-                if (absoluteTime)
+                // Check config setting
+                var config = await _configService.LoadConfigAsync();
+                if (config.Preferences?.Time?.Format != null)
                 {
-                    timeFormat = TimeFormat.Absolute;
-                }
-                else
-                {
-                    // Check config setting
-                    var config = await _configService.LoadConfigAsync();
-                    if (config.Preferences?.Time?.Format != null)
+                    timeFormat = config.Preferences.Time.Format.ToLower() switch
                     {
-                        timeFormat = config.Preferences.Time.Format.ToLower() switch
-                        {
-                            "absolute" => TimeFormat.Absolute,
-                            "utc" => TimeFormat.Utc,
-                            _ => TimeFormat.Relative
-                        };
-                    }
+                        "absolute" => TimeFormat.Absolute,
+                        "utc" => TimeFormat.Utc,
+                        _ => TimeFormat.Relative
+                    };
                 }
-
-                _tableFormatter.SetTimeFormat(timeFormat);
-                _tableFormatter.FormatIssues(issues);
             }
 
-            return 0;
+            _tableFormatter.SetTimeFormat(timeFormat);
+            _tableFormatter.FormatIssues(issues);
         }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogError(ex, "API request failed");
-            AnsiConsole.MarkupLine("[red]Error: API request failed[/]");
-            return 1;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to list issues");
-            AnsiConsole.MarkupLine($"[red]Error: {ex.Message}[/]");
-            return 1;
-        }
+
+        return 0;
     }
 
     private static string BuildIssuesUrl(string baseUrl, IssueFilter filter)
