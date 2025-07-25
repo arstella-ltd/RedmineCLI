@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Text;
 
 using Microsoft.Extensions.Logging;
 
@@ -9,16 +10,18 @@ namespace RedmineCLI.Commands;
 public class LlmsCommand
 {
     private readonly ILogger<LlmsCommand> _logger;
+    private readonly RootCommand? _rootCommand;
 
-    public LlmsCommand(ILogger<LlmsCommand> logger)
+    public LlmsCommand(ILogger<LlmsCommand> logger, RootCommand? rootCommand = null)
     {
         _logger = logger;
+        _rootCommand = rootCommand;
     }
 
-    public static Command Create(ILogger<LlmsCommand> logger)
+    public static Command Create(ILogger<LlmsCommand> logger, RootCommand? rootCommand = null)
     {
         var command = new Command("llms", "Show LLM-friendly information about RedmineCLI");
-        var llmsCommand = new LlmsCommand(logger);
+        var llmsCommand = new LlmsCommand(logger, rootCommand);
 
         command.SetAction(async (_) =>
         {
@@ -35,7 +38,7 @@ public class LlmsCommand
             _logger.LogDebug("Showing LLMs information");
 
             // LLMs.txt形式でRedmineCLIの情報を出力
-            AnsiConsole.WriteLine("# RedmineCLI");
+            AnsiConsole.WriteLine("# RedmineCLI - Comprehensive Command Reference for LLMs");
             AnsiConsole.WriteLine();
             AnsiConsole.WriteLine("RedmineCLI is a command-line interface tool for managing Redmine tickets, designed to provide a GitHub CLI-like experience.");
             AnsiConsole.WriteLine();
@@ -111,20 +114,25 @@ public class LlmsCommand
             AnsiConsole.WriteLine("redmine config list");
             AnsiConsole.WriteLine("```");
             AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("## Options");
+            AnsiConsole.WriteLine("## All Available Options");
             AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("### Global Options");
-            AnsiConsole.WriteLine("- `--help` : Show help");
-            AnsiConsole.WriteLine("- `--version` : Show version");
-            AnsiConsole.WriteLine("- `--license` : Show license information");
-            AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("### Common Issue Options");
-            AnsiConsole.WriteLine("- `-a, --assigned-to` : Filter by assignee (@me for current user)");
-            AnsiConsole.WriteLine("- `-s, --status` : Filter by status (open, closed, all)");
-            AnsiConsole.WriteLine("- `-p, --project` : Filter by project ID");
-            AnsiConsole.WriteLine("- `-L, --limit` : Number of results to show");
-            AnsiConsole.WriteLine("- `--json` : Output in JSON format (default: table)");
-            AnsiConsole.WriteLine("- `--web` : Open in web browser");
+
+            // 動的にコマンドとオプションを抽出して表示
+            if (_rootCommand != null)
+            {
+                DisplayCommandOptions(_rootCommand);
+            }
+            else
+            {
+                // フォールバック: 静的な情報を表示
+                AnsiConsole.WriteLine("### Global Options");
+                AnsiConsole.WriteLine("- `--help` : Show help and usage information");
+                AnsiConsole.WriteLine("- `--version` : Show version information");
+                AnsiConsole.WriteLine("- `--license` : Show license information");
+                AnsiConsole.WriteLine("- `--verbose` : Show detailed error information including stack traces");
+                AnsiConsole.WriteLine();
+                DisplayStaticCommandOptions();
+            }
             AnsiConsole.WriteLine();
             AnsiConsole.WriteLine("## Features");
             AnsiConsole.WriteLine();
@@ -173,5 +181,129 @@ public class LlmsCommand
             AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
             return 1;
         }
+    }
+
+    private void DisplayCommandOptions(RootCommand rootCommand)
+    {
+        // グローバルオプションを表示
+        AnsiConsole.WriteLine("### Global Options");
+        AnsiConsole.WriteLine();
+        foreach (var option in rootCommand.Options.OrderBy(o => o.Name))
+        {
+            DisplayOption(option);
+        }
+        AnsiConsole.WriteLine();
+
+        // 各コマンドとそのオプションを表示
+        foreach (var subcommand in rootCommand.Subcommands.OrderBy(c => c.Name))
+        {
+            DisplayCommand(subcommand, "### ");
+        }
+    }
+
+    private void DisplayCommand(Command command, string prefix)
+    {
+        AnsiConsole.WriteLine($"{prefix}`{command.Name}` Command");
+        AnsiConsole.WriteLine();
+
+        if (!string.IsNullOrEmpty(command.Description))
+        {
+            AnsiConsole.WriteLine($"Description: {command.Description}");
+            AnsiConsole.WriteLine();
+        }
+
+        // サブコマンドがある場合
+        if (command.Subcommands.Any())
+        {
+            AnsiConsole.WriteLine("Subcommands:");
+            foreach (var subcommand in command.Subcommands.OrderBy(c => c.Name))
+            {
+                AnsiConsole.WriteLine($"- `{command.Name} {subcommand.Name}` - {subcommand.Description}");
+
+                // サブコマンドのオプションを表示
+                if (subcommand.Options.Any())
+                {
+                    AnsiConsole.WriteLine($"  Options for `{command.Name} {subcommand.Name}`:");
+                    foreach (var option in subcommand.Options.OrderBy(o => o.Name))
+                    {
+                        DisplayOption(option, "  ");
+                    }
+                }
+                AnsiConsole.WriteLine();
+            }
+        }
+
+        // 直接のオプションがある場合
+        if (command.Options.Any())
+        {
+            AnsiConsole.WriteLine($"Options for `{command.Name}`:");
+            foreach (var option in command.Options.OrderBy(o => o.Name))
+            {
+                DisplayOption(option);
+            }
+            AnsiConsole.WriteLine();
+        }
+    }
+
+    private void DisplayOption(Option option, string indent = "")
+    {
+        var sb = new StringBuilder();
+        sb.Append($"{indent}- `{option.Name}`");
+
+        if (option.Aliases.Any())
+        {
+            var aliases = string.Join(", ", option.Aliases.Select(a => $"`{a}`"));
+            sb.Append($" (aliases: {aliases})");
+        }
+
+        AnsiConsole.WriteLine(sb.ToString());
+
+        if (!string.IsNullOrEmpty(option.Description))
+        {
+            AnsiConsole.WriteLine($"{indent}  - Description: {option.Description}");
+        }
+
+        // オプションの型情報を表示
+        var optionType = option.GetType();
+        if (optionType.IsGenericType)
+        {
+            var genericArg = optionType.GetGenericArguments().FirstOrDefault();
+            if (genericArg != null)
+            {
+                var typeName = GetFriendlyTypeName(genericArg);
+                AnsiConsole.WriteLine($"{indent}  - Type: `{typeName}`");
+            }
+        }
+    }
+
+    private string GetFriendlyTypeName(Type type)
+    {
+        if (type == typeof(string))
+            return "string";
+        if (type == typeof(int) || type == typeof(int?))
+            return "integer" + (type.IsGenericType ? " (optional)" : "");
+        if (type == typeof(bool))
+            return "boolean";
+        if (type == typeof(bool?))
+            return "boolean (optional)";
+
+        return type.Name;
+    }
+
+    private void DisplayStaticCommandOptions()
+    {
+        // 静的なコマンドオプション情報を表示（フォールバック用）
+        AnsiConsole.WriteLine("### Issue Command Options");
+        AnsiConsole.WriteLine("- `-a, --assignee` : Filter by assignee (username, ID, or @me)");
+        AnsiConsole.WriteLine("- `-s, --status` : Filter by status (open, closed, all, or status ID)");
+        AnsiConsole.WriteLine("- `-p, --project` : Filter by project (identifier or ID)");
+        AnsiConsole.WriteLine("- `-L, --limit` : Limit number of results (default: 30)");
+        AnsiConsole.WriteLine("- `--offset` : Offset for pagination");
+        AnsiConsole.WriteLine("- `--json` : Output in JSON format");
+        AnsiConsole.WriteLine("- `--web, -w` : Open in web browser");
+        AnsiConsole.WriteLine("- `--absolute-time` : Display absolute time instead of relative time");
+        AnsiConsole.WriteLine();
+        AnsiConsole.WriteLine("### Other Command Options");
+        AnsiConsole.WriteLine("- Various command-specific options available for auth, config, and attachment commands");
     }
 }
