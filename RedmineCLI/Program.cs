@@ -45,11 +45,13 @@ public class Program
         var configCommand = ConfigCommand.Create(configService, configLogger);
         var fileSystem = serviceProvider.GetRequiredService<IFileSystem>();
         var attachmentCommand = new AttachmentCommand().CreateCommand(configService, apiClient, tableFormatter, jsonFormatter, fileSystem);
+        var llmsCommand = LlmsCommand.Create();
 
         rootCommand.Add(authCommand);
         rootCommand.Add(issueCommand);
         rootCommand.Add(configCommand);
         rootCommand.Add(attachmentCommand);
+        rootCommand.Add(llmsCommand);
 
         // Add global options
         // Note: Built-in --version option is provided by System.CommandLine
