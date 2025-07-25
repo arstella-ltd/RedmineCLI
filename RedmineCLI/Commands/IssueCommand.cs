@@ -873,7 +873,7 @@ public class IssueCommand
         try
         {
             var users = await _apiClient.GetUsersAsync(cancellationToken);
-            var matchedUser = users.FirstOrDefault(u => 
+            var matchedUser = users.FirstOrDefault(u =>
                 u.Name.Equals(assignee, StringComparison.OrdinalIgnoreCase) ||
                 u.Login?.Equals(assignee, StringComparison.OrdinalIgnoreCase) == true);
 
