@@ -19,14 +19,61 @@ namespace RedmineCLI.Tests.Commands;
 public class LlmsCommandTests
 {
     private readonly ILogger<LlmsCommand> _logger;
+    private readonly RootCommand _rootCommand;
     private readonly LlmsCommand _command;
     private readonly AnsiConsoleTestFixture _consoleFixture;
 
     public LlmsCommandTests()
     {
         _logger = Substitute.For<ILogger<LlmsCommand>>();
-        _command = new LlmsCommand(_logger);
+        _rootCommand = CreateTestRootCommand();
+        _command = new LlmsCommand(_logger, _rootCommand);
         _consoleFixture = new AnsiConsoleTestFixture();
+    }
+    
+    private RootCommand CreateTestRootCommand()
+    {
+        var rootCommand = new RootCommand("Test RedmineCLI");
+        
+        // Add test global options
+        var licenseOption = new Option<bool>("--license") { Description = "Show license information" };
+        rootCommand.Add(licenseOption);
+        
+        // Add test commands with options
+        var authCommand = new Command("auth", "Authentication commands");
+        var loginCommand = new Command("login", "Login to Redmine");
+        loginCommand.Add(new Option<string>("--url") { Description = "Redmine server URL" });
+        loginCommand.Add(new Option<string>("--api-key") { Description = "Redmine API key" });
+        authCommand.Add(loginCommand);
+        
+        var issueCommand = new Command("issue", "Issue management commands");
+        var listCommand = new Command("list", "List issues");
+        
+        var assigneeOption = new Option<string?>("--assignee") { Description = "Filter by assignee" };
+        assigneeOption.Aliases.Add("-a");
+        listCommand.Add(assigneeOption);
+        
+        var statusOption = new Option<string?>("--status") { Description = "Filter by status" };
+        statusOption.Aliases.Add("-s");
+        listCommand.Add(statusOption);
+        
+        var limitOption = new Option<int?>("--limit") { Description = "Limit number of results" };
+        limitOption.Aliases.Add("-L");
+        listCommand.Add(limitOption);
+        
+        listCommand.Add(new Option<int?>("--offset") { Description = "Offset for pagination" });
+        listCommand.Add(new Option<bool>("--absolute-time") { Description = "Display absolute time instead of relative time" });
+        listCommand.Add(new Option<bool>("--json") { Description = "Output in JSON format" });
+        
+        var webOption = new Option<bool>("--web") { Description = "Open in web browser" };
+        webOption.Aliases.Add("-w");
+        listCommand.Add(webOption);
+        
+        issueCommand.Add(listCommand);
+        rootCommand.Add(authCommand);
+        rootCommand.Add(issueCommand);
+        
+        return rootCommand;
     }
 
     [Fact]
@@ -43,7 +90,7 @@ public class LlmsCommandTests
     public void Create_Should_ReturnCommandWithCorrectName()
     {
         // Act
-        var command = LlmsCommand.Create(_logger);
+        var command = LlmsCommand.Create(_logger, _rootCommand);
 
         // Assert
         command.Name.Should().Be("llms");
@@ -60,13 +107,14 @@ public class LlmsCommandTests
 
             result.Should().Be(0);
             var output = console.Output;
-            output.Should().Contain("# RedmineCLI");
+            output.Should().Contain("# RedmineCLI - Comprehensive Command Reference for LLMs");
             output.Should().Contain("## Installation");
             output.Should().Contain("## Authentication");
-            output.Should().Contain("## Core Commands");
-            output.Should().Contain("redmine auth login");
-            output.Should().Contain("redmine issue list");
-            output.Should().Contain("redmine config set");
+            output.Should().Contain("## Commands");
+            output.Should().Contain("### `auth`");
+            output.Should().Contain("### `issue`");
+            output.Should().Contain("--offset");
+            output.Should().Contain("--absolute-time");
 
             return result;
         });
@@ -86,15 +134,19 @@ public class LlmsCommandTests
             // 必須セクションの確認
             output.Should().Contain("## Installation");
             output.Should().Contain("## Authentication");
-            output.Should().Contain("## Core Commands");
-            output.Should().Contain("### Issue Management");
-            output.Should().Contain("### Attachment Management");
-            output.Should().Contain("### Configuration");
-            output.Should().Contain("## Options");
+            output.Should().Contain("## Global Options");
+            output.Should().Contain("## Commands");
+            output.Should().Contain("## Configuration");
             output.Should().Contain("## Features");
-            output.Should().Contain("## Configuration Files");
             output.Should().Contain("## API Requirements");
-            output.Should().Contain("## Common Workflows");
+            output.Should().Contain("## Example Workflows");
+            
+            // 全オプションが含まれていることを確認
+            output.Should().Contain("--offset");
+            output.Should().Contain("--absolute-time");
+            output.Should().Contain("--assignee");
+            output.Should().Contain("--status");
+            output.Should().Contain("--limit");
 
             return result;
         });
@@ -110,16 +162,15 @@ public class LlmsCommandTests
             var output = console.Output;
 
             // 主要なコマンドが含まれていることを確認
-            output.Should().Contain("redmine auth login");
-            output.Should().Contain("redmine issue list");
-            output.Should().Contain("redmine issue view");
-            output.Should().Contain("redmine issue create");
-            output.Should().Contain("redmine issue edit");
-            output.Should().Contain("redmine issue comment");
-            output.Should().Contain("redmine attachment download");
-            output.Should().Contain("redmine config set");
-            output.Should().Contain("redmine config get");
-            output.Should().Contain("redmine config list");
+            output.Should().Contain("### `auth`");
+            output.Should().Contain("### `auth login`");
+            output.Should().Contain("### `issue`");
+            output.Should().Contain("### `issue list`");
+            
+            // オプションの詳細情報が含まれていることを確認
+            output.Should().Contain("Description:");
+            output.Should().Contain("Type:");
+            output.Should().Contain("aliases:");
 
             return result;
         });
@@ -135,11 +186,16 @@ public class LlmsCommandTests
             var output = console.Output;
 
             // 特殊機能の説明が含まれていることを確認
-            output.Should().Contain("@me");
             output.Should().Contain("Native AOT");
             output.Should().Contain("Sixel protocol");
             output.Should().Contain("--web");
-            output.Should().Contain("table, json");
+            output.Should().Contain("table/json");
+            
+            // ページネーションオプションが含まれていることを確認
+            output.Should().Contain("--offset");
+            output.Should().Contain("Offset for pagination");
+            output.Should().Contain("--limit");
+            output.Should().Contain("Limit number of results");
 
             return result;
         });

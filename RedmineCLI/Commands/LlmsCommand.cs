@@ -1,4 +1,6 @@
 using System.CommandLine;
+using System.CommandLine.Binding;
+using System.Text;
 
 using Microsoft.Extensions.Logging;
 
@@ -9,16 +11,18 @@ namespace RedmineCLI.Commands;
 public class LlmsCommand
 {
     private readonly ILogger<LlmsCommand> _logger;
+    private readonly RootCommand _rootCommand;
 
-    public LlmsCommand(ILogger<LlmsCommand> logger)
+    public LlmsCommand(ILogger<LlmsCommand> logger, RootCommand rootCommand)
     {
         _logger = logger;
+        _rootCommand = rootCommand;
     }
 
-    public static Command Create(ILogger<LlmsCommand> logger)
+    public static Command Create(ILogger<LlmsCommand> logger, RootCommand rootCommand)
     {
         var command = new Command("llms", "Show LLM-friendly information about RedmineCLI");
-        var llmsCommand = new LlmsCommand(logger);
+        var llmsCommand = new LlmsCommand(logger, rootCommand);
 
         command.SetAction(async (_) =>
         {
@@ -34,11 +38,16 @@ public class LlmsCommand
         {
             _logger.LogDebug("Showing LLMs information");
 
-            // LLMs.txt形式でRedmineCLIの情報を出力
-            AnsiConsole.WriteLine("# RedmineCLI");
+            AnsiConsole.WriteLine("# RedmineCLI - Comprehensive Command Reference for LLMs");
+            AnsiConsole.WriteLine();
+            AnsiConsole.WriteLine("This document provides a comprehensive reference of all RedmineCLI commands and options for LLM usage.");
+            AnsiConsole.WriteLine();
+            
+            AnsiConsole.WriteLine("## Overview");
             AnsiConsole.WriteLine();
             AnsiConsole.WriteLine("RedmineCLI is a command-line interface tool for managing Redmine tickets, designed to provide a GitHub CLI-like experience.");
             AnsiConsole.WriteLine();
+            
             AnsiConsole.WriteLine("## Installation");
             AnsiConsole.WriteLine();
             AnsiConsole.WriteLine("```bash");
@@ -47,6 +56,7 @@ public class LlmsCommand
             AnsiConsole.WriteLine("brew install redmine");
             AnsiConsole.WriteLine("```");
             AnsiConsole.WriteLine();
+            
             AnsiConsole.WriteLine("## Authentication");
             AnsiConsole.WriteLine();
             AnsiConsole.WriteLine("First, authenticate with your Redmine server:");
@@ -55,77 +65,38 @@ public class LlmsCommand
             AnsiConsole.WriteLine("redmine auth login");
             AnsiConsole.WriteLine("```");
             AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("## Core Commands");
+            
+            // Extract and display global options
+            AnsiConsole.WriteLine("## Global Options");
             AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("### Issue Management");
+            AnsiConsole.WriteLine("These options are available for all commands:");
             AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("```bash");
-            AnsiConsole.WriteLine("# List issues (default: all issues in project)");
-            AnsiConsole.WriteLine("redmine issue list");
+            
+            DisplayOptions(_rootCommand.Options);
             AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("# List issues assigned to me");
-            AnsiConsole.WriteLine("redmine issue list -a @me");
+            
+            // Extract and display all commands with their options
+            AnsiConsole.WriteLine("## Commands");
             AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("# List issues with specific status");
-            AnsiConsole.WriteLine("redmine issue list -s open");
-            AnsiConsole.WriteLine("redmine issue list -s closed");
+            
+            foreach (var command in _rootCommand.Children.OfType<Command>().OrderBy(c => c.Name))
+            {
+                DisplayCommand(command);
+            }
+            
+            AnsiConsole.WriteLine("## Configuration");
             AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("# View issue details");
-            AnsiConsole.WriteLine("redmine issue view <issue-id>");
+            AnsiConsole.WriteLine("Configuration files are stored in:");
+            AnsiConsole.WriteLine("- Windows: `%APPDATA%\\redmine\\config.yml`");
+            AnsiConsole.WriteLine("- macOS/Linux: `~/.config/redmine/config.yml`");
             AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("# Create new issue");
-            AnsiConsole.WriteLine("redmine issue create");
+            
+            AnsiConsole.WriteLine("### Configuration Keys");
+            AnsiConsole.WriteLine("- `time.format`: Time display format (relative/absolute)");
+            AnsiConsole.WriteLine("- `defaultformat`: Default output format (table/json)");
+            AnsiConsole.WriteLine("- `editor`: Preferred text editor");
             AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("# Edit issue");
-            AnsiConsole.WriteLine("redmine issue edit <issue-id> --status=closed");
-            AnsiConsole.WriteLine("redmine issue edit <issue-id> --assigned-to=@me");
-            AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("# Add comment to issue");
-            AnsiConsole.WriteLine("redmine issue comment <issue-id> -m \"Comment text\"");
-            AnsiConsole.WriteLine("```");
-            AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("### Attachment Management");
-            AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("```bash");
-            AnsiConsole.WriteLine("# List attachments for an issue");
-            AnsiConsole.WriteLine("redmine issue attachment list <issue-id>");
-            AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("# Download attachment");
-            AnsiConsole.WriteLine("redmine attachment download <attachment-id>");
-            AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("# View attachment details");
-            AnsiConsole.WriteLine("redmine attachment view <attachment-id>");
-            AnsiConsole.WriteLine("```");
-            AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("### Configuration");
-            AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("```bash");
-            AnsiConsole.WriteLine("# Set configuration values");
-            AnsiConsole.WriteLine("redmine config set time.format relative");
-            AnsiConsole.WriteLine("redmine config set defaultformat json");
-            AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("# Get configuration value");
-            AnsiConsole.WriteLine("redmine config get time.format");
-            AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("# List all configuration");
-            AnsiConsole.WriteLine("redmine config list");
-            AnsiConsole.WriteLine("```");
-            AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("## Options");
-            AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("### Global Options");
-            AnsiConsole.WriteLine("- `--help` : Show help");
-            AnsiConsole.WriteLine("- `--version` : Show version");
-            AnsiConsole.WriteLine("- `--license` : Show license information");
-            AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("### Common Issue Options");
-            AnsiConsole.WriteLine("- `-a, --assigned-to` : Filter by assignee (@me for current user)");
-            AnsiConsole.WriteLine("- `-s, --status` : Filter by status (open, closed, all)");
-            AnsiConsole.WriteLine("- `-p, --project` : Filter by project ID");
-            AnsiConsole.WriteLine("- `-L, --limit` : Number of results to show");
-            AnsiConsole.WriteLine("- `--format` : Output format (table, json)");
-            AnsiConsole.WriteLine("- `--web` : Open in web browser");
-            AnsiConsole.WriteLine();
+            
             AnsiConsole.WriteLine("## Features");
             AnsiConsole.WriteLine();
             AnsiConsole.WriteLine("- Native AOT compiled for fast startup (<100ms)");
@@ -136,17 +107,14 @@ public class LlmsCommand
             AnsiConsole.WriteLine("- Editor integration for comments");
             AnsiConsole.WriteLine("- Interactive and non-interactive modes");
             AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("## Configuration Files");
-            AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("- Windows: `%APPDATA%\\redmine\\config.yml`");
-            AnsiConsole.WriteLine("- macOS/Linux: `~/.config/redmine/config.yml`");
-            AnsiConsole.WriteLine();
+            
             AnsiConsole.WriteLine("## API Requirements");
             AnsiConsole.WriteLine();
             AnsiConsole.WriteLine("- Redmine REST API v3.0 or higher");
             AnsiConsole.WriteLine("- API key authentication");
             AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("## Common Workflows");
+            
+            AnsiConsole.WriteLine("## Example Workflows");
             AnsiConsole.WriteLine();
             AnsiConsole.WriteLine("### Check my assigned issues");
             AnsiConsole.WriteLine("```bash");
@@ -159,11 +127,16 @@ public class LlmsCommand
             AnsiConsole.WriteLine("redmine issue comment 12345 -m \"Fixed in commit abc123\"");
             AnsiConsole.WriteLine("```");
             AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("### Create and assign issue");
+            AnsiConsole.WriteLine("### List issues with pagination");
             AnsiConsole.WriteLine("```bash");
-            AnsiConsole.WriteLine("redmine issue create --title=\"Bug fix\" --assigned-to=@me");
+            AnsiConsole.WriteLine("redmine issue list --limit 50 --offset 100");
             AnsiConsole.WriteLine("```");
-
+            AnsiConsole.WriteLine();
+            AnsiConsole.WriteLine("### View issue with absolute time");
+            AnsiConsole.WriteLine("```bash");
+            AnsiConsole.WriteLine("redmine issue view 12345 --absolute-time");
+            AnsiConsole.WriteLine("```");
+            
             await Task.CompletedTask;
             return 0;
         }
@@ -173,5 +146,120 @@ public class LlmsCommand
             AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
             return 1;
         }
+    }
+    
+    private void DisplayCommand(Command command, string prefix = "")
+    {
+        var fullCommandName = string.IsNullOrEmpty(prefix) ? command.Name : $"{prefix} {command.Name}";
+        
+        AnsiConsole.WriteLine($"### `{fullCommandName}`");
+        AnsiConsole.WriteLine();
+        
+        if (!string.IsNullOrEmpty(command.Description))
+        {
+            AnsiConsole.WriteLine($"**Description**: {command.Description}");
+            AnsiConsole.WriteLine();
+        }
+        
+        // Display arguments
+        var arguments = command.Arguments;
+        if (arguments.Any())
+        {
+            AnsiConsole.WriteLine("**Arguments**:");
+            AnsiConsole.WriteLine();
+            foreach (var arg in arguments)
+            {
+                AnsiConsole.WriteLine($"- `{arg.Name}`");
+                if (!string.IsNullOrEmpty(arg.Description))
+                {
+                    AnsiConsole.WriteLine($"  - Description: {arg.Description}");
+                }
+                if (arg.Arity.MaximumNumberOfValues > 1)
+                {
+                    AnsiConsole.WriteLine($"  - Can accept multiple values");
+                }
+                AnsiConsole.WriteLine();
+            }
+        }
+        
+        // Display options
+        var options = command.Options;
+        if (options.Any())
+        {
+            AnsiConsole.WriteLine("**Options**:");
+            AnsiConsole.WriteLine();
+            DisplayOptions(options);
+        }
+        
+        // Display subcommands
+        var subcommands = command.Children.OfType<Command>().OrderBy(c => c.Name);
+        if (subcommands.Any())
+        {
+            AnsiConsole.WriteLine("**Subcommands**:");
+            AnsiConsole.WriteLine();
+            foreach (var subcommand in subcommands)
+            {
+                DisplayCommand(subcommand, fullCommandName);
+            }
+        }
+        
+        AnsiConsole.WriteLine();
+    }
+    
+    private void DisplayOptions(IEnumerable<Option> options)
+    {
+        foreach (var option in options.OrderBy(o => o.Name))
+        {
+            var sb = new StringBuilder();
+            sb.Append($"- `{option.Name}`");
+            
+            // Add aliases
+            if (option.Aliases.Count > 1) // First alias is the primary name
+            {
+                var aliases = option.Aliases.Skip(1).ToList();
+                if (aliases.Any())
+                {
+                    sb.Append($" (aliases: {string.Join(", ", aliases.Select(a => $"`{a}`"))})");
+                }
+            }
+            
+            AnsiConsole.WriteLine(sb.ToString());
+            
+            // Description
+            if (!string.IsNullOrEmpty(option.Description))
+            {
+                AnsiConsole.WriteLine($"  - Description: {option.Description}");
+            }
+            
+            // Type
+            var optionType = option.ValueType;
+            if (optionType != null)
+            {
+                var typeName = GetFriendlyTypeName(optionType);
+                AnsiConsole.WriteLine($"  - Type: `{typeName}`");
+            }
+            
+            // Since reflection is problematic with AOT, we'll skip default values and required status
+            // These would need to be manually documented or extracted differently
+            
+            AnsiConsole.WriteLine();
+        }
+    }
+    
+    private string GetFriendlyTypeName(Type type)
+    {
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+        {
+            return GetFriendlyTypeName(type.GetGenericArguments()[0]) + " (optional)";
+        }
+        
+        return type.Name switch
+        {
+            "String" => "string",
+            "Int32" => "integer",
+            "Boolean" => "boolean",
+            "DateTime" => "datetime",
+            _ => type.Name.ToLowerInvariant()
+        };
     }
 }

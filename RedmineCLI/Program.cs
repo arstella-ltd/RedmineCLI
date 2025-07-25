@@ -46,12 +46,14 @@ public class Program
         var fileSystem = serviceProvider.GetRequiredService<IFileSystem>();
         var attachmentCommand = new AttachmentCommand().CreateCommand(configService, apiClient, tableFormatter, jsonFormatter, fileSystem);
         var llmsLogger = serviceProvider.GetRequiredService<ILogger<LlmsCommand>>();
-        var llmsCommand = LlmsCommand.Create(llmsLogger);
 
         rootCommand.Add(authCommand);
         rootCommand.Add(issueCommand);
         rootCommand.Add(configCommand);
         rootCommand.Add(attachmentCommand);
+        
+        // LlmsCommand needs to be created after all other commands are added to rootCommand
+        var llmsCommand = LlmsCommand.Create(llmsLogger, rootCommand);
         rootCommand.Add(llmsCommand);
 
         // Add global options
