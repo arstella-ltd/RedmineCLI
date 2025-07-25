@@ -52,11 +52,6 @@ public class Program
         rootCommand.Add(attachmentCommand);
 
         // Add global options
-        var debugOption = new Option<bool>("--debug");
-        debugOption.Description = "Enable debug output";
-        debugOption.Aliases.Add("-d");
-        rootCommand.Add(debugOption);
-
         // Note: Built-in --version option is provided by System.CommandLine
 
         // Add license option
@@ -117,8 +112,7 @@ public class Program
 
             // Show help when no arguments are provided
             if (parseResult.CommandResult.Command == rootCommand &&
-                parseResult.Tokens.Count == 0 &&
-                !parseResult.GetValue(debugOption))
+                parseResult.Tokens.Count == 0)
             {
                 // Create a new parse result with --help to trigger help display
                 var helpArgs = new[] { "--help" };

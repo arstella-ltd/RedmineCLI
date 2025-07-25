@@ -138,31 +138,6 @@ public class ProgramTests
         serviceProvider.GetService<ILogger<IssueCommand>>().Should().NotBeNull();
     }
 
-    [Fact]
-    public async Task Main_Should_HandleDebugOption()
-    {
-        // Arrange
-        var args = new[] { "--debug", "--help" };
-
-        // Act
-        var result = await Program.Main(args);
-
-        // Assert
-        result.Should().Be(0);
-    }
-
-    [Fact]
-    public async Task Main_Should_AcceptDebugShortOption()
-    {
-        // Arrange
-        var args = new[] { "-d", "--help" };
-
-        // Act
-        var result = await Program.Main(args);
-
-        // Assert
-        result.Should().Be(0);
-    }
 
     [Fact]
     public async Task Main_Should_ReturnNonZero_When_NoArguments()
