@@ -239,6 +239,11 @@ public class IssueCommandTests
     {
         // Arrange
         var project = "my-project";
+        var projectIdentifier = "my-project";
+        var projects = new List<Project>
+        {
+            new Project { Id = 10, Name = "My Project", Identifier = projectIdentifier }
+        };
         var issues = new List<Issue>
         {
             new Issue
@@ -250,7 +255,9 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.ProjectId == project), Arg.Any<CancellationToken>())
+        _apiClient.GetProjectsAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(projects));
+        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.ProjectId == projectIdentifier), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -258,10 +265,102 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
+        await _apiClient.Received(1).GetProjectsAsync(Arg.Any<CancellationToken>());
         await _apiClient.Received(1).GetIssuesAsync(
-            Arg.Is<IssueFilter>(f => f.ProjectId == project),
+            Arg.Is<IssueFilter>(f => f.ProjectId == projectIdentifier),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
+    }
+
+    [Fact]
+    public async Task List_Should_FilterByProjectName_When_ProjectNameIsSpecified()
+    {
+        // Arrange
+        var projectName = "管理"; // Using Japanese name as mentioned in the issue
+        var projectIdentifier = "kanri";
+        var projects = new List<Project>
+        {
+            new Project { Id = 10, Name = projectName, Identifier = projectIdentifier }
+        };
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "Project Issue",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                Project = new Project { Id = 10, Name = projectName }
+            }
+        };
+
+        _apiClient.GetProjectsAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(projects));
+        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.ProjectId == projectIdentifier), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(null, null, projectName, null, null, false, false, false, null, null, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _apiClient.Received(1).GetProjectsAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.ProjectId == projectIdentifier),
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
+    }
+
+    [Fact]
+    public async Task List_Should_FilterByProjectId_When_ProjectIdIsSpecified()
+    {
+        // Arrange
+        var projectId = "10";
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "Project Issue",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                Project = new Project { Id = 10, Name = "My Project" }
+            }
+        };
+
+        // When project is numeric, it should be passed as-is without resolution
+        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.ProjectId == projectId), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(null, null, projectId, null, null, false, false, false, null, null, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        // GetProjectsAsync should NOT be called when using numeric ID
+        await _apiClient.DidNotReceive().GetProjectsAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.ProjectId == projectId),
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
+    }
+
+    [Fact]
+    public async Task List_Should_ReturnError_When_ProjectNotFound()
+    {
+        // Arrange
+        var projectName = "NonExistentProject";
+        var projects = new List<Project>(); // Empty list, project not found
+
+        _apiClient.GetProjectsAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(projects));
+
+        // Act
+        var result = await _issueCommand.ListAsync(null, null, projectName, null, null, false, false, false, null, null, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(1); // Should return error
+        await _apiClient.Received(1).GetProjectsAsync(Arg.Any<CancellationToken>());
+        // GetIssuesAsync should NOT be called when project is not found
+        await _apiClient.DidNotReceive().GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -272,10 +371,15 @@ public class IssueCommandTests
         var assigneeUserId = "5";
         var status = "open";
         var project = "my-project";
+        var projectIdentifier = "my-project";
         var limit = 20;
         var users = new List<User>
         {
             new User { Id = 5, Name = "John Doe", Login = "john.doe" }
+        };
+        var projects = new List<Project>
+        {
+            new Project { Id = 10, Name = "My Project", Identifier = projectIdentifier }
         };
         var issues = new List<Issue>
         {
@@ -291,11 +395,13 @@ public class IssueCommandTests
 
         _apiClient.GetUsersAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(users));
+        _apiClient.GetProjectsAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(projects));
         _apiClient.GetIssuesAsync(
             Arg.Is<IssueFilter>(f =>
                 f.AssignedToId == assigneeUserId &&
                 f.StatusId == status &&
-                f.ProjectId == project &&
+                f.ProjectId == projectIdentifier &&
                 f.Limit == limit),
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
@@ -306,11 +412,12 @@ public class IssueCommandTests
         // Assert
         result.Should().Be(0);
         await _apiClient.Received(1).GetUsersAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).GetProjectsAsync(Arg.Any<CancellationToken>());
         await _apiClient.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f =>
                 f.AssignedToId == assigneeUserId &&
                 f.StatusId == status &&
-                f.ProjectId == project &&
+                f.ProjectId == projectIdentifier &&
                 f.Limit == limit),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
