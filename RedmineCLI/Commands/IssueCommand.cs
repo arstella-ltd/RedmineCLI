@@ -50,6 +50,7 @@ public class IssueCommand
         var issueCommand = new IssueCommand(apiClient, configService, tableFormatter, jsonFormatter, logger);
 
         var listCommand = new Command("list", "List issues with optional filters");
+        listCommand.Aliases.Add("ls");
 
         var assigneeOption = new Option<string?>("--assignee") { Description = "Filter by assignee (username, ID, or @me)" };
         assigneeOption.Aliases.Add("-a");
