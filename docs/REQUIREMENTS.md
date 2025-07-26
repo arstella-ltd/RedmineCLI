@@ -21,7 +21,7 @@ RedmineCLIは、Redmineのチケット管理をコマンドラインから効率
 **ユーザーストーリー:** 開発者として、プロジェクト全体のチケット状況を把握し、必要に応じて様々な条件でフィルタリングしたいので、効率的にチケット管理ができる
 
 #### 受け入れ基準
-1. WHEN `redmine issue list` を実行 THEN プロジェクトのオープンなチケット一覧が表示される（デフォルト30件） SHALL
+1. WHEN `redmine issue list` または `redmine issue ls` を実行 THEN プロジェクトのオープンなチケット一覧が表示される（デフォルト30件） SHALL
 2. WHEN `--assignee <user>` または `-a <user>` オプションを指定 THEN 特定のユーザーのチケットが表示される SHALL
 3. WHEN `--assignee @me` または `-a @me` を指定 THEN 現在の認証ユーザーのチケットが表示される SHALL
 4. WHEN `--status <status>` または `-s <status>` オプションを指定 THEN 特定のステータスのチケットが表示される SHALL

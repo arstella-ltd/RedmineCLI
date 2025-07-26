@@ -49,6 +49,17 @@ public class IssueCommandTests
     #region List Command Tests
 
     [Fact]
+    public void Command_Should_HaveLsAlias()
+    {
+        // Arrange & Act
+        var command = IssueCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var listCommand = command.Subcommands.First(c => c.Name == "list");
+
+        // Assert
+        listCommand.Aliases.Should().Contain("ls");
+    }
+
+    [Fact]
     public async Task List_Should_ReturnAllOpenIssues_When_NoOptionsSpecified()
     {
         // Arrange
