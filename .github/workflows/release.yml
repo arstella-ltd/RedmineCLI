@@ -82,6 +82,8 @@ jobs:
     needs: create-release
     permissions:
       contents: write
+    env:
+      ASSET_NAME_PREFIX: redmine-cli
     strategy:
       matrix:
         config:
@@ -89,27 +91,22 @@ jobs:
             os: windows-latest
             rid: win-x64
             output: redmine.exe
-            asset_name_prefix: redmine-cli
           - name: "macOS x64"
             os: macos-latest
             rid: osx-x64
             output: redmine
-            asset_name_prefix: redmine-cli
           - name: "macOS ARM64"
             os: macos-latest
             rid: osx-arm64
             output: redmine
-            asset_name_prefix: redmine-cli
           - name: "Linux x64"
             os: ubuntu-latest
             rid: linux-x64
             output: redmine
-            asset_name_prefix: redmine-cli
           - name: "Linux ARM64"
             os: ubuntu-24.04-arm
             rid: linux-arm64
             output: redmine
-            asset_name_prefix: redmine-cli
 
     steps:
     - name: Checkout code
@@ -151,21 +148,21 @@ jobs:
       shell: pwsh
       run: |
         cd publish/${{ matrix.config.rid }}
-        Compress-Archive -Path ${{ matrix.config.output }} -DestinationPath ../../${{ matrix.config.asset_name_prefix }}-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip
+        Compress-Archive -Path ${{ matrix.config.output }} -DestinationPath ../../${{ env.ASSET_NAME_PREFIX }}-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip
         cd ../..
 
     - name: Compress binary to zip (Unix)
       if: runner.os != 'Windows'
       run: |
         cd publish/${{ matrix.config.rid }}
-        zip -j ../../${{ matrix.config.asset_name_prefix }}-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip ${{ matrix.config.output }}
+        zip -j ../../${{ env.ASSET_NAME_PREFIX }}-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip ${{ matrix.config.output }}
         cd ../..
 
     - name: Upload Release Assets
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          ${{ matrix.config.asset_name_prefix }}-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip
+          ${{ env.ASSET_NAME_PREFIX }}-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip
 
   generate-checksums:
     name: Generate Checksums
