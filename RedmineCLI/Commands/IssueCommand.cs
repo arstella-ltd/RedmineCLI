@@ -283,12 +283,8 @@ public class IssueCommand
             // Handle project name to identifier resolution
             project = await ResolveProjectAsync(project, cancellationToken);
 
-            // Handle status special values
-            string? statusFilter = status;
-            if (status == "all")
-            {
-                statusFilter = "*"; // Use * to get all statuses per Redmine API
-            }
+            // Handle status resolution
+            string? statusFilter = await ResolveStatusAsync(status, cancellationToken);
 
             // Validate sort parameter if provided
             if (!string.IsNullOrEmpty(sort))
@@ -927,6 +923,131 @@ public class IssueCommand
         }
     }
 
+    private async Task<string?> ResolveStatusAsync(string? status, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(status))
+            return null;
+
+        // Handle special keywords
+        if (status.Equals("all", StringComparison.OrdinalIgnoreCase))
+        {
+            return "*"; // Use * to get all statuses per Redmine API
+        }
+
+        if (status.Equals("open", StringComparison.OrdinalIgnoreCase) ||
+            status.Equals("closed", StringComparison.OrdinalIgnoreCase))
+        {
+            return status.ToLower();
+        }
+
+        // If numeric, validate it's a valid status ID
+        if (int.TryParse(status, out var statusId))
+        {
+            try
+            {
+                var statuses = await _apiClient.GetIssueStatusesAsync(cancellationToken);
+                if (statuses.Any(s => s.Id == statusId))
+                {
+                    return status;
+                }
+                else
+                {
+                    throw new ValidationException($"Status ID '{status}' not found.");
+                }
+            }
+            catch (ValidationException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to validate status ID '{StatusId}'", status);
+                throw new ValidationException($"Failed to validate status ID '{status}': {ex.Message}", ex);
+            }
+        }
+
+        // Try to match by status name
+        try
+        {
+            var statuses = await _apiClient.GetIssueStatusesAsync(cancellationToken);
+            var matchedStatus = statuses.FirstOrDefault(s =>
+                s.Name.Equals(status, StringComparison.OrdinalIgnoreCase));
+
+            if (matchedStatus != null)
+            {
+                _logger.LogDebug("Resolved status '{Status}' to ID {StatusId}", status, matchedStatus.Id);
+                return matchedStatus.Id.ToString();
+            }
+
+            // Status not found
+            _logger.LogError("Could not find status with name '{Status}'", status);
+            throw new ValidationException($"Status '{status}' not found.");
+        }
+        catch (ValidationException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to resolve status '{Status}'", status);
+            throw new ValidationException($"Failed to resolve status '{status}': {ex.Message}", ex);
+        }
+    }
+
+    private async Task<(string? StatusId, IssueStatus? Status)> ResolveStatusForEditAsync(string? status, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(status))
+            return (null, null);
+
+        // Handle special keywords - not allowed for editing (exact match only)
+        if (status == "all" || status == "open" || status == "closed")
+        {
+            throw new ValidationException($"Cannot directly set status to '{status}'. Please specify a specific status name or ID.");
+        }
+
+        try
+        {
+            var statuses = await _apiClient.GetIssueStatusesAsync(cancellationToken);
+
+            // If numeric, validate it's a valid status ID
+            if (int.TryParse(status, out var statusId))
+            {
+                var matchedStatus = statuses.FirstOrDefault(s => s.Id == statusId);
+                if (matchedStatus != null)
+                {
+                    return (status, matchedStatus);
+                }
+                else
+                {
+                    throw new ValidationException($"Status ID '{status}' not found.");
+                }
+            }
+
+            // Try to match by status name
+            var statusByName = statuses.FirstOrDefault(s =>
+                s.Name.Equals(status, StringComparison.OrdinalIgnoreCase));
+
+            if (statusByName != null)
+            {
+                _logger.LogDebug("Resolved status '{Status}' to ID {StatusId}", status, statusByName.Id);
+                return (statusByName.Id.ToString(), statusByName);
+            }
+
+            // Status not found
+            _logger.LogError("Could not find status with name '{Status}'", status);
+            throw new ValidationException($"Status '{status}' not found.");
+        }
+        catch (ValidationException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to resolve status '{Status}'", status);
+            throw new ValidationException($"Failed to resolve status '{status}': {ex.Message}", ex);
+        }
+    }
+
     private static User? ParseAssignee(string? assignee)
     {
         if (string.IsNullOrEmpty(assignee))
@@ -1041,29 +1162,20 @@ public class IssueCommand
             // Set status if provided
             if (!string.IsNullOrEmpty(status))
             {
-                // Try to parse as ID first
-                if (int.TryParse(status, out var statusId))
+                try
                 {
-                    updateIssue.Status = new IssueStatus { Id = statusId, Name = status };
-                }
-                else
-                {
-                    // Resolve status name to ID
-                    var statuses = await _apiClient.GetIssueStatusesAsync(cancellationToken);
-                    var matchedStatus = statuses.FirstOrDefault(s =>
-                        s.Name.Equals(status, StringComparison.OrdinalIgnoreCase));
-
-                    if (matchedStatus != null)
+                    var (statusId, statusObj) = await ResolveStatusForEditAsync(status, cancellationToken);
+                    if (statusObj != null)
                     {
-                        updateIssue.Status = matchedStatus;
-                    }
-                    else
-                    {
-                        AnsiConsole.MarkupLine($"[red]Error:[/] Unknown status: {status}");
-                        return 1;
+                        updateIssue.Status = statusObj;
+                        fieldsToUpdate.Add("status");
                     }
                 }
-                fieldsToUpdate.Add("status");
+                catch (ValidationException ex)
+                {
+                    AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+                    return 1;
+                }
             }
 
             // Handle assignee
