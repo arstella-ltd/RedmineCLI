@@ -2,7 +2,6 @@ using System.CommandLine;
 
 using Microsoft.Extensions.Logging;
 
-using RedmineCLI.ApiClient;
 using RedmineCLI.Exceptions;
 using RedmineCLI.Formatters;
 using RedmineCLI.Models;
@@ -14,20 +13,20 @@ namespace RedmineCLI.Commands;
 
 public class ProjectCommand
 {
-    private readonly IRedmineApiClient _apiClient;
+    private readonly IRedmineService _redmineService;
     private readonly IConfigService _configService;
     private readonly ITableFormatter _tableFormatter;
     private readonly IJsonFormatter _jsonFormatter;
     private readonly ILogger<ProjectCommand> _logger;
 
     public ProjectCommand(
-        IRedmineApiClient apiClient,
+        IRedmineService redmineService,
         IConfigService configService,
         ITableFormatter tableFormatter,
         IJsonFormatter jsonFormatter,
         ILogger<ProjectCommand> logger)
     {
-        _apiClient = apiClient;
+        _redmineService = redmineService;
         _configService = configService;
         _tableFormatter = tableFormatter;
         _jsonFormatter = jsonFormatter;
@@ -35,14 +34,14 @@ public class ProjectCommand
     }
 
     public static Command Create(
-        IRedmineApiClient apiClient,
+        IRedmineService redmineService,
         IConfigService configService,
         ITableFormatter tableFormatter,
         IJsonFormatter jsonFormatter,
         ILogger<ProjectCommand> logger)
     {
         var command = new Command("project", "Manage projects");
-        var projectCommand = new ProjectCommand(apiClient, configService, tableFormatter, jsonFormatter, logger);
+        var projectCommand = new ProjectCommand(redmineService, configService, tableFormatter, jsonFormatter, logger);
 
         var listCommand = new Command("list", "List projects");
         listCommand.Aliases.Add("ls");
@@ -84,7 +83,7 @@ public class ProjectCommand
                 _tableFormatter.SetTimeFormat(TimeFormat.Utc);
             }
 
-            var projects = await _apiClient.GetProjectsAsync();
+            var projects = await _redmineService.GetProjectsAsync();
 
             // TODO: Implement public filtering when API supports it
             // For now, we display all projects

@@ -6,7 +6,6 @@ using System.Threading;
 
 using Microsoft.Extensions.Logging;
 
-using RedmineCLI.ApiClient;
 using RedmineCLI.Exceptions;
 using RedmineCLI.Formatters;
 using RedmineCLI.Models;
@@ -18,20 +17,20 @@ namespace RedmineCLI.Commands;
 
 public class IssueCommand
 {
-    private readonly IRedmineApiClient _apiClient;
+    private readonly IRedmineService _redmineService;
     private readonly IConfigService _configService;
     private readonly ITableFormatter _tableFormatter;
     private readonly IJsonFormatter _jsonFormatter;
     private readonly ILogger<IssueCommand> _logger;
 
     public IssueCommand(
-        IRedmineApiClient apiClient,
+        IRedmineService redmineService,
         IConfigService configService,
         ITableFormatter tableFormatter,
         IJsonFormatter jsonFormatter,
         ILogger<IssueCommand> logger)
     {
-        _apiClient = apiClient;
+        _redmineService = redmineService;
         _configService = configService;
         _tableFormatter = tableFormatter;
         _jsonFormatter = jsonFormatter;
@@ -40,14 +39,14 @@ public class IssueCommand
 
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(IssueCommand))]
     public static Command Create(
-        IRedmineApiClient apiClient,
+        IRedmineService redmineService,
         IConfigService configService,
         ITableFormatter tableFormatter,
         IJsonFormatter jsonFormatter,
         ILogger<IssueCommand> logger)
     {
         var command = new Command("issue", "Manage Redmine issues");
-        var issueCommand = new IssueCommand(apiClient, configService, tableFormatter, jsonFormatter, logger);
+        var issueCommand = new IssueCommand(redmineService, configService, tableFormatter, jsonFormatter, logger);
 
         var listCommand = new Command("list", "List issues with optional filters");
         listCommand.Aliases.Add("ls");
@@ -312,7 +311,7 @@ public class IssueCommand
                         cancellationToken);
                 }
 
-                issues = await _apiClient.SearchIssuesAsync(
+                issues = await _redmineService.SearchIssuesAsync(
                     search,
                     assignee,
                     statusFilter,
@@ -349,7 +348,7 @@ public class IssueCommand
                         cancellationToken);
                 }
 
-                issues = await _apiClient.GetIssuesAsync(filter, cancellationToken);
+                issues = await _redmineService.GetIssuesAsync(filter, cancellationToken);
             }
 
             if (json)
@@ -612,7 +611,7 @@ public class IssueCommand
             }
 
             // Fetch issue details with journals
-            var issue = await _apiClient.GetIssueAsync(issueId, true, cancellationToken);
+            var issue = await _redmineService.GetIssueAsync(issueId, true, cancellationToken);
 
             // Format output
             if (json)
@@ -705,37 +704,20 @@ public class IssueCommand
                 return 1;
             }
 
-            // Create issue object
-            var issue = new Issue
-            {
-                Subject = title,
-                Description = description
-            };
-
-            // Set project
-            issue.Project = ParseProject(project);
-            if (issue.Project == null)
+            // Validate required fields
+            if (string.IsNullOrEmpty(project))
             {
                 AnsiConsole.MarkupLine("[red]Error:[/] Project is required");
                 return 1;
             }
 
-            // Handle assignee
-            if (!string.IsNullOrEmpty(assignee))
-            {
-                if (assignee == "@me")
-                {
-                    var currentUser = await _apiClient.GetCurrentUserAsync(cancellationToken);
-                    issue.AssignedTo = currentUser;
-                }
-                else
-                {
-                    issue.AssignedTo = ParseAssignee(assignee);
-                }
-            }
-
-            // Create the issue
-            var createdIssue = await _apiClient.CreateIssueAsync(issue, cancellationToken);
+            // Create the issue using RedmineService
+            var createdIssue = await _redmineService.CreateIssueAsync(
+                project,
+                title,
+                description,
+                assignee,
+                cancellationToken);
 
             // Show success message with URL
             var profile = await _configService.GetActiveProfileAsync();
@@ -786,7 +768,7 @@ public class IssueCommand
             AnsiConsole.WriteLine();
 
             // Get projects list
-            var projects = await _apiClient.GetProjectsAsync(cancellationToken);
+            var projects = await _redmineService.GetProjectsAsync(cancellationToken);
             if (projects.Count == 0)
             {
                 AnsiConsole.MarkupLine("[red]Error:[/] No projects available");
@@ -831,11 +813,16 @@ public class IssueCommand
 
             if (assignToMe)
             {
-                var currentUser = await _apiClient.GetCurrentUserAsync(cancellationToken);
+                var currentUser = await _redmineService.GetCurrentUserAsync(cancellationToken);
                 issue.AssignedTo = currentUser;
             }
 
-            var createdIssue = await _apiClient.CreateIssueAsync(issue, cancellationToken);
+            var createdIssue = await _redmineService.CreateIssueAsync(
+                issue.Project.Identifier ?? issue.Project.Id.ToString(),
+                issue.Subject,
+                issue.Description,
+                assignToMe ? "@me" : null,
+                cancellationToken);
 
             // Show success message with URL
             var profile = await _configService.GetActiveProfileAsync();
@@ -880,7 +867,7 @@ public class IssueCommand
 
         if (assignee == "@me")
         {
-            var currentUser = await _apiClient.GetCurrentUserAsync(cancellationToken);
+            var currentUser = await _redmineService.GetCurrentUserAsync(cancellationToken);
             return currentUser.Id.ToString();
         }
 
@@ -893,7 +880,7 @@ public class IssueCommand
         // 文字列の場合はユーザー名として扱い、ユーザーIDを検索する
         try
         {
-            var users = await _apiClient.GetUsersAsync(null, cancellationToken);
+            var users = await _redmineService.GetUsersAsync(null, cancellationToken);
             var matchedUser = users.FirstOrDefault(u =>
                 u.DisplayName.Equals(assignee, StringComparison.OrdinalIgnoreCase) ||
                 u.Login?.Equals(assignee, StringComparison.OrdinalIgnoreCase) == true ||
@@ -945,7 +932,7 @@ public class IssueCommand
         {
             try
             {
-                var statuses = await _apiClient.GetIssueStatusesAsync(cancellationToken);
+                var statuses = await _redmineService.GetIssueStatusesAsync(cancellationToken);
                 if (statuses.Any(s => s.Id == statusId))
                 {
                     return status;
@@ -969,7 +956,7 @@ public class IssueCommand
         // Try to match by status name
         try
         {
-            var statuses = await _apiClient.GetIssueStatusesAsync(cancellationToken);
+            var statuses = await _redmineService.GetIssueStatusesAsync(cancellationToken);
             var matchedStatus = statuses.FirstOrDefault(s =>
                 s.Name.Equals(status, StringComparison.OrdinalIgnoreCase));
 
@@ -1007,7 +994,7 @@ public class IssueCommand
 
         try
         {
-            var statuses = await _apiClient.GetIssueStatusesAsync(cancellationToken);
+            var statuses = await _redmineService.GetIssueStatusesAsync(cancellationToken);
 
             // If numeric, validate it's a valid status ID
             if (int.TryParse(status, out var statusId))
@@ -1075,7 +1062,7 @@ public class IssueCommand
         // 文字列の場合はプロジェクト名として扱い、プロジェクト識別子を検索する
         try
         {
-            var projects = await _apiClient.GetProjectsAsync(cancellationToken);
+            var projects = await _redmineService.GetProjectsAsync(cancellationToken);
             var matchedProject = projects.FirstOrDefault(p =>
                 p.Name.Equals(project, StringComparison.OrdinalIgnoreCase) ||
                 p.Identifier?.Equals(project, StringComparison.OrdinalIgnoreCase) == true);
@@ -1152,14 +1139,14 @@ public class IssueCommand
             }
 
             // Fetch current issue to get the subject
-            var currentIssue = await _apiClient.GetIssueAsync(issueId, false, cancellationToken);
+            var currentIssue = await _redmineService.GetIssueAsync(issueId, false, cancellationToken);
 
-            // Create update object with only the fields to update
-            var updateIssue = new Issue();
-            updateIssue.Subject = currentIssue.Subject; // Always include subject
+            // Track what's being updated for display
             var fieldsToUpdate = new List<string>();
+            var updateDetails = new Dictionary<string, string>();
 
-            // Set status if provided
+            // Handle status
+            string? statusIdOrName = null;
             if (!string.IsNullOrEmpty(status))
             {
                 try
@@ -1167,8 +1154,9 @@ public class IssueCommand
                     var (statusId, statusObj) = await ResolveStatusForEditAsync(status, cancellationToken);
                     if (statusObj != null)
                     {
-                        updateIssue.Status = statusObj;
+                        statusIdOrName = status; // Pass the original status string to RedmineService
                         fieldsToUpdate.Add("status");
+                        updateDetails["status"] = statusObj.Name;
                     }
                 }
                 catch (ValidationException ex)
@@ -1179,33 +1167,41 @@ public class IssueCommand
             }
 
             // Handle assignee
+            string? assigneeIdOrUsername = null;
             if (!string.IsNullOrEmpty(assignee))
             {
-                var resolvedAssignee = await ResolveAssigneeAsync(assignee, cancellationToken);
-                updateIssue.AssignedTo = ParseAssignee(resolvedAssignee);
+                assigneeIdOrUsername = assignee; // Let RedmineService handle the resolution
                 fieldsToUpdate.Add("assignee");
+                var resolvedAssignee = await ResolveAssigneeAsync(assignee, cancellationToken);
+                updateDetails["assignee"] = resolvedAssignee ?? assignee;
             }
 
-            // Set done ratio if provided
+            // Handle done ratio
             if (doneRatio.HasValue)
             {
-                updateIssue.DoneRatio = doneRatio.Value;
                 fieldsToUpdate.Add("progress");
+                updateDetails["progress"] = $"{doneRatio.Value}%";
             }
 
             // Log what we're updating
             _logger.LogDebug("Updating issue {IssueId} fields: {Fields}", issueId, string.Join(", ", fieldsToUpdate));
 
-            // Update the issue
-            var updatedIssue = await _apiClient.UpdateIssueAsync(issueId, updateIssue, cancellationToken);
+            // Update the issue using RedmineService
+            var updatedIssue = await _redmineService.UpdateIssueAsync(
+                issueId,
+                null, // subject - keep existing
+                statusIdOrName,
+                assigneeIdOrUsername,
+                doneRatio,
+                cancellationToken);
 
             // Show success message with what was updated
             var updateSummary = string.Join(", ", fieldsToUpdate.Select(f =>
                 f switch
                 {
-                    "status" => $"status → {updateIssue.Status?.Name}",
-                    "assignee" => $"assignee → {updateIssue.AssignedTo?.DisplayName ?? updateIssue.AssignedTo?.Id.ToString() ?? "unknown"}",
-                    "progress" => $"progress → {updateIssue.DoneRatio}%",
+                    "status" => $"status → {updateDetails.GetValueOrDefault("status", "unknown")}",
+                    "assignee" => $"assignee → {updateDetails.GetValueOrDefault("assignee", "unknown")}",
+                    "progress" => $"progress → {updateDetails.GetValueOrDefault("progress", "unknown")}",
                     _ => f
                 }));
 
@@ -1259,7 +1255,7 @@ public class IssueCommand
             AnsiConsole.WriteLine();
 
             // Fetch current issue details
-            var currentIssue = await _apiClient.GetIssueAsync(issueId, false, cancellationToken);
+            var currentIssue = await _redmineService.GetIssueAsync(issueId, false, cancellationToken);
 
             // Show current values
             AnsiConsole.MarkupLine("[dim]Current values:[/]");
@@ -1300,7 +1296,7 @@ public class IssueCommand
                 switch (choice)
                 {
                     case "Status":
-                        var statuses = await _apiClient.GetIssueStatusesAsync(cancellationToken);
+                        var statuses = await _redmineService.GetIssueStatusesAsync(cancellationToken);
                         var selectedStatus = AnsiConsole.Prompt(
                             new SelectionPrompt<IssueStatus>()
                                 .Title("Select new status:")
@@ -1315,14 +1311,14 @@ public class IssueCommand
                         var assignToMe = AnsiConsole.Confirm("Assign to yourself?", false);
                         if (assignToMe)
                         {
-                            var currentUser = await _apiClient.GetCurrentUserAsync(cancellationToken);
+                            var currentUser = await _redmineService.GetCurrentUserAsync(cancellationToken);
                             updateIssue.AssignedTo = currentUser;
                             hasChanges = true;
                             AnsiConsole.MarkupLine($"[green]Will be assigned to: {currentUser.DisplayName}[/]");
                         }
                         else
                         {
-                            var users = await _apiClient.GetUsersAsync(null, cancellationToken);
+                            var users = await _redmineService.GetUsersAsync(null, cancellationToken);
                             var selectedUser = AnsiConsole.Prompt(
                                 new SelectionPrompt<User>()
                                     .Title("Select assignee:")
@@ -1351,8 +1347,18 @@ public class IssueCommand
                 }
             }
 
-            // Update the issue
-            var updatedIssue = await _apiClient.UpdateIssueAsync(issueId, updateIssue, cancellationToken);
+            // Update the issue using RedmineService
+            // Extract values from updateIssue
+            string? statusIdOrName = updateIssue.Status?.Id.ToString();
+            string? assigneeIdOrUsername = updateIssue.AssignedTo?.Id.ToString();
+
+            var updatedIssue = await _redmineService.UpdateIssueAsync(
+                issueId,
+                null, // subject - keep existing
+                statusIdOrName,
+                assigneeIdOrUsername,
+                updateIssue.DoneRatio,
+                cancellationToken);
 
             // Show success message
             var profile = await _configService.GetActiveProfileAsync();
@@ -1415,7 +1421,7 @@ public class IssueCommand
             }
 
             // Add comment via API
-            await _apiClient.AddCommentAsync(issueId, commentText, cancellationToken);
+            await _redmineService.AddCommentAsync(issueId, commentText, cancellationToken);
 
             // Show success message with issue URL
             await ShowSuccessMessageWithUrlAsync(issueId, "Comment added");
@@ -1557,7 +1563,7 @@ public class IssueCommand
         {
             _logger.LogDebug("Listing attachments for issue {IssueId}", issueId);
 
-            var issue = await _apiClient.GetIssueAsync(issueId, cancellationToken);
+            var issue = await _redmineService.GetIssueAsync(issueId, false, cancellationToken);
 
             if (issue.Attachments == null || issue.Attachments.Count == 0)
             {
@@ -1596,7 +1602,7 @@ public class IssueCommand
         {
             _logger.LogDebug("Downloading attachments for issue {IssueId}", issueId);
 
-            var issue = await _apiClient.GetIssueAsync(issueId, cancellationToken);
+            var issue = await _redmineService.GetIssueAsync(issueId, false, cancellationToken);
 
             if (issue.Attachments == null || issue.Attachments.Count == 0)
             {
@@ -1663,7 +1669,7 @@ public class IssueCommand
                         {
                             try
                             {
-                                using var stream = await _apiClient.DownloadAttachmentAsync(attachment.Id, cancellationToken);
+                                using var stream = await _redmineService.DownloadAttachmentAsync(attachment.Id, cancellationToken);
 
                                 string fileName;
                                 string filePath;
