@@ -895,7 +895,7 @@ public class IssueCommand
         {
             var users = await _apiClient.GetUsersAsync(null, cancellationToken);
             var matchedUser = users.FirstOrDefault(u =>
-                u.Name.Equals(assignee, StringComparison.OrdinalIgnoreCase) ||
+                u.DisplayName.Equals(assignee, StringComparison.OrdinalIgnoreCase) ||
                 u.Login?.Equals(assignee, StringComparison.OrdinalIgnoreCase) == true ||
                 (!string.IsNullOrEmpty(u.FirstName) && !string.IsNullOrEmpty(u.LastName) &&
                  ($"{u.FirstName} {u.LastName}".Equals(assignee, StringComparison.OrdinalIgnoreCase) ||
@@ -1058,8 +1058,7 @@ public class IssueCommand
             return new User { Id = assigneeId };
         }
 
-        // Name cannot be set directly, need to search for user by name
-        return null;
+        return new User { Name = assignee };
     }
 
     private async Task<string?> ResolveProjectAsync(string? project, CancellationToken cancellationToken)
@@ -1205,7 +1204,7 @@ public class IssueCommand
                 f switch
                 {
                     "status" => $"status → {updateIssue.Status?.Name}",
-                    "assignee" => $"assignee → {updateIssue.AssignedTo?.Name ?? updateIssue.AssignedTo?.Id.ToString() ?? "unknown"}",
+                    "assignee" => $"assignee → {updateIssue.AssignedTo?.DisplayName ?? updateIssue.AssignedTo?.Id.ToString() ?? "unknown"}",
                     "progress" => $"progress → {updateIssue.DoneRatio}%",
                     _ => f
                 }));
@@ -1265,7 +1264,7 @@ public class IssueCommand
             // Show current values
             AnsiConsole.MarkupLine("[dim]Current values:[/]");
             AnsiConsole.MarkupLine($"  Status: {currentIssue.Status?.Name ?? "None"}");
-            AnsiConsole.MarkupLine($"  Assignee: {currentIssue.AssignedTo?.Name ?? "None"}");
+            AnsiConsole.MarkupLine($"  Assignee: {currentIssue.AssignedTo?.DisplayName ?? "None"}");
             AnsiConsole.MarkupLine($"  Progress: {currentIssue.DoneRatio ?? 0}%");
             AnsiConsole.WriteLine();
 
@@ -1319,7 +1318,7 @@ public class IssueCommand
                             var currentUser = await _apiClient.GetCurrentUserAsync(cancellationToken);
                             updateIssue.AssignedTo = currentUser;
                             hasChanges = true;
-                            AnsiConsole.MarkupLine($"[green]Will be assigned to: {currentUser.Name}[/]");
+                            AnsiConsole.MarkupLine($"[green]Will be assigned to: {currentUser.DisplayName}[/]");
                         }
                         else
                         {
@@ -1327,11 +1326,11 @@ public class IssueCommand
                             var selectedUser = AnsiConsole.Prompt(
                                 new SelectionPrompt<User>()
                                     .Title("Select assignee:")
-                                    .UseConverter(u => u.Name)
+                                    .UseConverter(u => u.DisplayName)
                                     .AddChoices(users));
                             updateIssue.AssignedTo = selectedUser;
                             hasChanges = true;
-                            AnsiConsole.MarkupLine($"[green]Will be assigned to: {selectedUser.Name}[/]");
+                            AnsiConsole.MarkupLine($"[green]Will be assigned to: {selectedUser.DisplayName}[/]");
                         }
                         break;
 

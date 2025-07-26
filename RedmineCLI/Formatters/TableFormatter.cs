@@ -63,7 +63,7 @@ public class TableFormatter : ITableFormatter
                     Markup.Escape(issue.Subject ?? string.Empty),
                     Markup.Escape(issue.Priority?.Name ?? "Normal"),
                     Markup.Escape(issue.Status?.Name ?? "Unknown"),
-                    Markup.Escape(issue.AssignedTo?.Name ?? "Unassigned"),
+                    Markup.Escape(issue.AssignedTo?.DisplayName ?? "Unassigned"),
                     Markup.Escape(issue.Project?.Name ?? "No Project"),
                     issue.DueDate.HasValue ? _timeHelper.GetLocalTime(issue.DueDate.Value, "yyyy-MM-dd") : "Not set",
                     _timeHelper.FormatTime(issue.UpdatedOn, _timeFormat)
@@ -76,7 +76,7 @@ public class TableFormatter : ITableFormatter
                     Markup.Escape(issue.Subject ?? string.Empty),
                     Markup.Escape(issue.Priority?.Name ?? "Normal"),
                     Markup.Escape(issue.Status?.Name ?? "Unknown"),
-                    Markup.Escape(issue.AssignedTo?.Name ?? "Unassigned"),
+                    Markup.Escape(issue.AssignedTo?.DisplayName ?? "Unassigned"),
                     Markup.Escape(issue.Project?.Name ?? "No Project"),
                     issue.DueDate.HasValue ? _timeHelper.GetLocalTime(issue.DueDate.Value, "yyyy-MM-dd") : "Not set",
                     _timeHelper.FormatTime(issue.UpdatedOn, _timeFormat)
@@ -111,7 +111,7 @@ public class TableFormatter : ITableFormatter
 
         grid.AddRow("[bold]Status:[/]", Markup.Escape(issue.Status?.Name ?? "Unknown"));
         grid.AddRow("[bold]Priority:[/]", Markup.Escape(issue.Priority?.Name ?? "Normal"));
-        grid.AddRow("[bold]Assignee:[/]", Markup.Escape(issue.AssignedTo?.Name ?? "Unassigned"));
+        grid.AddRow("[bold]Assignee:[/]", Markup.Escape(issue.AssignedTo?.DisplayName ?? "Unassigned"));
         grid.AddRow("[bold]Project:[/]", Markup.Escape(issue.Project?.Name ?? "No Project"));
         grid.AddRow("[bold]Progress:[/]", $"{issue.DoneRatio ?? 0}%");
         grid.AddRow("[bold]Due Date:[/]", issue.DueDate.HasValue ? _timeHelper.GetLocalTime(issue.DueDate.Value, "yyyy-MM-dd") : "Not set");
@@ -136,7 +136,7 @@ public class TableFormatter : ITableFormatter
             foreach (var journal in issue.Journals.OrderBy(j => j.CreatedOn))
             {
                 AnsiConsole.WriteLine();
-                AnsiConsole.MarkupLine($"[grey]#{journal.Id} - {Markup.Escape(journal.User?.Name ?? "Unknown")} - {_timeHelper.FormatTime(journal.CreatedOn, _timeFormat)}[/]");
+                AnsiConsole.MarkupLine($"[grey]#{journal.Id} - {Markup.Escape(journal.User?.DisplayName ?? "Unknown")} - {_timeHelper.FormatTime(journal.CreatedOn, _timeFormat)}[/]");
 
                 // Show changes
                 if (journal.Details != null && journal.Details.Count > 0)
@@ -180,7 +180,7 @@ public class TableFormatter : ITableFormatter
                     $"#{attachment.Id}",
                     Markup.Escape(attachment.Filename),
                     FormatFileSize(attachment.Filesize),
-                    Markup.Escape(attachment.Author?.Name ?? "Unknown"),
+                    Markup.Escape(attachment.Author?.DisplayName ?? "Unknown"),
                     _timeHelper.FormatTime(attachment.CreatedOn, _timeFormat)
                 );
             }
@@ -246,7 +246,7 @@ public class TableFormatter : ITableFormatter
 
         if (attachment.Author != null)
         {
-            grid.AddRow("[bold]Author:[/]", Markup.Escape(attachment.Author.Name));
+            grid.AddRow("[bold]Author:[/]", Markup.Escape(attachment.Author.DisplayName));
         }
 
         grid.AddRow("[bold]Created:[/]", _timeHelper.FormatTime(attachment.CreatedOn, _timeFormat));
@@ -373,7 +373,7 @@ public class TableFormatter : ITableFormatter
             table.AddRow(
                 user.Id.ToString(),
                 Markup.Escape(user.Login ?? string.Empty),
-                Markup.Escape(user.Name),
+                Markup.Escape(user.DisplayName),
                 Markup.Escape(user.Email ?? string.Empty),
                 _timeHelper.FormatTime(user.CreatedOn, _timeFormat)
             );

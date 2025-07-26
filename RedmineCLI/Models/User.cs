@@ -10,6 +10,9 @@ public class User
     [JsonPropertyName("login")]
     public string Login { get; set; } = string.Empty;
 
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
+
     [JsonPropertyName("firstname")]
     public string? FirstName { get; set; }
 
@@ -23,15 +26,21 @@ public class User
     public string? Mail => Email;
 
     [JsonIgnore]
-    public string Name
+    public string DisplayName
     {
         get
         {
+            // If name is provided (e.g., from issues API), use it
+            if (!string.IsNullOrEmpty(Name))
+            {
+                return Name;
+            }
+            // Otherwise, build from firstname and lastname (e.g., from users API)
             if (!string.IsNullOrEmpty(FirstName) || !string.IsNullOrEmpty(LastName))
             {
                 return $"{FirstName} {LastName}".Trim();
             }
-            // Fallback to login if name is not available
+            // Fallback to login
             return Login ?? string.Empty;
         }
     }
