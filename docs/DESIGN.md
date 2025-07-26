@@ -501,6 +501,44 @@ public class Attachment
     public DateTime CreatedOn { get; set; }
 }
 
+// SearchResponse.cs (検索APIレスポンス)
+public class SearchResponse
+{
+    [JsonPropertyName("results")]
+    public List<SearchResult> Results { get; set; } = new();
+    
+    [JsonPropertyName("total_count")]
+    public int TotalCount { get; set; }
+    
+    [JsonPropertyName("offset")]
+    public int Offset { get; set; }
+    
+    [JsonPropertyName("limit")]
+    public int Limit { get; set; }
+}
+
+// SearchResult.cs (検索結果アイテム)
+public class SearchResult
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+    
+    [JsonPropertyName("title")]
+    public string Title { get; set; } = string.Empty;
+    
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = string.Empty;
+    
+    [JsonPropertyName("url")]
+    public string Url { get; set; } = string.Empty;
+    
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+    
+    [JsonPropertyName("datetime")]
+    public DateTime? DateTime { get; set; }
+}
+
 // Config.cs (VYaml対応)
 [YamlObject]
 public partial class Config
@@ -565,6 +603,10 @@ VYamlについては、[YamlObject]属性による自動生成フォーマッタ
 [JsonSerializable(typeof(List<JournalDetail>))]
 [JsonSerializable(typeof(Attachment))]
 [JsonSerializable(typeof(List<Attachment>))]
+[JsonSerializable(typeof(SearchResponse))]
+[JsonSerializable(typeof(SearchResult))]
+[JsonSerializable(typeof(List<SearchResult>))]
+[JsonSerializable(typeof(AttachmentResponse))]
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     WriteIndented = true,
@@ -617,6 +659,13 @@ public class IssueUpdateData
 ### サービスインターフェース
 
 ```csharp
+// IErrorMessageService.cs
+public interface IErrorMessageService
+{
+    string GetUserFriendlyMessage(Exception ex);
+    string GetRecoveryHint(Exception ex);
+}
+
 // IConfigService.cs
 public interface IConfigService
 {
@@ -786,6 +835,16 @@ services.AddHttpClient<IRedmineApiClient, RedmineApiClient>()
         .WaitAndRetryAsync(3, retryAttempt => 
             TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))));
 ```
+
+## 実装状況の注記
+
+### 未実装の機能
+1. **拡張機能システム**: ExtensionExecutorと関連機能は未実装
+2. **RedmineService**: ビジネスロジック層は省略され、コマンドが直接APIClientを使用
+
+### 追加実装
+1. **検索機能**: `--search`オプションによるチケット検索
+2. **エラーメッセージサービス**: ユーザーフレンドリーなエラーメッセージの提供
 
 ## テスト戦略
 

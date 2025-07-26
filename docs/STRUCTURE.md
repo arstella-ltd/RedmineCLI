@@ -11,7 +11,7 @@ RedmineCLI/
 ├── .gitignore                        # Git除外設定
 ├── .editorconfig                     # エディタ設定
 ├── global.json                       # .NET SDKバージョン指定
-├── Directory.Build.props             # 共通ビルド設定
+├── Directory.Build.props             # 共通ビルド設定（未作成）
 ├── CLAUDE.md                         # Claude Code向けガイドライン
 ├── RedmineCLI/                       # メインプロジェクト
 ├── RedmineCLI.Tests/                 # 単体テストプロジェクト
@@ -84,17 +84,18 @@ RedmineCLI/                           # メインプロジェクトディレク�
 │   ├── ImageReferenceDetector.cs     # 画像参照検出ユーティリティ
 │   ├── TerminalCapabilityDetector.cs # ターミナル機能検出ユーティリティ
 │   └── SixelImageRenderer.cs         # Sixelプロトコル画像レンダリング
-├── Extensions/                       # 拡張機能サポート（今後実装）
-│   ├── IExtensionExecutor.cs         # 拡張機能実行インターフェース
-│   └── ExtensionExecutor.cs          # 拡張機能実行実装
-└── Resources/                        # 埋め込みリソース（今後実装）
+├── Extensions/                       # 拡張機能サポート（未実装）
+│   ├── IExtensionExecutor.cs         # 拡張機能実行インターフェース（未実装）
+│   └── ExtensionExecutor.cs          # 拡張機能実行実装（未実装）
+└── Resources/                        # 埋め込みリソース（未実装）
     └── THIRD-PARTY-NOTICES.txt       # ビルド時埋め込み用
 
 RedmineCLI.Tests/                     # 単体テストプロジェクト
 ├── RedmineCLI.Tests.csproj
 ├── ApiClient/
 │   ├── RedmineApiClientTests.cs      # APIクライアントのテスト  
-│   └── SerializationTests.cs         # JSONシリアライゼーションテスト
+│   ├── SerializationTests.cs         # JSONシリアライゼーションテスト
+│   └── ApiResponsesTests.cs          # APIレスポンスモデルのテスト
 ├── Models/
 │   ├── ConfigTests.cs                # 設定モデルのテスト
 │   ├── IssueTests.cs                 # Issueモデルのテスト
@@ -113,6 +114,7 @@ RedmineCLI.Tests/                     # 単体テストプロジェクト
 │   └── JsonFormatterTests.cs         # JSONフォーマッターのテスト
 ├── Services/
 │   ├── ConfigServiceTests.cs         # 設定サービスのテスト
+│   ├── ErrorMessageServiceTests.cs   # エラーメッセージサービスのテスト
 │   └── RedmineServiceTests.cs        # (今後実装予定)
 ├── Exceptions/
 │   └── ExceptionTests.cs             # カスタム例外のテスト

@@ -25,7 +25,7 @@
 - **Microsoft.Extensions.Logging.Console** v9.0.7
 - **Microsoft.Extensions.Configuration** v9.0.7
 - **Microsoft.Extensions.Configuration.Binder** v9.0.7
-- **Polly.Extensions.Http** v3.0.0
+- **Polly.Extensions.Http** v3.0.0（未使用）
 - **System.Text.Json** v9.0.7（Source Generator対応）
 - **System.Security.Cryptography.ProtectedData** v9.0.7（Windows DPAPI）
 - **System.IO.Abstractions** v22.0.15
@@ -179,6 +179,9 @@ redmine issue list --absolute-time              # ローカル時刻で表示
 redmine issue list -a @me -s open -p myproject # 複数条件の組み合わせ
 redmine issue list --web                        # ブラウザで開く（または -w）
 redmine issue list -a @me --web                # 条件付きでブラウザで開く
+redmine issue list --search "bug fix"           # タイトルと説明文で検索
+redmine issue list --sort priority:desc         # 優先度で降順ソート
+redmine issue list --sort updated_on:desc,id    # 更新日時で降順、次にIDでソート
 
 redmine issue view <ID> [--json] [--web] [--image]  # --imageでSixel画像表示
 redmine issue create [-p PROJECT] [-t TITLE] [--description DESC] [-a USER] [--web]

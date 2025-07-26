@@ -73,6 +73,13 @@ public class LlmsCommand
             AnsiConsole.WriteLine("redmine issue list -s open");
             AnsiConsole.WriteLine("redmine issue list -s closed");
             AnsiConsole.WriteLine();
+            AnsiConsole.WriteLine("# Search issues by title or description");
+            AnsiConsole.WriteLine("redmine issue list --search \"bug fix\"");
+            AnsiConsole.WriteLine();
+            AnsiConsole.WriteLine("# Sort issues");
+            AnsiConsole.WriteLine("redmine issue list --sort priority:desc");
+            AnsiConsole.WriteLine("redmine issue list --sort updated_on:desc,id");
+            AnsiConsole.WriteLine();
             AnsiConsole.WriteLine("# View issue details");
             AnsiConsole.WriteLine("redmine issue view <issue-id>");
             AnsiConsole.WriteLine();
@@ -297,6 +304,8 @@ public class LlmsCommand
         AnsiConsole.WriteLine("- `-a, --assignee` : Filter by assignee (username, ID, or @me)");
         AnsiConsole.WriteLine("- `-s, --status` : Filter by status (open, closed, all, or status ID)");
         AnsiConsole.WriteLine("- `-p, --project` : Filter by project (identifier or ID)");
+        AnsiConsole.WriteLine("- `--search` : Search issues by title or description");
+        AnsiConsole.WriteLine("- `--sort` : Sort results by field[:direction] (e.g., priority:desc, updated_on:desc,id)");
         AnsiConsole.WriteLine("- `-L, --limit` : Limit number of results (default: 30)");
         AnsiConsole.WriteLine("- `--offset` : Offset for pagination");
         AnsiConsole.WriteLine("- `--json` : Output in JSON format");
