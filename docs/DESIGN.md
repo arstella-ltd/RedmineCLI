@@ -341,6 +341,55 @@ APIキーベースの認証により安全な通信を実現し、設定はYAML�
   - 単純な出力処理のため、基本的なエラーハンドリングのみ
   - ログ出力によるデバッグサポート
 
+### List Commands Design (User/Project/Status)
+- **責任**: Redmineに登録されているマスターデータの一覧表示
+- **主要コマンド**
+  - `user list` / `user ls`: ユーザー一覧表示
+  - `project list` / `project ls`: プロジェクト一覧表示
+  - `status list` / `status ls`: チケットステータス一覧表示
+- **共通オプション**
+  - `--json`: JSON形式で出力
+  - `--limit <number>` / `-L <number>`: 表示件数制限（ユーザー一覧のみ）
+  - `--filter <keyword>` / `-f <keyword>`: キーワードフィルタ（ユーザー/プロジェクトのみ）
+- **ユーザー一覧コマンド詳細**
+  - **表示項目**: ID、ログイン名、氏名、メールアドレス、作成日時
+  - **フィルタリング**: ログイン名または氏名での部分一致検索
+  - **APIエンドポイント**: `/users.json`
+  - **ページネーション対応**: limit/offsetパラメータ使用
+- **プロジェクト一覧コマンド詳細**
+  - **表示項目**: ID、識別子、名前、説明、作成日時
+  - **フィルタリング**: 名前または識別子での部分一致検索
+  - **追加オプション**: `--public` - 公開プロジェクトのみ表示
+  - **APIエンドポイント**: `/projects.json`
+- **ステータス一覧コマンド詳細**
+  - **表示項目**: ID、名前、終了ステータス、デフォルトステータス
+  - **フィルタリング**: なし（通常、ステータス数は少ないため）
+  - **APIエンドポイント**: `/issue_statuses.json`
+- **表示フォーマット設計**
+  ```
+  # ユーザー一覧（テーブル形式）
+  ID    LOGIN       NAME            EMAIL                   CREATED
+  1     admin       Administrator   admin@example.com       2024-01-01 10:00
+  2     johndoe     John Doe        john@example.com        2024-01-15 14:30
+  
+  # プロジェクト一覧（テーブル形式）
+  ID    IDENTIFIER      NAME                    DESCRIPTION                             CREATED
+  1     main-project    Main Project            Main development project                2024-01-01 10:00
+  2     sub-project     Sub Project             Sub project for testing                 2024-02-01 09:00
+  
+  # ステータス一覧（テーブル形式）
+  ID    NAME            CLOSED    DEFAULT
+  1     New             No        Yes
+  2     In Progress     No        No
+  3     Resolved        No        No
+  4     Closed          Yes       No
+  ```
+- **実装上の考慮事項**
+  - 既存のIRedmineApiClientインターフェースを使用
+  - TableFormatterとJsonFormatterを活用した出力
+  - 権限エラー（403 Forbidden）の適切なハンドリング
+  - ユーザー一覧は管理者権限が必要な場合があることを考慮
+
 ### API Client
 - **責任**: Redmine REST APIとの通信
 - **主要機能**
