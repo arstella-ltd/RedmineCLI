@@ -71,7 +71,7 @@ public class IssueCreateCommandTests
 
         // Act - Note: In actual test, we need to mock console input
         // For now, we test the method directly
-        var result = await _issueCommand.CreateAsync(1, "Test Issue", "Test Description", null, CancellationToken.None);
+        var result = await _issueCommand.CreateAsync("1", "Test Issue", "Test Description", null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -109,7 +109,7 @@ public class IssueCreateCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.CreateAsync(1, title, description, assignee, CancellationToken.None);
+        var result = await _issueCommand.CreateAsync(projectId, title, description, assignee, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -140,7 +140,7 @@ public class IssueCreateCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.CreateAsync(1, "Test Issue", null, null, CancellationToken.None);
+        var result = await _issueCommand.CreateAsync("1", "Test Issue", null, null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -211,11 +211,12 @@ public class IssueCreateCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.CreateAsync(1, "Test Issue", "Description", "@me", CancellationToken.None);
+        var result = await _issueCommand.CreateAsync("1", "Test Issue", "Description", "@me", false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
-        await _redmineService.Received(1).GetCurrentUserAsync(Arg.Any<CancellationToken>());
+        // GetCurrentUserAsync is now called inside RedmineService.CreateIssueAsync when assignee is "@me"
+        // So we don't need to verify it was called directly from IssueCommand
         await _redmineService.Received(1).CreateIssueAsync("1", "Test Issue", "Description", "@me", Arg.Any<CancellationToken>());
     }
 

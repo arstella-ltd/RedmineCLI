@@ -70,7 +70,7 @@ public class IssueEditCommandTests
             .Returns(Task.FromResult(statusList));
         _redmineService.UpdateIssueAsync(
             issueId,
-            "Test Issue",
+            null,
             "in-progress",
             null,
             null,
@@ -86,7 +86,7 @@ public class IssueEditCommandTests
         await _redmineService.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
         await _redmineService.Received(1).UpdateIssueAsync(
             issueId,
-            "Test Issue",
+            null,
             "in-progress",
             null,
             null,
@@ -125,7 +125,7 @@ public class IssueEditCommandTests
             .Returns(Task.FromResult(currentIssue));
         _redmineService.UpdateIssueAsync(
             issueId,
-            "Test Issue",
+            null,
             null,
             newAssignee,
             null,
@@ -141,7 +141,7 @@ public class IssueEditCommandTests
         await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
         await _redmineService.Received(1).UpdateIssueAsync(
             issueId,
-            "Test Issue",
+            null,
             null,
             newAssignee,
             null,
@@ -174,7 +174,7 @@ public class IssueEditCommandTests
             .Returns(Task.FromResult(currentIssue));
         _redmineService.UpdateIssueAsync(
             issueId,
-            "Test Issue",
+            null,
             null,
             null,
             doneRatio,
@@ -189,7 +189,7 @@ public class IssueEditCommandTests
         await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
         await _redmineService.Received(1).UpdateIssueAsync(
             issueId,
-            "Test Issue",
+            null,
             null,
             null,
             doneRatio,
@@ -231,7 +231,7 @@ public class IssueEditCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
         _redmineService.UpdateIssueAsync(
             issueId,
-            "Updated Issue",
+            null,
             newStatus,
             null,
             null,
@@ -244,7 +244,7 @@ public class IssueEditCommandTests
         // Assert
         result.Should().Be(0);
         await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
-        await _redmineService.Received(1).UpdateIssueAsync(issueId, "Updated Issue", newStatus, null, null, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).UpdateIssueAsync(issueId, null, newStatus, null, null, Arg.Any<CancellationToken>());
         await _configService.Received(1).GetActiveProfileAsync();
     }
 
@@ -292,7 +292,7 @@ public class IssueEditCommandTests
             .Returns(Task.FromResult(currentUser));
         _redmineService.UpdateIssueAsync(
             issueId,
-            "Test Issue",
+            null,
             null,
             "@me",
             null,
@@ -305,10 +305,10 @@ public class IssueEditCommandTests
         // Assert
         result.Should().Be(0);
         await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
-        await _redmineService.Received(1).GetCurrentUserAsync(Arg.Any<CancellationToken>());
+        // GetCurrentUserAsync is now called inside RedmineService.UpdateIssueAsync when assignee is "@me"
         await _redmineService.Received(1).UpdateIssueAsync(
             issueId,
-            "Test Issue",
+            null,
             null,
             "@me",
             null,
@@ -359,7 +359,7 @@ public class IssueEditCommandTests
             .Returns(Task.FromResult(statusList));
         _redmineService.UpdateIssueAsync(
             issueId,
-            "Test Issue",
+            null,
             newStatus,
             newAssignee,
             doneRatio,
@@ -375,7 +375,7 @@ public class IssueEditCommandTests
         await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
         await _redmineService.Received(1).UpdateIssueAsync(
             issueId,
-            "Test Issue",
+            null,
             newStatus,
             newAssignee,
             doneRatio,
@@ -414,7 +414,7 @@ public class IssueEditCommandTests
         // Assert
         result.Should().Be(1);
         await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
-        await _redmineService.Received(1).UpdateIssueAsync(issueId, "Test Issue", "Closed", null, null, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).UpdateIssueAsync(issueId, null, "Closed", null, null, Arg.Any<CancellationToken>());
     }
 
     [Fact]
