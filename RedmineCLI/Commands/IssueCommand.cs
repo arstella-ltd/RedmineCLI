@@ -1058,7 +1058,8 @@ public class IssueCommand
             return new User { Id = assigneeId };
         }
 
-        return new User { Name = assignee };
+        // Name cannot be set directly, need to search for user by name
+        return null;
     }
 
     private async Task<string?> ResolveProjectAsync(string? project, CancellationToken cancellationToken)

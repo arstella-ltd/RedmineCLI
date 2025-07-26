@@ -274,7 +274,8 @@ public class RedmineApiClient : IRedmineApiClient
             ["status_id"] = filter.StatusId,
             ["limit"] = filter.Limit?.ToString(),
             ["offset"] = filter.Offset?.ToString(),
-            ["sort"] = filter.Sort
+            ["sort"] = filter.Sort,
+            ["include"] = "attachments,relations"
         });
 
         var path = $"/issues.json{queryString}";

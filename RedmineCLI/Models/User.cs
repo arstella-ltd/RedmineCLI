@@ -7,11 +7,8 @@ public class User
     [JsonPropertyName("id")]
     public int Id { get; set; }
 
-    [JsonPropertyName("name")]
-    public string Name { get; set; } = string.Empty;
-
     [JsonPropertyName("login")]
-    public string? Login { get; set; }
+    public string Login { get; set; } = string.Empty;
 
     [JsonPropertyName("firstname")]
     public string? FirstName { get; set; }
@@ -24,6 +21,20 @@ public class User
 
     [JsonIgnore]
     public string? Mail => Email;
+
+    [JsonIgnore]
+    public string Name
+    {
+        get
+        {
+            if (!string.IsNullOrEmpty(FirstName) || !string.IsNullOrEmpty(LastName))
+            {
+                return $"{FirstName} {LastName}".Trim();
+            }
+            // Fallback to login if name is not available
+            return Login ?? string.Empty;
+        }
+    }
 
     [JsonPropertyName("created_on")]
     public DateTime CreatedOn { get; set; }

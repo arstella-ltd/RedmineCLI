@@ -64,7 +64,8 @@ public class UserCommandTests
             {
                 Id = 1,
                 Login = "admin",
-                Name = "Administrator",
+                FirstName = "Administrator",
+                LastName = "",
                 Email = "admin@example.com",
                 CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0, DateTimeKind.Utc)
             },
@@ -72,7 +73,8 @@ public class UserCommandTests
             {
                 Id = 2,
                 Login = "johndoe",
-                Name = "John Doe",
+                FirstName = "John",
+                LastName = "Doe",
                 Email = "john@example.com",
                 CreatedOn = new DateTime(2024, 1, 15, 14, 30, 0, DateTimeKind.Utc)
             }
@@ -103,7 +105,8 @@ public class UserCommandTests
             {
                 Id = 1,
                 Login = "admin",
-                Name = "Administrator",
+                FirstName = "Administrator",
+                LastName = "",
                 Email = "admin@example.com",
                 CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0, DateTimeKind.Utc)
             }
@@ -134,7 +137,8 @@ public class UserCommandTests
             {
                 Id = 1,
                 Login = "admin",
-                Name = "Administrator",
+                FirstName = "Administrator",
+                LastName = "",
                 Email = "admin@example.com",
                 CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0, DateTimeKind.Utc)
             }
@@ -185,7 +189,8 @@ public class UserCommandTests
             {
                 Id = 1,
                 Login = "admin",
-                Name = "Administrator",
+                FirstName = "Administrator",
+                LastName = "",
                 Email = "admin@example.com",
                 CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0, DateTimeKind.Utc)
             }
