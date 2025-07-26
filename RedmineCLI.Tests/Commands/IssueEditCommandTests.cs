@@ -184,7 +184,7 @@ public class IssueEditCommandTests
     {
         // Arrange
         var issueId = 321;
-        var newStatus = "closed";
+        var newStatus = "Closed"; // Use actual status name instead of keyword
         var statusList = new List<IssueStatus>
         {
             new IssueStatus { Id = 1, Name = "New" },
@@ -385,7 +385,7 @@ public class IssueEditCommandTests
             .Returns(Task.FromException<Issue>(new RedmineApiException(404, "Issue not found")));
 
         // Act
-        var result = await _issueCommand.EditAsync(issueId, "closed", null, null, false, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, "Closed", null, null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);

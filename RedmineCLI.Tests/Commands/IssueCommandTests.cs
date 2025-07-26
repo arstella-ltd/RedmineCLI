@@ -652,7 +652,7 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == null && f.Limit == 30), Arg.Any<CancellationToken>())
+        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == "*" && f.Limit == 30), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -661,7 +661,174 @@ public class IssueCommandTests
         // Assert
         result.Should().Be(0);
         await _apiClient.Received(1).GetIssuesAsync(
-            Arg.Is<IssueFilter>(f => f.StatusId == null && f.Limit == 30),
+            Arg.Is<IssueFilter>(f => f.StatusId == "*" && f.Limit == 30),
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
+    }
+
+    [Fact]
+    public async Task List_Should_ValidateAndUseStatusId_When_NumericStatusProvided()
+    {
+        // Arrange
+        var statusId = "3";
+        var statuses = new List<IssueStatus>
+        {
+            new IssueStatus { Id = 1, Name = "New" },
+            new IssueStatus { Id = 3, Name = "In Progress" },
+            new IssueStatus { Id = 5, Name = "Closed" }
+        };
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "In Progress Issue",
+                Status = new IssueStatus { Id = 3, Name = "In Progress" },
+                Project = new Project { Id = 1, Name = "Test Project" }
+            }
+        };
+
+        _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(statuses));
+        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == statusId), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(null, statusId, null, null, null, false, false, false, null, null, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _apiClient.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.StatusId == statusId),
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
+    }
+
+    [Fact]
+    public async Task List_Should_ResolveStatusNameToId_When_StatusNameProvided()
+    {
+        // Arrange
+        var statusName = "In Progress";
+        var expectedStatusId = "2";
+        var statuses = new List<IssueStatus>
+        {
+            new IssueStatus { Id = 1, Name = "New" },
+            new IssueStatus { Id = 2, Name = "In Progress" },
+            new IssueStatus { Id = 5, Name = "Closed" }
+        };
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "In Progress Issue",
+                Status = new IssueStatus { Id = 2, Name = "In Progress" },
+                Project = new Project { Id = 1, Name = "Test Project" }
+            }
+        };
+
+        _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(statuses));
+        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == expectedStatusId), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(null, statusName, null, null, null, false, false, false, null, null, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _apiClient.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.StatusId == expectedStatusId),
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
+    }
+
+    [Fact]
+    public async Task List_Should_ReturnError_When_InvalidStatusIdProvided()
+    {
+        // Arrange
+        var invalidStatusId = "999";
+        var statuses = new List<IssueStatus>
+        {
+            new IssueStatus { Id = 1, Name = "New" },
+            new IssueStatus { Id = 2, Name = "In Progress" },
+            new IssueStatus { Id = 5, Name = "Closed" }
+        };
+
+        _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(statuses));
+
+        // Act
+        var result = await _issueCommand.ListAsync(null, invalidStatusId, null, null, null, false, false, false, null, null, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(1); // Error
+        await _apiClient.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
+        await _apiClient.DidNotReceive().GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task List_Should_ReturnError_When_UnknownStatusNameProvided()
+    {
+        // Arrange
+        var unknownStatus = "Unknown Status";
+        var statuses = new List<IssueStatus>
+        {
+            new IssueStatus { Id = 1, Name = "New" },
+            new IssueStatus { Id = 2, Name = "In Progress" },
+            new IssueStatus { Id = 5, Name = "Closed" }
+        };
+
+        _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(statuses));
+
+        // Act
+        var result = await _issueCommand.ListAsync(null, unknownStatus, null, null, null, false, false, false, null, null, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(1); // Error
+        await _apiClient.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
+        await _apiClient.DidNotReceive().GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task List_Should_UseCaseInsensitiveMatching_When_StatusNameProvided()
+    {
+        // Arrange
+        var statusName = "in progress"; // lowercase
+        var expectedStatusId = "2";
+        var statuses = new List<IssueStatus>
+        {
+            new IssueStatus { Id = 1, Name = "New" },
+            new IssueStatus { Id = 2, Name = "In Progress" },
+            new IssueStatus { Id = 5, Name = "Closed" }
+        };
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "In Progress Issue",
+                Status = new IssueStatus { Id = 2, Name = "In Progress" },
+                Project = new Project { Id = 1, Name = "Test Project" }
+            }
+        };
+
+        _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(statuses));
+        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == expectedStatusId), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(null, statusName, null, null, null, false, false, false, null, null, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _apiClient.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.StatusId == expectedStatusId),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
     }
