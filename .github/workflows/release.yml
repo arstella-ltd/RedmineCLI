@@ -82,6 +82,8 @@ jobs:
     needs: create-release
     permissions:
       contents: write
+    env:
+      ASSET_NAME_PREFIX: redmine-cli
     strategy:
       matrix:
         config:
@@ -89,27 +91,22 @@ jobs:
             os: windows-latest
             rid: win-x64
             output: redmine.exe
-            asset_name: redmine-cli-win-x64
           - name: "macOS x64"
             os: macos-latest
             rid: osx-x64
             output: redmine
-            asset_name: redmine-cli-osx-x64
           - name: "macOS ARM64"
             os: macos-latest
             rid: osx-arm64
             output: redmine
-            asset_name: redmine-cli-osx-arm64
           - name: "Linux x64"
             os: ubuntu-latest
             rid: linux-x64
             output: redmine
-            asset_name: redmine-cli-linux-x64
           - name: "Linux ARM64"
             os: ubuntu-24.04-arm
             rid: linux-arm64
             output: redmine
-            asset_name: redmine-cli-linux-arm64
 
     steps:
     - name: Checkout code
@@ -151,21 +148,21 @@ jobs:
       shell: pwsh
       run: |
         cd publish/${{ matrix.config.rid }}
-        Compress-Archive -Path ${{ matrix.config.output }} -DestinationPath ../../${{ matrix.config.asset_name }}.zip
+        Compress-Archive -Path ${{ matrix.config.output }} -DestinationPath ../../${{ env.ASSET_NAME_PREFIX }}-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip
         cd ../..
 
     - name: Compress binary to zip (Unix)
       if: runner.os != 'Windows'
       run: |
         cd publish/${{ matrix.config.rid }}
-        zip -j ../../${{ matrix.config.asset_name }}.zip ${{ matrix.config.output }}
+        zip -j ../../${{ env.ASSET_NAME_PREFIX }}-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip ${{ matrix.config.output }}
         cd ../..
 
     - name: Upload Release Assets
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          ${{ matrix.config.asset_name }}.zip
+          ${{ env.ASSET_NAME_PREFIX }}-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip
 
   generate-checksums:
     name: Generate Checksums
@@ -175,6 +172,13 @@ jobs:
       contents: write
     
     steps:
+    - name: Extract version from tag
+      id: extract_version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Version: $VERSION"
+    
     - name: Download release assets
       uses: robinraju/release-downloader@v1.11
       with:
@@ -185,13 +189,13 @@ jobs:
     - name: Generate checksums
       run: |
         cd downloads
-        sha256sum *.zip > ../checksums.txt
+        sha256sum *.zip > ../redmine-cli-${{ steps.extract_version.outputs.version }}-checksums.txt
         cd ..
-        cat checksums.txt
+        cat redmine-cli-${{ steps.extract_version.outputs.version }}-checksums.txt
     
     - name: Upload checksums
       uses: softprops/action-gh-release@v2
       with:
-        files: checksums.txt
+        files: redmine-cli-${{ steps.extract_version.outputs.version }}-checksums.txt
 
 
