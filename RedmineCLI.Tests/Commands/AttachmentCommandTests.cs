@@ -8,7 +8,6 @@ using FluentAssertions;
 
 using NSubstitute;
 
-using RedmineCLI.ApiClient;
 using RedmineCLI.Commands;
 using RedmineCLI.Exceptions;
 using RedmineCLI.Formatters;
@@ -25,7 +24,7 @@ public class AttachmentCommandTests
 {
     private readonly MockFileSystem _fileSystem;
     private readonly IConfigService _configService;
-    private readonly IRedmineApiClient _apiClient;
+    private readonly IRedmineService _redmineService;
     private readonly ITableFormatter _tableFormatter;
     private readonly IJsonFormatter _jsonFormatter;
     private readonly AttachmentCommand _attachmentCommand;
@@ -34,7 +33,7 @@ public class AttachmentCommandTests
     {
         _fileSystem = new MockFileSystem();
         _configService = Substitute.For<IConfigService>();
-        _apiClient = Substitute.For<IRedmineApiClient>();
+        _redmineService = Substitute.For<IRedmineService>();
         _tableFormatter = Substitute.For<ITableFormatter>();
         _jsonFormatter = Substitute.For<IJsonFormatter>();
 
@@ -74,11 +73,11 @@ public class AttachmentCommandTests
         var fileContent = Encoding.UTF8.GetBytes("Test file content");
         var stream = new MemoryStream(fileContent);
 
-        _apiClient.GetAttachmentAsync(123).Returns(attachment);
-        _apiClient.DownloadAttachmentAsync(123).Returns(stream);
+        _redmineService.GetAttachmentAsync(123).Returns(attachment);
+        _redmineService.DownloadAttachmentAsync(123).Returns(stream);
 
         var command = _attachmentCommand.CreateCommand(
-            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, console);
+            _configService, _redmineService, _tableFormatter, _jsonFormatter, _fileSystem, console);
 
         // Act
         var result = await InvokeCommandAsync(command, new[] { "download", "123" });
@@ -107,12 +106,12 @@ public class AttachmentCommandTests
         var fileContent = Encoding.UTF8.GetBytes("Test file content");
         var stream = new MemoryStream(fileContent);
 
-        _apiClient.GetAttachmentAsync(123).Returns(attachment);
-        _apiClient.DownloadAttachmentAsync(123).Returns(stream);
+        _redmineService.GetAttachmentAsync(123).Returns(attachment);
+        _redmineService.DownloadAttachmentAsync(123).Returns(stream);
         _fileSystem.AddDirectory("/downloads");
 
         var command = _attachmentCommand.CreateCommand(
-            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, console);
+            _configService, _redmineService, _tableFormatter, _jsonFormatter, _fileSystem, console);
 
         // Act
         var result = await InvokeCommandAsync(command, new[] { "download", "123", "--output", "/downloads/" });
@@ -139,11 +138,11 @@ public class AttachmentCommandTests
         var fileContent = new byte[1024 * 1024]; // 1MB
         var stream = new MemoryStream(fileContent);
 
-        _apiClient.GetAttachmentAsync(123).Returns(attachment);
-        _apiClient.DownloadAttachmentAsync(123).Returns(stream);
+        _redmineService.GetAttachmentAsync(123).Returns(attachment);
+        _redmineService.DownloadAttachmentAsync(123).Returns(stream);
 
         var command = _attachmentCommand.CreateCommand(
-            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, console);
+            _configService, _redmineService, _tableFormatter, _jsonFormatter, _fileSystem, console);
 
         // Act
         var result = await InvokeCommandAsync(command, new[] { "download", "123" });
@@ -171,11 +170,11 @@ public class AttachmentCommandTests
         var fileContent = Encoding.UTF8.GetBytes("Test file content");
         var stream = new MemoryStream(fileContent);
 
-        _apiClient.GetAttachmentAsync(123).Returns(attachment);
-        _apiClient.DownloadAttachmentAsync(123).Returns(stream);
+        _redmineService.GetAttachmentAsync(123).Returns(attachment);
+        _redmineService.DownloadAttachmentAsync(123).Returns(stream);
 
         var command = _attachmentCommand.CreateCommand(
-            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, console);
+            _configService, _redmineService, _tableFormatter, _jsonFormatter, _fileSystem, console);
 
         // Act
         var result = await InvokeCommandAsync(command, new[] { "download", "123" });
@@ -206,11 +205,11 @@ public class AttachmentCommandTests
         var newContent = Encoding.UTF8.GetBytes("New content");
         var stream = new MemoryStream(newContent);
 
-        _apiClient.GetAttachmentAsync(123).Returns(attachment);
-        _apiClient.DownloadAttachmentAsync(123).Returns(stream);
+        _redmineService.GetAttachmentAsync(123).Returns(attachment);
+        _redmineService.DownloadAttachmentAsync(123).Returns(stream);
 
         var command = _attachmentCommand.CreateCommand(
-            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, console);
+            _configService, _redmineService, _tableFormatter, _jsonFormatter, _fileSystem, console);
 
         // Act
         var result = await InvokeCommandAsync(command, new[] { "download", "123", "--force" });
@@ -238,10 +237,10 @@ public class AttachmentCommandTests
             ContentUrl = "https://redmine.example.com/attachments/download/123/document.pdf"
         };
 
-        _apiClient.GetAttachmentAsync(123).Returns(attachment);
+        _redmineService.GetAttachmentAsync(123).Returns(attachment);
 
         var command = _attachmentCommand.CreateCommand(
-            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, console);
+            _configService, _redmineService, _tableFormatter, _jsonFormatter, _fileSystem, console);
 
         // Act
         var result = await InvokeCommandAsync(command, new[] { "view", "123" });
@@ -268,10 +267,10 @@ public class AttachmentCommandTests
         // Create existing file
         _fileSystem.AddFile("existing-file.txt", new MockFileData("Old content"));
 
-        _apiClient.GetAttachmentAsync(123).Returns(attachment);
+        _redmineService.GetAttachmentAsync(123).Returns(attachment);
 
         var command = _attachmentCommand.CreateCommand(
-            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, console);
+            _configService, _redmineService, _tableFormatter, _jsonFormatter, _fileSystem, console);
 
         // Act
         var result = await InvokeCommandAsync(command, new[] { "download", "123" });
@@ -288,7 +287,7 @@ public class AttachmentCommandTests
     {
         // Arrange
         using var console = new TestConsole();
-        _apiClient.GetAttachmentAsync(123).Returns(new Attachment
+        _redmineService.GetAttachmentAsync(123).Returns(new Attachment
         {
             Id = 123,
             Filename = "test.txt",
@@ -297,11 +296,11 @@ public class AttachmentCommandTests
             ContentUrl = "https://redmine.example.com/attachments/download/123/test.txt"
         });
 
-        _apiClient.DownloadAttachmentAsync(123).Returns(Task.FromException<Stream>(
+        _redmineService.DownloadAttachmentAsync(123).Returns(Task.FromException<Stream>(
             new HttpRequestException("Network error")));
 
         var command = _attachmentCommand.CreateCommand(
-            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, console);
+            _configService, _redmineService, _tableFormatter, _jsonFormatter, _fileSystem, console);
 
         // Act
         var result = await InvokeCommandAsync(command, new[] { "download", "123" });
@@ -330,10 +329,10 @@ public class AttachmentCommandTests
             ContentUrl = "https://redmine.example.com/attachments/download/123/document.pdf"
         };
 
-        _apiClient.GetAttachmentAsync(123).Returns(attachment);
+        _redmineService.GetAttachmentAsync(123).Returns(attachment);
 
         var command = _attachmentCommand.CreateCommand(
-            _configService, _apiClient, _tableFormatter, _jsonFormatter, _fileSystem, console);
+            _configService, _redmineService, _tableFormatter, _jsonFormatter, _fileSystem, console);
 
         // Act
         var result = await InvokeCommandAsync(command, new[] { "view", "123", "--json" });

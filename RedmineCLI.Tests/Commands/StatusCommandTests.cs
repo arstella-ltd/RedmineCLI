@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging;
 
 using NSubstitute;
 
-using RedmineCLI.ApiClient;
 using RedmineCLI.Commands;
 using RedmineCLI.Formatters;
 using RedmineCLI.Models;
@@ -18,7 +17,7 @@ namespace RedmineCLI.Tests.Commands;
 
 public class StatusCommandTests
 {
-    private readonly IRedmineApiClient _apiClient;
+    private readonly IRedmineService _redmineService;
     private readonly IConfigService _configService;
     private readonly ITableFormatter _tableFormatter;
     private readonly IJsonFormatter _jsonFormatter;
@@ -26,7 +25,7 @@ public class StatusCommandTests
 
     public StatusCommandTests()
     {
-        _apiClient = Substitute.For<IRedmineApiClient>();
+        _redmineService = Substitute.For<IRedmineService>();
         _configService = Substitute.For<IConfigService>();
         _tableFormatter = Substitute.For<ITableFormatter>();
         _jsonFormatter = Substitute.For<IJsonFormatter>();
@@ -46,7 +45,7 @@ public class StatusCommandTests
     public void Command_Should_HaveLsAlias()
     {
         // Arrange & Act
-        var command = StatusCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = StatusCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
         var listCommand = command.Subcommands.First(c => c.Name == "list");
 
         // Assert
@@ -89,10 +88,10 @@ public class StatusCommandTests
             }
         };
 
-        _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(statuses));
 
-        var command = StatusCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = StatusCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
         var parseResult = command.Parse("list");
 
         // Act
@@ -100,7 +99,7 @@ public class StatusCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssueStatuses(statuses);
     }
 
@@ -119,10 +118,10 @@ public class StatusCommandTests
             }
         };
 
-        _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(statuses));
 
-        var command = StatusCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = StatusCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
         var parseResult = command.Parse("list");
 
         // Act
@@ -150,10 +149,10 @@ public class StatusCommandTests
             }
         };
 
-        _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(statuses));
 
-        var command = StatusCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = StatusCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
         var parseResult = command.Parse("list");
 
         // Act
@@ -181,10 +180,10 @@ public class StatusCommandTests
             }
         };
 
-        _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(statuses));
 
-        var command = StatusCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = StatusCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
         var parseResult = command.Parse("list --json");
 
         // Act
@@ -192,7 +191,7 @@ public class StatusCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
         _jsonFormatter.Received(1).FormatIssueStatuses(statuses);
         _tableFormatter.DidNotReceive().FormatIssueStatuses(Arg.Any<List<IssueStatus>>());
     }

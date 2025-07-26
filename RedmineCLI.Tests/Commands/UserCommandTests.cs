@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging;
 
 using NSubstitute;
 
-using RedmineCLI.ApiClient;
 using RedmineCLI.Commands;
 using RedmineCLI.Exceptions;
 using RedmineCLI.Formatters;
@@ -19,7 +18,7 @@ namespace RedmineCLI.Tests.Commands;
 
 public class UserCommandTests
 {
-    private readonly IRedmineApiClient _apiClient;
+    private readonly IRedmineService _redmineService;
     private readonly IConfigService _configService;
     private readonly ITableFormatter _tableFormatter;
     private readonly IJsonFormatter _jsonFormatter;
@@ -27,7 +26,7 @@ public class UserCommandTests
 
     public UserCommandTests()
     {
-        _apiClient = Substitute.For<IRedmineApiClient>();
+        _redmineService = Substitute.For<IRedmineService>();
         _configService = Substitute.For<IConfigService>();
         _tableFormatter = Substitute.For<ITableFormatter>();
         _jsonFormatter = Substitute.For<IJsonFormatter>();
@@ -47,7 +46,7 @@ public class UserCommandTests
     public void Command_Should_HaveLsAlias()
     {
         // Arrange & Act
-        var command = UserCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = UserCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
         var listCommand = command.Subcommands.First(c => c.Name == "list");
 
         // Assert
@@ -80,10 +79,10 @@ public class UserCommandTests
             }
         };
 
-        _apiClient.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
+        _redmineService.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(users));
 
-        var command = UserCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = UserCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
         var parseResult = command.Parse("list");
 
         // Act
@@ -91,7 +90,7 @@ public class UserCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetUsersAsync(30, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetUsersAsync(30, Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatUsers(users);
     }
 
@@ -112,10 +111,10 @@ public class UserCommandTests
             }
         };
 
-        _apiClient.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
+        _redmineService.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(users));
 
-        var command = UserCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = UserCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
         var parseResult = command.Parse("list --limit 10");
 
         // Act
@@ -123,7 +122,7 @@ public class UserCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetUsersAsync(10, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetUsersAsync(10, Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatUsers(users);
     }
 
@@ -144,10 +143,10 @@ public class UserCommandTests
             }
         };
 
-        _apiClient.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
+        _redmineService.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(users));
 
-        var command = UserCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = UserCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
         var parseResult = command.Parse("list --json");
 
         // Act
@@ -155,7 +154,7 @@ public class UserCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetUsersAsync(30, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetUsersAsync(30, Arg.Any<CancellationToken>());
         _jsonFormatter.Received(1).FormatUsers(users);
         _tableFormatter.DidNotReceive().FormatUsers(Arg.Any<List<User>>());
     }
@@ -165,10 +164,10 @@ public class UserCommandTests
     {
         // Arrange
         var apiException = new RedmineApiException(403, "Forbidden", "You do not have permission to view users.");
-        _apiClient.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
+        _redmineService.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException<List<User>>(apiException));
 
-        var command = UserCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = UserCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
         var parseResult = command.Parse("list");
 
         // Act
@@ -196,10 +195,10 @@ public class UserCommandTests
             }
         };
 
-        _apiClient.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
+        _redmineService.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(users));
 
-        var command = UserCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = UserCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
         var parseResult = command.Parse("list -L 5");
 
         // Act
@@ -207,6 +206,6 @@ public class UserCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetUsersAsync(5, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetUsersAsync(5, Arg.Any<CancellationToken>());
     }
 }

@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging;
 
 using NSubstitute;
 
-using RedmineCLI.ApiClient;
 using RedmineCLI.Commands;
 using RedmineCLI.Models;
 using RedmineCLI.Services;
@@ -25,7 +24,7 @@ namespace RedmineCLI.Tests.Commands;
 public class AuthCommandTests
 {
     private readonly IConfigService _configService;
-    private readonly IRedmineApiClient _apiClient;
+    private readonly IRedmineService _redmineService;
     private readonly ILogger<AuthCommand> _logger;
     private readonly AuthCommand _authCommand;
     private readonly AnsiConsoleTestFixture _consoleFixture;
@@ -33,10 +32,10 @@ public class AuthCommandTests
     public AuthCommandTests()
     {
         _configService = Substitute.For<IConfigService>();
-        _apiClient = Substitute.For<IRedmineApiClient>();
+        _redmineService = Substitute.For<IRedmineService>();
         _logger = Substitute.For<ILogger<AuthCommand>>();
 
-        _authCommand = new AuthCommand(_configService, _apiClient, _logger);
+        _authCommand = new AuthCommand(_configService, _redmineService, _logger);
         _consoleFixture = new AnsiConsoleTestFixture();
     }
 
@@ -50,7 +49,7 @@ public class AuthCommandTests
         var testApiKey = "test-api-key-12345";
         var testProfileName = "default";
 
-        _apiClient.TestConnectionAsync(testUrl, testApiKey, Arg.Any<CancellationToken>())
+        _redmineService.TestConnectionAsync(testUrl, testApiKey, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(true));
 
         var config = new Config
@@ -96,7 +95,7 @@ public class AuthCommandTests
         var testApiKey = "invalid-api-key";
         var testProfileName = "default";
 
-        _apiClient.TestConnectionAsync(testUrl, testApiKey, Arg.Any<CancellationToken>())
+        _redmineService.TestConnectionAsync(testUrl, testApiKey, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(false));
 
         var config = new Config
@@ -123,7 +122,7 @@ public class AuthCommandTests
         var testApiKey = "test-api-key-12345";
         var testProfileName = "default";
 
-        _apiClient.TestConnectionAsync(testUrl, testApiKey, Arg.Any<CancellationToken>())
+        _redmineService.TestConnectionAsync(testUrl, testApiKey, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(true));
 
         var emptyConfig = new Config
@@ -161,7 +160,7 @@ public class AuthCommandTests
 
         _configService.GetActiveProfileAsync()
             .Returns(Task.FromResult<Profile?>(testProfile));
-        _apiClient.TestConnectionAsync(Arg.Any<CancellationToken>())
+        _redmineService.TestConnectionAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(true));
 
         // Act & Assert
@@ -182,7 +181,7 @@ public class AuthCommandTests
         // Assert
         result.Should().Be(0);
         await _configService.Received(1).GetActiveProfileAsync();
-        await _apiClient.Received(1).TestConnectionAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).TestConnectionAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -198,7 +197,7 @@ public class AuthCommandTests
         // Assert
         result.Should().Be(1);
         await _configService.Received(1).GetActiveProfileAsync();
-        await _apiClient.DidNotReceive().TestConnectionAsync(Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().TestConnectionAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -214,7 +213,7 @@ public class AuthCommandTests
 
         _configService.GetActiveProfileAsync()
             .Returns(Task.FromResult<Profile?>(testProfile));
-        _apiClient.TestConnectionAsync(Arg.Any<CancellationToken>())
+        _redmineService.TestConnectionAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(false));
 
         // Act
@@ -222,7 +221,7 @@ public class AuthCommandTests
 
         // Assert
         result.Should().Be(1);
-        await _apiClient.Received(1).TestConnectionAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).TestConnectionAsync(Arg.Any<CancellationToken>());
     }
 
     #endregion
@@ -325,7 +324,7 @@ public class AuthCommandTests
             Preferences = new Preferences()
         };
         _configService.LoadConfigAsync().Returns(Task.FromResult(config));
-        _apiClient.TestConnectionAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+        _redmineService.TestConnectionAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(true));
 
         // Act & Assert
@@ -345,7 +344,7 @@ public class AuthCommandTests
     public void AuthCommand_Should_RegisterSubcommands_When_Created()
     {
         // Arrange & Act
-        var command = AuthCommand.Create(_configService, _apiClient, _logger);
+        var command = AuthCommand.Create(_configService, _redmineService, _logger);
 
         // Assert
         command.Should().NotBeNull();
@@ -362,7 +361,7 @@ public class AuthCommandTests
     public void LoginCommand_Should_HaveCorrectOptions_When_Created()
     {
         // Arrange & Act
-        var command = AuthCommand.Create(_configService, _apiClient, _logger);
+        var command = AuthCommand.Create(_configService, _redmineService, _logger);
         var loginCommand = command.Subcommands.First(sc => sc.Name == "login");
 
         // Assert
@@ -422,7 +421,7 @@ public class AuthCommandTests
         // Assert
         result.Should().Be(1);
         await _configService.Received(1).GetActiveProfileAsync();
-        await _apiClient.DidNotReceive().TestConnectionAsync(Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().TestConnectionAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

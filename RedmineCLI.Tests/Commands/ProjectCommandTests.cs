@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging;
 
 using NSubstitute;
 
-using RedmineCLI.ApiClient;
 using RedmineCLI.Commands;
 using RedmineCLI.Exceptions;
 using RedmineCLI.Formatters;
@@ -19,7 +18,7 @@ namespace RedmineCLI.Tests.Commands;
 
 public class ProjectCommandTests
 {
-    private readonly IRedmineApiClient _apiClient;
+    private readonly IRedmineService _redmineService;
     private readonly IConfigService _configService;
     private readonly ITableFormatter _tableFormatter;
     private readonly IJsonFormatter _jsonFormatter;
@@ -27,7 +26,7 @@ public class ProjectCommandTests
 
     public ProjectCommandTests()
     {
-        _apiClient = Substitute.For<IRedmineApiClient>();
+        _redmineService = Substitute.For<IRedmineService>();
         _configService = Substitute.For<IConfigService>();
         _tableFormatter = Substitute.For<ITableFormatter>();
         _jsonFormatter = Substitute.For<IJsonFormatter>();
@@ -47,7 +46,7 @@ public class ProjectCommandTests
     public void Command_Should_HaveLsAlias()
     {
         // Arrange & Act
-        var command = ProjectCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = ProjectCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
         var listCommand = command.Subcommands.First(c => c.Name == "list");
 
         // Assert
@@ -78,10 +77,10 @@ public class ProjectCommandTests
             }
         };
 
-        _apiClient.GetProjectsAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetProjectsAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(projects));
 
-        var command = ProjectCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = ProjectCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
         var parseResult = command.Parse("list");
 
         // Act
@@ -89,7 +88,7 @@ public class ProjectCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetProjectsAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetProjectsAsync(Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatProjects(projects);
     }
 
@@ -109,10 +108,10 @@ public class ProjectCommandTests
             }
         };
 
-        _apiClient.GetProjectsAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetProjectsAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(publicProjects));
 
-        var command = ProjectCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = ProjectCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
         var parseResult = command.Parse("list --public");
 
         // Act
@@ -122,7 +121,7 @@ public class ProjectCommandTests
         result.Should().Be(0);
         // Note: In the actual implementation, we would filter by public projects
         // For now, we just verify the API is called
-        await _apiClient.Received(1).GetProjectsAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetProjectsAsync(Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatProjects(publicProjects);
     }
 
@@ -142,10 +141,10 @@ public class ProjectCommandTests
             }
         };
 
-        _apiClient.GetProjectsAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetProjectsAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(projects));
 
-        var command = ProjectCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = ProjectCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
         var parseResult = command.Parse("list --json");
 
         // Act
@@ -153,7 +152,7 @@ public class ProjectCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetProjectsAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetProjectsAsync(Arg.Any<CancellationToken>());
         _jsonFormatter.Received(1).FormatProjects(projects);
         _tableFormatter.DidNotReceive().FormatProjects(Arg.Any<List<Project>>());
     }

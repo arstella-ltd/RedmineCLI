@@ -4,7 +4,6 @@ using Microsoft.Extensions.Logging;
 
 using NSubstitute;
 
-using RedmineCLI.ApiClient;
 using RedmineCLI.Commands;
 using RedmineCLI.Exceptions;
 using RedmineCLI.Formatters;
@@ -17,7 +16,7 @@ namespace RedmineCLI.Tests.Commands;
 
 public class IssueCommentCommandTests
 {
-    private readonly IRedmineApiClient _apiClient;
+    private readonly IRedmineService _redmineService;
     private readonly IConfigService _configService;
     private readonly ITableFormatter _tableFormatter;
     private readonly IJsonFormatter _jsonFormatter;
@@ -26,13 +25,13 @@ public class IssueCommentCommandTests
 
     public IssueCommentCommandTests()
     {
-        _apiClient = Substitute.For<IRedmineApiClient>();
+        _redmineService = Substitute.For<IRedmineService>();
         _configService = Substitute.For<IConfigService>();
         _tableFormatter = Substitute.For<ITableFormatter>();
         _jsonFormatter = Substitute.For<IJsonFormatter>();
         _logger = Substitute.For<ILogger<IssueCommand>>();
 
-        _issueCommand = new IssueCommand(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        _issueCommand = new IssueCommand(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
     }
 
     #region Comment Command Tests
@@ -51,14 +50,14 @@ public class IssueCommentCommandTests
             ApiKey = "test-key"
         };
         _configService.GetActiveProfileAsync().Returns(profile);
-        _apiClient.AddCommentAsync(issueId, message, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        _redmineService.AddCommentAsync(issueId, message, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
         // Act
         var result = await _issueCommand.CommentAsync(issueId, message, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).AddCommentAsync(issueId, message, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).AddCommentAsync(issueId, message, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -100,7 +99,7 @@ public class IssueCommentCommandTests
             ApiKey = "test-key"
         };
         _configService.GetActiveProfileAsync().Returns(profile);
-        _apiClient.AddCommentAsync(issueId, message, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        _redmineService.AddCommentAsync(issueId, message, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
         // Act
         var result = await _issueCommand.CommentAsync(issueId, message, CancellationToken.None);
@@ -108,7 +107,7 @@ public class IssueCommentCommandTests
         // Assert
         result.Should().Be(0);
         // The method should call AddCommentAsync and show a success message
-        await _apiClient.Received(1).AddCommentAsync(issueId, message, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).AddCommentAsync(issueId, message, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -123,7 +122,7 @@ public class IssueCommentCommandTests
 
         // Assert
         result.Should().Be(1); // Should return error code for empty comment
-        await _apiClient.DidNotReceive().AddCommentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().AddCommentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -134,7 +133,7 @@ public class IssueCommentCommandTests
         const string message = "This will fail";
 
         var apiException = new RedmineApiException(404, "Issue not found", null);
-        _apiClient.AddCommentAsync(issueId, message, Arg.Any<CancellationToken>())
+        _redmineService.AddCommentAsync(issueId, message, Arg.Any<CancellationToken>())
             .Returns(Task.FromException(apiException));
 
         // Act
@@ -142,7 +141,7 @@ public class IssueCommentCommandTests
 
         // Assert
         result.Should().Be(1);
-        await _apiClient.Received(1).AddCommentAsync(issueId, message, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).AddCommentAsync(issueId, message, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -153,7 +152,7 @@ public class IssueCommentCommandTests
         const string message = "Comment for non-existent issue";
 
         var apiException = new RedmineApiException(404, "Issue not found", null);
-        _apiClient.AddCommentAsync(nonExistentIssueId, message, Arg.Any<CancellationToken>())
+        _redmineService.AddCommentAsync(nonExistentIssueId, message, Arg.Any<CancellationToken>())
             .Returns(Task.FromException(apiException));
 
         // Act
@@ -161,7 +160,7 @@ public class IssueCommentCommandTests
 
         // Assert
         result.Should().Be(1);
-        await _apiClient.Received(1).AddCommentAsync(nonExistentIssueId, message, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).AddCommentAsync(nonExistentIssueId, message, Arg.Any<CancellationToken>());
     }
 
     #endregion
