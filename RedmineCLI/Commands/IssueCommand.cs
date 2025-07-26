@@ -279,6 +279,9 @@ public class IssueCommand
             // Handle @me special value
             assignee = await ResolveAssigneeAsync(assignee, cancellationToken);
 
+            // Handle project name to identifier resolution
+            project = await ResolveProjectAsync(project, cancellationToken);
+
             // Handle status special values
             string? statusFilter = status;
             if (status == "all")
@@ -934,6 +937,48 @@ public class IssueCommand
         }
 
         return new User { Name = assignee };
+    }
+
+    private async Task<string?> ResolveProjectAsync(string? project, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(project))
+            return null;
+
+        // 数値の場合はそのままIDとして返す
+        if (int.TryParse(project, out _))
+        {
+            return project;
+        }
+
+        // 文字列の場合はプロジェクト名として扱い、プロジェクト識別子を検索する
+        try
+        {
+            var projects = await _apiClient.GetProjectsAsync(cancellationToken);
+            var matchedProject = projects.FirstOrDefault(p =>
+                p.Name.Equals(project, StringComparison.OrdinalIgnoreCase) ||
+                p.Identifier?.Equals(project, StringComparison.OrdinalIgnoreCase) == true);
+
+            if (matchedProject != null)
+            {
+                _logger.LogDebug("Resolved project '{Project}' to identifier '{Identifier}'", project, matchedProject.Identifier);
+                // プロジェクトの場合は識別子を返す（IDではなく）
+                return matchedProject.Identifier ?? matchedProject.Id.ToString();
+            }
+
+            // プロジェクトが見つからない場合はエラーをスロー
+            _logger.LogError("Could not find project with name '{Project}'", project);
+            throw new ValidationException($"Project '{project}' not found.");
+        }
+        catch (ValidationException)
+        {
+            // ValidationExceptionはそのまま再スロー
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to resolve project '{Project}'", project);
+            throw new ValidationException($"Failed to resolve project '{project}': {ex.Message}", ex);
+        }
     }
 
     private static Project? ParseProject(string? project)

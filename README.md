@@ -95,12 +95,16 @@ redmine issue list
 # 特定のステータスでフィルタ
 redmine issue list --status=open
 
+# プロジェクトでフィルタ（プロジェクト名、識別子、IDが使用可能）
+redmine issue list --project "管理"
+redmine issue list -p my-project
+
 # キーワードでチケットを検索
 redmine issue list --search "会議"
 redmine issue list -q "バグ修正"
 
 # 複合検索（検索と他のフィルターの組み合わせ）
-redmine issue list --search "会議" --status open --assignee @me
+redmine issue list --search "会議" --status open --assignee @me --project "開発"
 
 # チケットの詳細を表示
 redmine issue view 12345
