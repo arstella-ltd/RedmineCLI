@@ -197,6 +197,9 @@ public class Program
         // Redmine API Client
         services.AddScoped<IRedmineApiClient, RedmineApiClient>();
 
+        // Redmine Service
+        services.AddScoped<IRedmineService, RedmineService>();
+
         // Utils
         services.AddSingleton<ITimeHelper, TimeHelper>();
 
