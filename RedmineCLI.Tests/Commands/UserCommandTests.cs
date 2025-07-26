@@ -168,10 +168,11 @@ public class UserCommandTests
         var parseResult = command.Parse("list");
 
         // Act
-        var result = await parseResult.InvokeAsync();
+        Environment.ExitCode = 0; // Reset before test
+        await parseResult.InvokeAsync();
 
         // Assert
-        result.Should().Be(1);
+        Environment.ExitCode.Should().Be(1);
     }
 
     [Fact]
