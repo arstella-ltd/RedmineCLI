@@ -114,7 +114,7 @@ public class IssueEditCommandTests
             Project = new Project { Id = 1, Name = "Test Project" }
         };
 
-        _apiClient.GetUsersAsync(Arg.Any<CancellationToken>())
+        _apiClient.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(users));
         _apiClient.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
@@ -129,7 +129,7 @@ public class IssueEditCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetUsersAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
         await _apiClient.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
         await _apiClient.Received(1).UpdateIssueAsync(
             issueId,
@@ -325,7 +325,7 @@ public class IssueEditCommandTests
             Project = new Project { Id = 1, Name = "Test Project" }
         };
 
-        _apiClient.GetUsersAsync(Arg.Any<CancellationToken>())
+        _apiClient.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(users));
         _apiClient.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
@@ -346,7 +346,7 @@ public class IssueEditCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetUsersAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
         await _apiClient.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
         await _apiClient.Received(1).UpdateIssueAsync(
             issueId,

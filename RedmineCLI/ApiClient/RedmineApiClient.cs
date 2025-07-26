@@ -184,9 +184,20 @@ public class RedmineApiClient : IRedmineApiClient
         return projectsResponse?.Projects ?? new List<Project>();
     }
 
-    public async Task<List<User>> GetUsersAsync(CancellationToken cancellationToken = default)
+    public async Task<List<User>> GetUsersAsync(int? limit = null, CancellationToken cancellationToken = default)
     {
-        var path = "/users.json";
+        var queryParams = new Dictionary<string, string?>();
+        if (limit.HasValue)
+        {
+            queryParams["limit"] = limit.Value.ToString();
+        }
+        else
+        {
+            queryParams["limit"] = "30"; // Default limit
+        }
+
+        var queryString = BuildQueryString(queryParams);
+        var path = $"/users.json{queryString}";
         var usersResponse = await GetAsync(path, RedmineJsonContext.Default.UsersResponse, "users", cancellationToken);
         return usersResponse?.Users ?? new List<User>();
     }
@@ -263,7 +274,8 @@ public class RedmineApiClient : IRedmineApiClient
             ["status_id"] = filter.StatusId,
             ["limit"] = filter.Limit?.ToString(),
             ["offset"] = filter.Offset?.ToString(),
-            ["sort"] = filter.Sort
+            ["sort"] = filter.Sort,
+            ["include"] = "attachments,relations"
         });
 
         var path = $"/issues.json{queryString}";
