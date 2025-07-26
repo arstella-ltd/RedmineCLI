@@ -1,7 +1,6 @@
 using System.CommandLine;
 using System.IO.Abstractions;
 
-using RedmineCLI.ApiClient;
 using RedmineCLI.Exceptions;
 using RedmineCLI.Formatters;
 using RedmineCLI.Services;
@@ -14,7 +13,7 @@ public class AttachmentCommand
 {
     public Command CreateCommand(
         IConfigService configService,
-        IRedmineApiClient apiClient,
+        IRedmineService redmineService,
         ITableFormatter tableFormatter,
         IJsonFormatter jsonFormatter,
         IFileSystem? fileSystem = null,
@@ -23,11 +22,11 @@ public class AttachmentCommand
         var attachmentCommand = new Command("attachment", "Manage attachments");
 
         // attachment download <id>
-        var downloadCommand = CreateDownloadCommand(configService, apiClient, fileSystem ?? new FileSystem(), console ?? AnsiConsole.Console);
+        var downloadCommand = CreateDownloadCommand(configService, redmineService, fileSystem ?? new FileSystem(), console ?? AnsiConsole.Console);
         attachmentCommand.Add(downloadCommand);
 
         // attachment view <id>
-        var viewCommand = CreateViewCommand(configService, apiClient, tableFormatter, jsonFormatter);
+        var viewCommand = CreateViewCommand(configService, redmineService, tableFormatter, jsonFormatter);
         attachmentCommand.Add(viewCommand);
 
         return attachmentCommand;
@@ -35,7 +34,7 @@ public class AttachmentCommand
 
     private Command CreateDownloadCommand(
         IConfigService configService,
-        IRedmineApiClient apiClient,
+        IRedmineService redmineService,
         IFileSystem fileSystem,
         IAnsiConsole console)
     {
@@ -70,7 +69,7 @@ public class AttachmentCommand
                 }
 
                 // Get attachment metadata
-                var attachment = await apiClient.GetAttachmentAsync(attachmentId);
+                var attachment = await redmineService.GetAttachmentAsync(attachmentId);
 
                 // Sanitize filename
                 var sanitizedFilename = SanitizeFilename(attachment.Filename);
@@ -113,7 +112,7 @@ public class AttachmentCommand
                         try
                         {
                             // Download the file
-                            using var stream = await apiClient.DownloadAttachmentAsync(attachmentId);
+                            using var stream = await redmineService.DownloadAttachmentAsync(attachmentId);
                             using var fileStream = fileSystem.File.Create(fullPath);
 
                             // Copy with progress tracking if size is known
@@ -166,7 +165,7 @@ public class AttachmentCommand
 
     private Command CreateViewCommand(
         IConfigService configService,
-        IRedmineApiClient apiClient,
+        IRedmineService redmineService,
         ITableFormatter tableFormatter,
         IJsonFormatter jsonFormatter)
     {
@@ -198,7 +197,7 @@ public class AttachmentCommand
                     return;
                 }
 
-                var attachment = await apiClient.GetAttachmentAsync(attachmentId);
+                var attachment = await redmineService.GetAttachmentAsync(attachmentId);
 
                 if (isJson)
                 {

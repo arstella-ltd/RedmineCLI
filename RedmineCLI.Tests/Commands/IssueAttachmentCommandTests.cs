@@ -9,7 +9,6 @@ using Microsoft.Extensions.Logging;
 
 using NSubstitute;
 
-using RedmineCLI.ApiClient;
 using RedmineCLI.Commands;
 using RedmineCLI.Formatters;
 using RedmineCLI.Models;
@@ -27,7 +26,7 @@ namespace RedmineCLI.Tests.Commands;
 [Collection("AnsiConsole")]
 public class IssueAttachmentCommandTests
 {
-    private readonly IRedmineApiClient _apiClient;
+    private readonly IRedmineService _redmineService;
     private readonly IConfigService _configService;
     private readonly ITableFormatter _tableFormatter;
     private readonly IJsonFormatter _jsonFormatter;
@@ -37,7 +36,7 @@ public class IssueAttachmentCommandTests
 
     public IssueAttachmentCommandTests()
     {
-        _apiClient = Substitute.For<IRedmineApiClient>();
+        _redmineService = Substitute.For<IRedmineService>();
         _configService = Substitute.For<IConfigService>();
         _tableFormatter = Substitute.For<ITableFormatter>();
         _jsonFormatter = Substitute.For<IJsonFormatter>();
@@ -61,7 +60,7 @@ public class IssueAttachmentCommandTests
         var config = new Config { Preferences = preferences };
         _configService.LoadConfigAsync().Returns(Task.FromResult(config));
 
-        _issueCommand = new IssueCommand(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        _issueCommand = new IssueCommand(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
         _consoleFixture = new AnsiConsoleTestFixture();
     }
 
@@ -81,7 +80,7 @@ public class IssueAttachmentCommandTests
             }
         };
 
-        _apiClient.GetIssueAsync(issueId, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
+        _redmineService.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
 
         // Act
         var result = await _issueCommand.ListAttachmentsAsync(issueId, false, CancellationToken.None);
@@ -106,7 +105,7 @@ public class IssueAttachmentCommandTests
             Attachments = new List<Attachment>()
         };
 
-        _apiClient.GetIssueAsync(issueId, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
+        _redmineService.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
 
         // Act & Assert
         var result = await _consoleFixture.ExecuteWithTestConsoleAsync(async console =>
@@ -140,7 +139,7 @@ public class IssueAttachmentCommandTests
             }
         };
 
-        _apiClient.GetIssueAsync(issueId, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
+        _redmineService.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
 
         // Act & Assert
         var result = await _consoleFixture.ExecuteWithTestConsoleAsync(async console =>
@@ -178,8 +177,8 @@ public class IssueAttachmentCommandTests
             }
         };
 
-        _apiClient.GetIssueAsync(issueId, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
-        _apiClient.DownloadAttachmentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+        _redmineService.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
+        _redmineService.DownloadAttachmentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(x => new System.IO.MemoryStream(new byte[1024]));
 
         // Use temp directory for test
@@ -198,10 +197,10 @@ public class IssueAttachmentCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(3).DownloadAttachmentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).DownloadAttachmentAsync(1, Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).DownloadAttachmentAsync(2, Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).DownloadAttachmentAsync(3, Arg.Any<CancellationToken>());
+        await _redmineService.Received(3).DownloadAttachmentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).DownloadAttachmentAsync(1, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).DownloadAttachmentAsync(2, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).DownloadAttachmentAsync(3, Arg.Any<CancellationToken>());
 
         // Cleanup
         if (Directory.Exists(tempDir))
@@ -226,7 +225,7 @@ public class IssueAttachmentCommandTests
             }
         };
 
-        _apiClient.GetIssueAsync(issueId, true, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
+        _redmineService.GetIssueAsync(issueId, true, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
 
         // Act
         var result = await _issueCommand.ViewAsync(issueId, false, false, false, false, CancellationToken.None);
@@ -252,7 +251,7 @@ public class IssueAttachmentCommandTests
             Attachments = new List<Attachment>()
         };
 
-        _apiClient.GetIssueAsync(issueId, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
+        _redmineService.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
 
         // Act & Assert
         var result = await _consoleFixture.ExecuteWithTestConsoleAsync(async console =>
@@ -261,7 +260,7 @@ public class IssueAttachmentCommandTests
 
             // Assert console output
             console.Output.Should().Contain("No attachments found for issue #123");
-            await _apiClient.DidNotReceive().DownloadAttachmentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
+            await _redmineService.DidNotReceive().DownloadAttachmentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
 
             return actualResult;
         });
@@ -286,8 +285,8 @@ public class IssueAttachmentCommandTests
             }
         };
 
-        _apiClient.GetIssueAsync(issueId, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
-        _apiClient.DownloadAttachmentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+        _redmineService.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>()).Returns(Task.FromResult(issue));
+        _redmineService.DownloadAttachmentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(x => new System.IO.MemoryStream(new byte[1024]));
 
         // Use temp directory for test

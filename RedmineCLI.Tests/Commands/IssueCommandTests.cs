@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging;
 
 using NSubstitute;
 
-using RedmineCLI.ApiClient;
 using RedmineCLI.Commands;
 using RedmineCLI.Exceptions;
 using RedmineCLI.Formatters;
@@ -19,7 +18,7 @@ namespace RedmineCLI.Tests.Commands;
 
 public class IssueCommandTests
 {
-    private readonly IRedmineApiClient _apiClient;
+    private readonly IRedmineService _redmineService;
     private readonly IConfigService _configService;
     private readonly ITableFormatter _tableFormatter;
     private readonly IJsonFormatter _jsonFormatter;
@@ -28,7 +27,7 @@ public class IssueCommandTests
 
     public IssueCommandTests()
     {
-        _apiClient = Substitute.For<IRedmineApiClient>();
+        _redmineService = Substitute.For<IRedmineService>();
         _configService = Substitute.For<IConfigService>();
         _tableFormatter = Substitute.For<ITableFormatter>();
         _jsonFormatter = Substitute.For<IJsonFormatter>();
@@ -43,7 +42,7 @@ public class IssueCommandTests
         };
         _configService.LoadConfigAsync().Returns(Task.FromResult(config));
 
-        _issueCommand = new IssueCommand(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        _issueCommand = new IssueCommand(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
     }
 
     #region List Command Tests
@@ -52,7 +51,7 @@ public class IssueCommandTests
     public void Command_Should_HaveLsAlias()
     {
         // Arrange & Act
-        var command = IssueCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = IssueCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
         var listCommand = command.Subcommands.First(c => c.Name == "list");
 
         // Assert
@@ -91,7 +90,7 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == "open" && f.AssignedToId == null && f.ProjectId == null && f.Limit == 30), Arg.Any<CancellationToken>())
+        _redmineService.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == "open" && f.AssignedToId == null && f.ProjectId == null && f.Limit == 30), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -99,8 +98,8 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.DidNotReceive().GetCurrentUserAsync(Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).GetIssuesAsync(
+        await _redmineService.DidNotReceive().GetCurrentUserAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.StatusId == "open" && f.AssignedToId == null && f.ProjectId == null && f.Limit == 30),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
@@ -129,7 +128,7 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == status), Arg.Any<CancellationToken>())
+        _redmineService.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == status), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -137,7 +136,7 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetIssuesAsync(
+        await _redmineService.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.StatusId == status && f.AssignedToId == null),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
@@ -160,7 +159,7 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetIssuesAsync(
+        _redmineService.GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.Limit == limit && f.Offset == offset && f.StatusId == "open" && f.AssignedToId == null),
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
@@ -170,8 +169,8 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.DidNotReceive().GetCurrentUserAsync(Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).GetIssuesAsync(
+        await _redmineService.DidNotReceive().GetCurrentUserAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.Limit == limit && f.Offset == offset && f.StatusId == "open" && f.AssignedToId == null),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
@@ -192,7 +191,7 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == "open" && f.AssignedToId == null && f.Limit == 30), Arg.Any<CancellationToken>())
+        _redmineService.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == "open" && f.AssignedToId == null && f.Limit == 30), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -200,8 +199,8 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.DidNotReceive().GetCurrentUserAsync(Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == "open" && f.AssignedToId == null && f.Limit == 30), Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().GetCurrentUserAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == "open" && f.AssignedToId == null && f.Limit == 30), Arg.Any<CancellationToken>());
         _jsonFormatter.Received(1).FormatIssues(issues);
         _tableFormatter.DidNotReceive().FormatIssues(Arg.Any<List<Issue>>());
     }
@@ -228,9 +227,9 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
+        _redmineService.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(users));
-        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == assigneeUserId), Arg.Any<CancellationToken>())
+        _redmineService.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == assigneeUserId), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -238,8 +237,8 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).GetIssuesAsync(
+        await _redmineService.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.AssignedToId == assigneeUserId),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
@@ -266,9 +265,9 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetProjectsAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetProjectsAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(projects));
-        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.ProjectId == projectIdentifier), Arg.Any<CancellationToken>())
+        _redmineService.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.ProjectId == projectIdentifier), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -276,8 +275,8 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetProjectsAsync(Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).GetIssuesAsync(
+        await _redmineService.Received(1).GetProjectsAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.ProjectId == projectIdentifier),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
@@ -304,9 +303,9 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetProjectsAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetProjectsAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(projects));
-        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.ProjectId == projectIdentifier), Arg.Any<CancellationToken>())
+        _redmineService.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.ProjectId == projectIdentifier), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -314,8 +313,8 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetProjectsAsync(Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).GetIssuesAsync(
+        await _redmineService.Received(1).GetProjectsAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.ProjectId == projectIdentifier),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
@@ -338,7 +337,7 @@ public class IssueCommandTests
         };
 
         // When project is numeric, it should be passed as-is without resolution
-        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.ProjectId == projectId), Arg.Any<CancellationToken>())
+        _redmineService.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.ProjectId == projectId), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -347,8 +346,8 @@ public class IssueCommandTests
         // Assert
         result.Should().Be(0);
         // GetProjectsAsync should NOT be called when using numeric ID
-        await _apiClient.DidNotReceive().GetProjectsAsync(Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).GetIssuesAsync(
+        await _redmineService.DidNotReceive().GetProjectsAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.ProjectId == projectId),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
@@ -361,7 +360,7 @@ public class IssueCommandTests
         var projectName = "NonExistentProject";
         var projects = new List<Project>(); // Empty list, project not found
 
-        _apiClient.GetProjectsAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetProjectsAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(projects));
 
         // Act
@@ -369,9 +368,9 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(1); // Should return error
-        await _apiClient.Received(1).GetProjectsAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetProjectsAsync(Arg.Any<CancellationToken>());
         // GetIssuesAsync should NOT be called when project is not found
-        await _apiClient.DidNotReceive().GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -404,11 +403,11 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
+        _redmineService.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(users));
-        _apiClient.GetProjectsAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetProjectsAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(projects));
-        _apiClient.GetIssuesAsync(
+        _redmineService.GetIssuesAsync(
             Arg.Is<IssueFilter>(f =>
                 f.AssignedToId == assigneeUserId &&
                 f.StatusId == status &&
@@ -422,9 +421,9 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).GetProjectsAsync(Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).GetIssuesAsync(
+        await _redmineService.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetProjectsAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f =>
                 f.AssignedToId == assigneeUserId &&
                 f.StatusId == status &&
@@ -438,7 +437,7 @@ public class IssueCommandTests
     public async Task List_Should_ReturnError_When_RequestFails()
     {
         // Arrange
-        _apiClient.GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>())
+        _redmineService.GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException<List<Issue>>(new HttpRequestException("API Error")));
 
         // Act
@@ -473,7 +472,7 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.SearchIssuesAsync(searchQuery, null, null, null, 30, null, null, Arg.Any<CancellationToken>())
+        _redmineService.SearchIssuesAsync(searchQuery, null, null, null, 30, null, null, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(searchResults));
 
         // Act
@@ -481,7 +480,7 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).SearchIssuesAsync(searchQuery, null, null, null, 30, null, null, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).SearchIssuesAsync(searchQuery, null, null, null, 30, null, null, Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(searchResults);
     }
 
@@ -505,9 +504,9 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetCurrentUserAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetCurrentUserAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentUser));
-        _apiClient.SearchIssuesAsync(searchQuery, currentUser.Id.ToString(), status, null, 30, null, null, Arg.Any<CancellationToken>())
+        _redmineService.SearchIssuesAsync(searchQuery, currentUser.Id.ToString(), status, null, 30, null, null, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(searchResults));
 
         // Act
@@ -515,8 +514,8 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetCurrentUserAsync(Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).SearchIssuesAsync(searchQuery, currentUser.Id.ToString(), status, null, 30, null, null, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetCurrentUserAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).SearchIssuesAsync(searchQuery, currentUser.Id.ToString(), status, null, 30, null, null, Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(searchResults);
     }
 
@@ -545,7 +544,7 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.SearchIssuesAsync(searchQuery, null, null, null, 30, null, null, Arg.Any<CancellationToken>())
+        _redmineService.SearchIssuesAsync(searchQuery, null, null, null, 30, null, null, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(searchResults));
 
         // Act
@@ -553,7 +552,7 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).SearchIssuesAsync(searchQuery, null, null, null, 30, null, null, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).SearchIssuesAsync(searchQuery, null, null, null, 30, null, null, Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(searchResults);
 
         // Verify that the search results include both issue types
@@ -569,7 +568,7 @@ public class IssueCommandTests
     public void IssueCommand_Should_RegisterSubcommands_When_Created()
     {
         // Arrange & Act
-        var command = IssueCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = IssueCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
 
         // Assert
         command.Should().NotBeNull();
@@ -581,7 +580,7 @@ public class IssueCommandTests
     public void ListCommand_Should_HaveCorrectOptions_When_Created()
     {
         // Arrange & Act
-        var command = IssueCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = IssueCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
         var listCommand = command.Subcommands.First(sc => sc.Name == "list");
 
         // Assert
@@ -613,9 +612,9 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetCurrentUserAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetCurrentUserAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentUser));
-        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == currentUser.Id.ToString()), Arg.Any<CancellationToken>())
+        _redmineService.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == currentUser.Id.ToString()), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -623,8 +622,8 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetCurrentUserAsync(Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).GetIssuesAsync(
+        await _redmineService.Received(1).GetCurrentUserAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.AssignedToId == currentUser.Id.ToString()),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
@@ -652,7 +651,7 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == "*" && f.Limit == 30), Arg.Any<CancellationToken>())
+        _redmineService.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == "*" && f.Limit == 30), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -660,7 +659,7 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetIssuesAsync(
+        await _redmineService.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.StatusId == "*" && f.Limit == 30),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
@@ -688,9 +687,9 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(statuses));
-        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == statusId), Arg.Any<CancellationToken>())
+        _redmineService.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == statusId), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -698,8 +697,8 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).GetIssuesAsync(
+        await _redmineService.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.StatusId == statusId),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
@@ -728,9 +727,9 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(statuses));
-        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == expectedStatusId), Arg.Any<CancellationToken>())
+        _redmineService.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == expectedStatusId), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -738,8 +737,8 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).GetIssuesAsync(
+        await _redmineService.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.StatusId == expectedStatusId),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
@@ -757,7 +756,7 @@ public class IssueCommandTests
             new IssueStatus { Id = 5, Name = "Closed" }
         };
 
-        _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(statuses));
 
         // Act
@@ -765,8 +764,8 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(1); // Error
-        await _apiClient.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
-        await _apiClient.DidNotReceive().GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -781,7 +780,7 @@ public class IssueCommandTests
             new IssueStatus { Id = 5, Name = "Closed" }
         };
 
-        _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(statuses));
 
         // Act
@@ -789,8 +788,8 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(1); // Error
-        await _apiClient.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
-        await _apiClient.DidNotReceive().GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -816,9 +815,9 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(statuses));
-        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == expectedStatusId), Arg.Any<CancellationToken>())
+        _redmineService.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == expectedStatusId), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -826,8 +825,8 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).GetIssuesAsync(
+        await _redmineService.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.StatusId == expectedStatusId),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
@@ -873,7 +872,7 @@ public class IssueCommandTests
             new Issue { Id = 2, Subject = "Test Issue 2", UpdatedOn = DateTime.Now }
         };
 
-        _apiClient.GetIssuesAsync(
+        _redmineService.GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.Sort == "updated_on:desc"),
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
@@ -883,7 +882,7 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetIssuesAsync(
+        await _redmineService.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.Sort == "updated_on:desc"),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
@@ -899,7 +898,7 @@ public class IssueCommandTests
             new Issue { Id = 2, Subject = "Test Issue 2", Priority = new Priority { Id = 2, Name = "Normal" } }
         };
 
-        _apiClient.GetIssuesAsync(
+        _redmineService.GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.Sort == "priority:desc,id"),
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
@@ -909,7 +908,7 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetIssuesAsync(
+        await _redmineService.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.Sort == "priority:desc,id"),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
@@ -923,7 +922,7 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(1);
-        await _apiClient.DidNotReceive().GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>());
         _tableFormatter.DidNotReceive().FormatIssues(Arg.Any<List<Issue>>());
     }
 
@@ -935,7 +934,7 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(1);
-        await _apiClient.DidNotReceive().GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>());
         _tableFormatter.DidNotReceive().FormatIssues(Arg.Any<List<Issue>>());
     }
 
@@ -951,7 +950,7 @@ public class IssueCommandTests
             new Issue { Id = 2, Subject = "Bug 2", Priority = new Priority { Id = 2, Name = "Normal" } }
         };
 
-        _apiClient.SearchIssuesAsync(searchQuery, null, null, null, 30, null, sort, Arg.Any<CancellationToken>())
+        _redmineService.SearchIssuesAsync(searchQuery, null, null, null, 30, null, sort, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -959,7 +958,7 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).SearchIssuesAsync(searchQuery, null, null, null, 30, null, sort, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).SearchIssuesAsync(searchQuery, null, null, null, 30, null, sort, Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
     }
 
@@ -987,7 +986,7 @@ public class IssueCommandTests
             Journals = new List<Journal>()
         };
 
-        _apiClient.GetIssueAsync(issueId, true, Arg.Any<CancellationToken>())
+        _redmineService.GetIssueAsync(issueId, true, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issue));
 
         // Act
@@ -995,7 +994,7 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetIssueAsync(issueId, true, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssueAsync(issueId, true, Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssueDetails(issue, false);
     }
 
@@ -1043,7 +1042,7 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetIssueAsync(issueId, true, Arg.Any<CancellationToken>())
+        _redmineService.GetIssueAsync(issueId, true, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issue));
 
         // Act
@@ -1051,7 +1050,7 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetIssueAsync(issueId, true, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssueAsync(issueId, true, Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssueDetails(issue, false);
     }
 
@@ -1060,7 +1059,7 @@ public class IssueCommandTests
     {
         // Arrange
         var issueId = 999;
-        _apiClient.GetIssueAsync(issueId, true, Arg.Any<CancellationToken>())
+        _redmineService.GetIssueAsync(issueId, true, Arg.Any<CancellationToken>())
             .Returns(Task.FromException<Issue>(new RedmineApiException(404, "Issue not found")));
 
         // Act
@@ -1068,7 +1067,7 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(1);
-        await _apiClient.Received(1).GetIssueAsync(issueId, true, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssueAsync(issueId, true, Arg.Any<CancellationToken>());
         _tableFormatter.DidNotReceive().FormatIssueDetails(Arg.Any<Issue>(), Arg.Any<bool>());
         _jsonFormatter.DidNotReceive().FormatIssueDetails(Arg.Any<Issue>(), Arg.Any<bool>());
     }
@@ -1090,7 +1089,7 @@ public class IssueCommandTests
             Journals = new List<Journal>()
         };
 
-        _apiClient.GetIssueAsync(issueId, true, Arg.Any<CancellationToken>())
+        _redmineService.GetIssueAsync(issueId, true, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issue));
 
         // Act
@@ -1098,7 +1097,7 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetIssueAsync(issueId, true, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssueAsync(issueId, true, Arg.Any<CancellationToken>());
         _jsonFormatter.Received(1).FormatIssueDetails(issue, false);
         _tableFormatter.DidNotReceive().FormatIssueDetails(Arg.Any<Issue>(), Arg.Any<bool>());
     }
@@ -1118,7 +1117,7 @@ public class IssueCommandTests
         result.Should().Be(0);
         await _configService.Received(1).GetActiveProfileAsync();
         // Note: We can't easily test browser opening in unit tests, but we verify the success path
-        await _apiClient.DidNotReceive().GetIssueAsync(Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().GetIssueAsync(Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -1140,7 +1139,7 @@ public class IssueCommandTests
     public void ViewCommand_Should_HaveCorrectOptions_When_Created()
     {
         // Arrange & Act
-        var command = IssueCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = IssueCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
         var viewCommand = command.Subcommands.FirstOrDefault(sc => sc.Name == "view");
 
         // Assert
@@ -1180,9 +1179,9 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
+        _redmineService.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(users));
-        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId), Arg.Any<CancellationToken>())
+        _redmineService.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -1190,8 +1189,8 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).GetIssuesAsync(
+        await _redmineService.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
@@ -1214,7 +1213,7 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == assigneeId), Arg.Any<CancellationToken>())
+        _redmineService.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == assigneeId), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -1222,8 +1221,8 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.DidNotReceive().GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).GetIssuesAsync(
+        await _redmineService.DidNotReceive().GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.AssignedToId == assigneeId),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
@@ -1240,7 +1239,7 @@ public class IssueCommandTests
             new User { Id = 2, Name = "Tanaka Hanako", Login = "tanaka" }
         };
 
-        _apiClient.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
+        _redmineService.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(users));
 
         // Act
@@ -1248,8 +1247,8 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(1); // Error code
-        await _apiClient.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
-        await _apiClient.DidNotReceive().GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -1276,9 +1275,9 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
+        _redmineService.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(users));
-        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId), Arg.Any<CancellationToken>())
+        _redmineService.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -1286,8 +1285,8 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).GetIssuesAsync(
+        await _redmineService.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
@@ -1317,9 +1316,9 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
+        _redmineService.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(users));
-        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId), Arg.Any<CancellationToken>())
+        _redmineService.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -1327,8 +1326,8 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).GetIssuesAsync(
+        await _redmineService.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);

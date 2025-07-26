@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging;
 
 using NSubstitute;
 
-using RedmineCLI.ApiClient;
 using RedmineCLI.Commands;
 using RedmineCLI.Exceptions;
 using RedmineCLI.Formatters;
@@ -19,7 +18,7 @@ namespace RedmineCLI.Tests.Commands;
 
 public class IssueEditCommandTests
 {
-    private readonly IRedmineApiClient _apiClient;
+    private readonly IRedmineService _redmineService;
     private readonly IConfigService _configService;
     private readonly ITableFormatter _tableFormatter;
     private readonly IJsonFormatter _jsonFormatter;
@@ -28,13 +27,13 @@ public class IssueEditCommandTests
 
     public IssueEditCommandTests()
     {
-        _apiClient = Substitute.For<IRedmineApiClient>();
+        _redmineService = Substitute.For<IRedmineService>();
         _configService = Substitute.For<IConfigService>();
         _tableFormatter = Substitute.For<ITableFormatter>();
         _jsonFormatter = Substitute.For<IJsonFormatter>();
         _logger = Substitute.For<ILogger<IssueCommand>>();
 
-        _issueCommand = new IssueCommand(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        _issueCommand = new IssueCommand(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
     }
 
     [Fact]
@@ -65,13 +64,16 @@ public class IssueEditCommandTests
             Project = new Project { Id = 1, Name = "Test Project" }
         };
 
-        _apiClient.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
+        _redmineService.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
-        _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(statusList));
-        _apiClient.UpdateIssueAsync(
+        _redmineService.UpdateIssueAsync(
             issueId,
-            Arg.Is<Issue>(i => i.Status != null && i.Status.Id == 2 && i.Subject == "Test Issue"),
+            null,
+            "in-progress",
+            null,
+            null,
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
@@ -80,11 +82,14 @@ public class IssueEditCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).UpdateIssueAsync(
+        await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).UpdateIssueAsync(
             issueId,
-            Arg.Is<Issue>(i => i.Status != null && i.Status.Id == 2 && i.Subject == "Test Issue"),
+            null,
+            "in-progress",
+            null,
+            null,
             Arg.Any<CancellationToken>());
     }
 
@@ -114,13 +119,16 @@ public class IssueEditCommandTests
             Project = new Project { Id = 1, Name = "Test Project" }
         };
 
-        _apiClient.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
+        _redmineService.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(users));
-        _apiClient.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
+        _redmineService.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
-        _apiClient.UpdateIssueAsync(
+        _redmineService.UpdateIssueAsync(
             issueId,
-            Arg.Is<Issue>(i => i.AssignedTo != null && i.AssignedTo.Id == assigneeUserId && i.Subject == "Test Issue"),
+            null,
+            null,
+            newAssignee,
+            null,
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
@@ -129,11 +137,14 @@ public class IssueEditCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).UpdateIssueAsync(
+        await _redmineService.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).UpdateIssueAsync(
             issueId,
-            Arg.Is<Issue>(i => i.AssignedTo != null && i.AssignedTo.Id == assigneeUserId && i.Subject == "Test Issue"),
+            null,
+            null,
+            newAssignee,
+            null,
             Arg.Any<CancellationToken>());
     }
 
@@ -159,11 +170,14 @@ public class IssueEditCommandTests
             Project = new Project { Id = 1, Name = "Test Project" }
         };
 
-        _apiClient.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
+        _redmineService.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
-        _apiClient.UpdateIssueAsync(
+        _redmineService.UpdateIssueAsync(
             issueId,
-            Arg.Is<Issue>(i => i.DoneRatio == doneRatio && i.Subject == "Test Issue"),
+            null,
+            null,
+            null,
+            doneRatio,
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
@@ -172,10 +186,13 @@ public class IssueEditCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).UpdateIssueAsync(
+        await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).UpdateIssueAsync(
             issueId,
-            Arg.Is<Issue>(i => i.DoneRatio == doneRatio && i.Subject == "Test Issue"),
+            null,
+            null,
+            null,
+            doneRatio,
             Arg.Any<CancellationToken>());
     }
 
@@ -207,14 +224,17 @@ public class IssueEditCommandTests
             Project = new Project { Id = 1, Name = "Test Project" }
         };
 
-        _apiClient.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
+        _redmineService.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
-        _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(statusList));
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
-        _apiClient.UpdateIssueAsync(
+        _redmineService.UpdateIssueAsync(
             issueId,
-            Arg.Any<Issue>(),
+            null,
+            newStatus,
+            null,
+            null,
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
@@ -223,8 +243,8 @@ public class IssueEditCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).UpdateIssueAsync(issueId, Arg.Any<Issue>(), Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).UpdateIssueAsync(issueId, null, newStatus, null, null, Arg.Any<CancellationToken>());
         await _configService.Received(1).GetActiveProfileAsync();
     }
 
@@ -242,7 +262,7 @@ public class IssueEditCommandTests
         // Assert
         result.Should().Be(0);
         await _configService.Received(1).GetActiveProfileAsync();
-        await _apiClient.DidNotReceive().UpdateIssueAsync(Arg.Any<int>(), Arg.Any<Issue>(), Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().UpdateIssueAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -266,13 +286,16 @@ public class IssueEditCommandTests
             Project = new Project { Id = 1, Name = "Test Project" }
         };
 
-        _apiClient.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
+        _redmineService.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
-        _apiClient.GetCurrentUserAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetCurrentUserAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentUser));
-        _apiClient.UpdateIssueAsync(
+        _redmineService.UpdateIssueAsync(
             issueId,
-            Arg.Is<Issue>(i => i.AssignedTo != null && i.AssignedTo.Id == currentUser.Id && i.Subject == "Test Issue"),
+            null,
+            null,
+            "@me",
+            null,
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
@@ -281,11 +304,14 @@ public class IssueEditCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).GetCurrentUserAsync(Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).UpdateIssueAsync(
+        await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
+        // GetCurrentUserAsync is now called inside RedmineService.UpdateIssueAsync when assignee is "@me"
+        await _redmineService.Received(1).UpdateIssueAsync(
             issueId,
-            Arg.Is<Issue>(i => i.AssignedTo != null && i.AssignedTo.Id == currentUser.Id && i.Subject == "Test Issue"),
+            null,
+            null,
+            "@me",
+            null,
             Arg.Any<CancellationToken>());
     }
 
@@ -325,19 +351,18 @@ public class IssueEditCommandTests
             Project = new Project { Id = 1, Name = "Test Project" }
         };
 
-        _apiClient.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
+        _redmineService.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(users));
-        _apiClient.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
+        _redmineService.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
-        _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(statusList));
-        _apiClient.UpdateIssueAsync(
+        _redmineService.UpdateIssueAsync(
             issueId,
-            Arg.Is<Issue>(i =>
-                i.Status != null && i.Status.Id == 3 &&
-                i.AssignedTo != null && i.AssignedTo.Id == assigneeUserId &&
-                i.DoneRatio == doneRatio &&
-                i.Subject == "Test Issue"),
+            null,
+            newStatus,
+            newAssignee,
+            doneRatio,
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
@@ -346,15 +371,14 @@ public class IssueEditCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).UpdateIssueAsync(
+        await _redmineService.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).UpdateIssueAsync(
             issueId,
-            Arg.Is<Issue>(i =>
-                i.Status != null && i.Status.Id == 3 &&
-                i.AssignedTo != null && i.AssignedTo.Id == assigneeUserId &&
-                i.DoneRatio == doneRatio &&
-                i.Subject == "Test Issue"),
+            null,
+            newStatus,
+            newAssignee,
+            doneRatio,
             Arg.Any<CancellationToken>());
     }
 
@@ -377,11 +401,11 @@ public class IssueEditCommandTests
             Project = new Project { Id = 1, Name = "Test Project" }
         };
 
-        _apiClient.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
+        _redmineService.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
-        _apiClient.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(statusList));
-        _apiClient.UpdateIssueAsync(Arg.Any<int>(), Arg.Any<Issue>(), Arg.Any<CancellationToken>())
+        _redmineService.UpdateIssueAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException<Issue>(new RedmineApiException(404, "Issue not found")));
 
         // Act
@@ -389,8 +413,8 @@ public class IssueEditCommandTests
 
         // Assert
         result.Should().Be(1);
-        await _apiClient.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).UpdateIssueAsync(issueId, Arg.Any<Issue>(), Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).UpdateIssueAsync(issueId, null, "Closed", null, null, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -423,7 +447,7 @@ public class IssueEditCommandTests
             Project = new Project { Id = 1, Name = "Test Project" }
         };
 
-        _apiClient.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
+        _redmineService.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(originalIssue));
 
         // Act
@@ -432,14 +456,14 @@ public class IssueEditCommandTests
         // Assert
         // Since this would launch interactive mode, we can't fully test it in unit tests
         // But we can verify that it attempted to fetch the issue first
-        await _apiClient.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public void EditCommand_Should_HaveCorrectOptions_When_Created()
     {
         // Arrange & Act
-        var command = IssueCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = IssueCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
         var editCommand = command.Subcommands.FirstOrDefault(sc => sc.Name == "edit");
 
         // Assert
@@ -467,7 +491,7 @@ public class IssueEditCommandTests
 
         // Assert
         result.Should().Be(1);
-        await _apiClient.DidNotReceive().GetIssueAsync(Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
-        await _apiClient.DidNotReceive().UpdateIssueAsync(Arg.Any<int>(), Arg.Any<Issue>(), Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().GetIssueAsync(Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().UpdateIssueAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<CancellationToken>());
     }
 }

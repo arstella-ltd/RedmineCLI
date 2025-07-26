@@ -2,7 +2,6 @@ using System.CommandLine;
 
 using Microsoft.Extensions.Logging;
 
-using RedmineCLI.ApiClient;
 using RedmineCLI.Exceptions;
 using RedmineCLI.Formatters;
 using RedmineCLI.Services;
@@ -13,20 +12,20 @@ namespace RedmineCLI.Commands;
 
 public class StatusCommand
 {
-    private readonly IRedmineApiClient _apiClient;
+    private readonly IRedmineService _redmineService;
     private readonly IConfigService _configService;
     private readonly ITableFormatter _tableFormatter;
     private readonly IJsonFormatter _jsonFormatter;
     private readonly ILogger<StatusCommand> _logger;
 
     public StatusCommand(
-        IRedmineApiClient apiClient,
+        IRedmineService redmineService,
         IConfigService configService,
         ITableFormatter tableFormatter,
         IJsonFormatter jsonFormatter,
         ILogger<StatusCommand> logger)
     {
-        _apiClient = apiClient;
+        _redmineService = redmineService;
         _configService = configService;
         _tableFormatter = tableFormatter;
         _jsonFormatter = jsonFormatter;
@@ -34,14 +33,14 @@ public class StatusCommand
     }
 
     public static Command Create(
-        IRedmineApiClient apiClient,
+        IRedmineService redmineService,
         IConfigService configService,
         ITableFormatter tableFormatter,
         IJsonFormatter jsonFormatter,
         ILogger<StatusCommand> logger)
     {
         var command = new Command("status", "Manage issue statuses");
-        var statusCommand = new StatusCommand(apiClient, configService, tableFormatter, jsonFormatter, logger);
+        var statusCommand = new StatusCommand(redmineService, configService, tableFormatter, jsonFormatter, logger);
 
         var listCommand = new Command("list", "List issue statuses");
         listCommand.Aliases.Add("ls");
@@ -66,7 +65,7 @@ public class StatusCommand
         {
             _logger.LogDebug("Listing issue statuses");
 
-            var statuses = await _apiClient.GetIssueStatusesAsync();
+            var statuses = await _redmineService.GetIssueStatusesAsync();
 
             if (json)
             {

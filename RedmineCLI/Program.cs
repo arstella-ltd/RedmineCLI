@@ -33,26 +33,27 @@ public class Program
         // Configure commands
         var configService = serviceProvider.GetRequiredService<IConfigService>();
         var apiClient = serviceProvider.GetRequiredService<IRedmineApiClient>();
+        var redmineService = serviceProvider.GetRequiredService<IRedmineService>();
         var authLogger = serviceProvider.GetRequiredService<ILogger<AuthCommand>>();
         var issueLogger = serviceProvider.GetRequiredService<ILogger<IssueCommand>>();
         var tableFormatter = serviceProvider.GetRequiredService<ITableFormatter>();
         var jsonFormatter = serviceProvider.GetRequiredService<IJsonFormatter>();
         var licenseHelper = serviceProvider.GetRequiredService<ILicenseHelper>();
 
-        var authCommand = AuthCommand.Create(configService, apiClient, authLogger);
-        var issueCommand = IssueCommand.Create(apiClient, configService, tableFormatter, jsonFormatter, issueLogger);
+        var authCommand = AuthCommand.Create(configService, redmineService, authLogger);
+        var issueCommand = IssueCommand.Create(redmineService, configService, tableFormatter, jsonFormatter, issueLogger);
         var configLogger = serviceProvider.GetRequiredService<ILogger<ConfigCommand>>();
         var configCommand = ConfigCommand.Create(configService, configLogger);
         var fileSystem = serviceProvider.GetRequiredService<IFileSystem>();
-        var attachmentCommand = new AttachmentCommand().CreateCommand(configService, apiClient, tableFormatter, jsonFormatter, fileSystem);
+        var attachmentCommand = new AttachmentCommand().CreateCommand(configService, redmineService, tableFormatter, jsonFormatter, fileSystem);
         var llmsLogger = serviceProvider.GetRequiredService<ILogger<LlmsCommand>>();
         var userLogger = serviceProvider.GetRequiredService<ILogger<UserCommand>>();
         var projectLogger = serviceProvider.GetRequiredService<ILogger<ProjectCommand>>();
         var statusLogger = serviceProvider.GetRequiredService<ILogger<StatusCommand>>();
 
-        var userCommand = UserCommand.Create(apiClient, configService, tableFormatter, jsonFormatter, userLogger);
-        var projectCommand = ProjectCommand.Create(apiClient, configService, tableFormatter, jsonFormatter, projectLogger);
-        var statusCommand = StatusCommand.Create(apiClient, configService, tableFormatter, jsonFormatter, statusLogger);
+        var userCommand = UserCommand.Create(redmineService, configService, tableFormatter, jsonFormatter, userLogger);
+        var projectCommand = ProjectCommand.Create(redmineService, configService, tableFormatter, jsonFormatter, projectLogger);
+        var statusCommand = StatusCommand.Create(redmineService, configService, tableFormatter, jsonFormatter, statusLogger);
 
         rootCommand.Add(authCommand);
         rootCommand.Add(issueCommand);
@@ -196,6 +197,9 @@ public class Program
 
         // Redmine API Client
         services.AddScoped<IRedmineApiClient, RedmineApiClient>();
+
+        // Redmine Service
+        services.AddScoped<IRedmineService, RedmineService>();
 
         // Utils
         services.AddSingleton<ITimeHelper, TimeHelper>();

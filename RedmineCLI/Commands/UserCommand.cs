@@ -2,7 +2,6 @@ using System.CommandLine;
 
 using Microsoft.Extensions.Logging;
 
-using RedmineCLI.ApiClient;
 using RedmineCLI.Exceptions;
 using RedmineCLI.Formatters;
 using RedmineCLI.Models;
@@ -14,20 +13,20 @@ namespace RedmineCLI.Commands;
 
 public class UserCommand
 {
-    private readonly IRedmineApiClient _apiClient;
+    private readonly IRedmineService _redmineService;
     private readonly IConfigService _configService;
     private readonly ITableFormatter _tableFormatter;
     private readonly IJsonFormatter _jsonFormatter;
     private readonly ILogger<UserCommand> _logger;
 
     public UserCommand(
-        IRedmineApiClient apiClient,
+        IRedmineService redmineService,
         IConfigService configService,
         ITableFormatter tableFormatter,
         IJsonFormatter jsonFormatter,
         ILogger<UserCommand> logger)
     {
-        _apiClient = apiClient;
+        _redmineService = redmineService;
         _configService = configService;
         _tableFormatter = tableFormatter;
         _jsonFormatter = jsonFormatter;
@@ -35,14 +34,14 @@ public class UserCommand
     }
 
     public static Command Create(
-        IRedmineApiClient apiClient,
+        IRedmineService redmineService,
         IConfigService configService,
         ITableFormatter tableFormatter,
         IJsonFormatter jsonFormatter,
         ILogger<UserCommand> logger)
     {
         var command = new Command("user", "Manage users");
-        var userCommand = new UserCommand(apiClient, configService, tableFormatter, jsonFormatter, logger);
+        var userCommand = new UserCommand(redmineService, configService, tableFormatter, jsonFormatter, logger);
 
         var listCommand = new Command("list", "List users");
         listCommand.Aliases.Add("ls");
@@ -91,7 +90,7 @@ public class UserCommand
                 limit = 30;
             }
 
-            var users = await _apiClient.GetUsersAsync(limit);
+            var users = await _redmineService.GetUsersAsync(limit);
 
             if (json)
             {

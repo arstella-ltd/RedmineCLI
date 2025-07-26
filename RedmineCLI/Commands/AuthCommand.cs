@@ -3,7 +3,6 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.Extensions.Logging;
 
-using RedmineCLI.ApiClient;
 using RedmineCLI.Services;
 
 using Spectre.Console;
@@ -15,20 +14,20 @@ namespace RedmineCLI.Commands;
 public class AuthCommand
 {
     private readonly IConfigService _configService;
-    private readonly IRedmineApiClient _apiClient;
+    private readonly IRedmineService _redmineService;
     private readonly ILogger<AuthCommand> _logger;
 
-    public AuthCommand(IConfigService configService, IRedmineApiClient apiClient, ILogger<AuthCommand> logger)
+    public AuthCommand(IConfigService configService, IRedmineService redmineService, ILogger<AuthCommand> logger)
     {
         _configService = configService;
-        _apiClient = apiClient;
+        _redmineService = redmineService;
         _logger = logger;
     }
 
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(AuthCommand))]
-    public static Command Create(IConfigService configService, IRedmineApiClient apiClient, ILogger<AuthCommand> logger)
+    public static Command Create(IConfigService configService, IRedmineService redmineService, ILogger<AuthCommand> logger)
     {
-        var authCommand = new AuthCommand(configService, apiClient, logger);
+        var authCommand = new AuthCommand(configService, redmineService, logger);
 
         var command = new Command("auth", "Authenticate with Redmine server");
 
@@ -93,7 +92,7 @@ public class AuthCommand
             _logger.LogDebug("Testing connection to {Url}", url);
 
             // Test connection with provided credentials
-            var connectionTest = await _apiClient.TestConnectionAsync(url, apiKey);
+            var connectionTest = await _redmineService.TestConnectionAsync(url, apiKey);
             if (!connectionTest)
             {
                 DisplayError("Failed to connect to Redmine server. Please check your URL and API key.");
@@ -222,7 +221,7 @@ public class AuthCommand
                     .StartAsync<bool>("Testing connection...", async ctx =>
                     {
                         ctx.Spinner(Spinner.Known.Dots);
-                        var connectionTest = await _apiClient.TestConnectionAsync();
+                        var connectionTest = await _redmineService.TestConnectionAsync();
 
                         if (connectionTest)
                         {

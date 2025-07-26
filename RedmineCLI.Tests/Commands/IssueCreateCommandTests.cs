@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging;
 
 using NSubstitute;
 
-using RedmineCLI.ApiClient;
 using RedmineCLI.Commands;
 using RedmineCLI.Exceptions;
 using RedmineCLI.Formatters;
@@ -19,7 +18,7 @@ namespace RedmineCLI.Tests.Commands;
 
 public class IssueCreateCommandTests
 {
-    private readonly IRedmineApiClient _apiClient;
+    private readonly IRedmineService _redmineService;
     private readonly IConfigService _configService;
     private readonly ITableFormatter _tableFormatter;
     private readonly IJsonFormatter _jsonFormatter;
@@ -28,13 +27,13 @@ public class IssueCreateCommandTests
 
     public IssueCreateCommandTests()
     {
-        _apiClient = Substitute.For<IRedmineApiClient>();
+        _redmineService = Substitute.For<IRedmineService>();
         _configService = Substitute.For<IConfigService>();
         _tableFormatter = Substitute.For<ITableFormatter>();
         _jsonFormatter = Substitute.For<IJsonFormatter>();
         _logger = Substitute.For<ILogger<IssueCommand>>();
 
-        _issueCommand = new IssueCommand(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        _issueCommand = new IssueCommand(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
     }
 
     [Fact]
@@ -56,13 +55,15 @@ public class IssueCreateCommandTests
             Status = new IssueStatus { Id = 1, Name = "New" }
         };
 
-        _apiClient.GetProjectsAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetProjectsAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(projects));
 
-        _apiClient.CreateIssueAsync(Arg.Is<Issue>(i =>
-            i.Subject == "Test Issue" &&
-            i.Description == "Test Description" &&
-            i.Project!.Id == 1), Arg.Any<CancellationToken>())
+        _redmineService.CreateIssueAsync(
+            "1",
+            "Test Issue",
+            "Test Description",
+            null,
+            Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(createdIssue));
 
         var profile = new Profile { Url = "https://redmine.example.com", ApiKey = "test-key" };
@@ -70,11 +71,11 @@ public class IssueCreateCommandTests
 
         // Act - Note: In actual test, we need to mock console input
         // For now, we test the method directly
-        var result = await _issueCommand.CreateAsync(1, "Test Issue", "Test Description", null, CancellationToken.None);
+        var result = await _issueCommand.CreateAsync("1", "Test Issue", "Test Description", null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).CreateIssueAsync(Arg.Any<Issue>(), Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).CreateIssueAsync("1", "Test Issue", "Test Description", null, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -96,18 +97,23 @@ public class IssueCreateCommandTests
             Status = new IssueStatus { Id = 1, Name = "New" }
         };
 
-        _apiClient.CreateIssueAsync(Arg.Any<Issue>(), Arg.Any<CancellationToken>())
+        _redmineService.CreateIssueAsync(
+            projectId,
+            title,
+            description,
+            assignee,
+            Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(createdIssue));
 
         var profile = new Profile { Url = "https://redmine.example.com", ApiKey = "test-key" };
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.CreateAsync(1, title, description, assignee, CancellationToken.None);
+        var result = await _issueCommand.CreateAsync(projectId, title, description, assignee, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).CreateIssueAsync(Arg.Any<Issue>(), Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).CreateIssueAsync(projectId, title, description, assignee, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -122,14 +128,19 @@ public class IssueCreateCommandTests
             Status = new IssueStatus { Id = 1, Name = "New" }
         };
 
-        _apiClient.CreateIssueAsync(Arg.Any<Issue>(), Arg.Any<CancellationToken>())
+        _redmineService.CreateIssueAsync(
+            "1",
+            "Test Issue",
+            null,
+            null,
+            Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(createdIssue));
 
         var profile = new Profile { Url = "https://redmine.example.com", ApiKey = "test-key" };
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.CreateAsync(1, "Test Issue", null, null, CancellationToken.None);
+        var result = await _issueCommand.CreateAsync("1", "Test Issue", null, null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -151,7 +162,7 @@ public class IssueCreateCommandTests
         // Assert
         result.Should().Be(1);
         // Should not call CreateIssueAsync when validation fails
-        await _apiClient.DidNotReceive().CreateIssueAsync(Arg.Any<Issue>(), Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().CreateIssueAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -168,7 +179,7 @@ public class IssueCreateCommandTests
         result.Should().Be(0);
         await _configService.Received(1).GetActiveProfileAsync();
         // Browser opening can't be easily tested, but we verify the success path
-        await _apiClient.DidNotReceive().CreateIssueAsync(Arg.Any<Issue>(), Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().CreateIssueAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -185,30 +196,35 @@ public class IssueCreateCommandTests
             Status = new IssueStatus { Id = 1, Name = "New" }
         };
 
-        _apiClient.GetCurrentUserAsync(Arg.Any<CancellationToken>())
+        _redmineService.GetCurrentUserAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentUser));
 
-        _apiClient.CreateIssueAsync(Arg.Is<Issue>(i =>
-            i.AssignedTo != null && i.AssignedTo.Id == currentUser.Id), Arg.Any<CancellationToken>())
+        _redmineService.CreateIssueAsync(
+            "1",
+            "Test Issue",
+            "Description",
+            "@me",
+            Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(createdIssue));
 
         var profile = new Profile { Url = "https://redmine.example.com", ApiKey = "test-key" };
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.CreateAsync(1, "Test Issue", "Description", "@me", CancellationToken.None);
+        var result = await _issueCommand.CreateAsync("1", "Test Issue", "Description", "@me", false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetCurrentUserAsync(Arg.Any<CancellationToken>());
-        await _apiClient.Received(1).CreateIssueAsync(Arg.Any<Issue>(), Arg.Any<CancellationToken>());
+        // GetCurrentUserAsync is now called inside RedmineService.CreateIssueAsync when assignee is "@me"
+        // So we don't need to verify it was called directly from IssueCommand
+        await _redmineService.Received(1).CreateIssueAsync("1", "Test Issue", "Description", "@me", Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public void CreateCommand_Should_HaveCorrectOptions_When_Created()
     {
         // Arrange & Act
-        var command = IssueCommand.Create(_apiClient, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var command = IssueCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
         var createCommand = command.Subcommands.FirstOrDefault(sc => sc.Name == "create");
 
         // Assert
