@@ -209,6 +209,13 @@ public class RedmineApiClient : IRedmineApiClient
         return statusesResponse?.IssueStatuses ?? new List<IssueStatus>();
     }
 
+    public async Task<List<Priority>> GetPrioritiesAsync(CancellationToken cancellationToken = default)
+    {
+        var path = "/enumerations/issue_priorities.json";
+        var prioritiesResponse = await GetAsync(path, RedmineJsonContext.Default.PrioritiesResponse, "issue priorities", cancellationToken);
+        return prioritiesResponse?.Priorities ?? new List<Priority>();
+    }
+
     public async Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -272,6 +279,7 @@ public class RedmineApiClient : IRedmineApiClient
             ["assigned_to_id"] = filter.AssignedToId,
             ["project_id"] = filter.ProjectId,
             ["status_id"] = filter.StatusId,
+            ["priority_id"] = filter.PriorityId,
             ["limit"] = filter.Limit?.ToString(),
             ["offset"] = filter.Offset?.ToString(),
             ["sort"] = filter.Sort,

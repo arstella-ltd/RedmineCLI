@@ -94,7 +94,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -132,7 +132,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, status, null, null, null, false, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, status, null, null, null, false, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -165,7 +165,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, limit, offset, false, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, limit, offset, false, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -195,7 +195,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, true, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, true, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -233,7 +233,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(assignee, null, null, null, null, false, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(assignee, null, null, null, null, false, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -271,7 +271,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, project, null, null, false, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, project, null, null, false, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -309,7 +309,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, projectName, null, null, false, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, projectName, null, null, false, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -341,7 +341,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, projectId, null, null, false, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, projectId, null, null, false, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -364,7 +364,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(projects));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, projectName, null, null, false, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, projectName, null, null, false, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(1); // Should return error
@@ -417,7 +417,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(assignee, status, project, limit, null, false, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(assignee, status, project, limit, null, false, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -441,7 +441,7 @@ public class IssueCommandTests
             .Returns(Task.FromException<List<Issue>>(new HttpRequestException("API Error")));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -476,7 +476,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(searchResults));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, searchQuery, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, searchQuery, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -510,7 +510,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(searchResults));
 
         // Act
-        var result = await _issueCommand.ListAsync(assignee, status, null, null, null, false, false, false, searchQuery, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(assignee, status, null, null, null, false, false, false, searchQuery, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -548,7 +548,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(searchResults));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, searchQuery, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, searchQuery, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -618,7 +618,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync("@me", null, null, null, null, false, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync("@me", null, null, null, null, false, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -655,7 +655,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, "all", null, null, null, false, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, "all", null, null, null, false, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -693,7 +693,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, statusId, null, null, null, false, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, statusId, null, null, null, false, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -733,7 +733,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, statusName, null, null, null, false, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, statusName, null, null, null, false, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -760,7 +760,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(statuses));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, invalidStatusId, null, null, null, false, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, invalidStatusId, null, null, null, false, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(1); // Error
@@ -784,7 +784,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(statuses));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, unknownStatus, null, null, null, false, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, unknownStatus, null, null, null, false, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(1); // Error
@@ -821,7 +821,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, statusName, null, null, null, false, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, statusName, null, null, null, false, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -840,7 +840,7 @@ public class IssueCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, true, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, true, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -855,7 +855,7 @@ public class IssueCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(null));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, true, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, true, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -878,7 +878,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, "updated_on:desc", CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, "updated_on:desc", null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -904,7 +904,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, "priority:desc,id", CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, "priority:desc,id", null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -918,7 +918,7 @@ public class IssueCommandTests
     public async Task List_Should_ReturnError_When_InvalidSortFieldProvided()
     {
         // Arrange & Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, "invalid_field", CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, "invalid_field", null, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -930,7 +930,7 @@ public class IssueCommandTests
     public async Task List_Should_ReturnError_When_InvalidSortDirectionProvided()
     {
         // Arrange & Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, "id:invalid", CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, "id:invalid", null, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -954,11 +954,189 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, searchQuery, sort, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, searchQuery, sort, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
         await _redmineService.Received(1).SearchIssuesAsync(searchQuery, null, null, null, 30, null, sort, Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
+    }
+
+    [Fact]
+    public async Task List_Should_FilterByPriority_When_PriorityIdIsSpecified()
+    {
+        // Arrange
+        var priorityId = "4";
+        var priorities = new List<Priority>
+        {
+            new Priority { Id = 3, Name = "Low" },
+            new Priority { Id = 4, Name = "High" },
+            new Priority { Id = 5, Name = "Urgent" }
+        };
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "High Priority Issue",
+                Priority = new Priority { Id = 4, Name = "High" },
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                Project = new Project { Id = 1, Name = "Test Project" }
+            }
+        };
+
+        _redmineService.GetPrioritiesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(priorities));
+        _redmineService.GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, null, priorityId, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).GetPrioritiesAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.PriorityId == priorityId),
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
+    }
+
+    [Fact]
+    public async Task List_Should_ResolvePriorityNameToId_When_PriorityNameProvided()
+    {
+        // Arrange
+        var priorityName = "High";
+        var expectedPriorityId = "4";
+        var priorities = new List<Priority>
+        {
+            new Priority { Id = 3, Name = "Low" },
+            new Priority { Id = 4, Name = "High" },
+            new Priority { Id = 5, Name = "Urgent" }
+        };
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "High Priority Issue",
+                Priority = new Priority { Id = 4, Name = "High" },
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                Project = new Project { Id = 1, Name = "Test Project" }
+            }
+        };
+
+        _redmineService.GetPrioritiesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(priorities));
+        _redmineService.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.PriorityId == expectedPriorityId), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, null, priorityName, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).GetPrioritiesAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.PriorityId == expectedPriorityId),
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
+    }
+
+    [Fact]
+    public async Task List_Should_ReturnError_When_InvalidPriorityIdProvided()
+    {
+        // Arrange
+        var invalidPriorityId = "999";
+        var priorities = new List<Priority>
+        {
+            new Priority { Id = 3, Name = "Low" },
+            new Priority { Id = 4, Name = "Normal" },
+            new Priority { Id = 5, Name = "High" }
+        };
+
+        _redmineService.GetPrioritiesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(priorities));
+
+        // Act
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, null, invalidPriorityId, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(1); // Error
+        await _redmineService.Received(1).GetPrioritiesAsync(Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task List_Should_ReturnError_When_UnknownPriorityNameProvided()
+    {
+        // Arrange
+        var unknownPriority = "Unknown Priority";
+        var priorities = new List<Priority>
+        {
+            new Priority { Id = 3, Name = "Low" },
+            new Priority { Id = 4, Name = "Normal" },
+            new Priority { Id = 5, Name = "High" }
+        };
+
+        _redmineService.GetPrioritiesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(priorities));
+
+        // Act
+        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, null, unknownPriority, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(1); // Error
+        await _redmineService.Received(1).GetPrioritiesAsync(Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task List_Should_FilterByMultipleParameters_When_PriorityAndOtherFiltersSpecified()
+    {
+        // Arrange
+        var priorityId = "4";
+        var statusId = "open";
+        var assignee = "@me";
+        var expectedAssigneeId = "123";
+        var priorities = new List<Priority>
+        {
+            new Priority { Id = 3, Name = "Low" },
+            new Priority { Id = 4, Name = "High" },
+            new Priority { Id = 5, Name = "Urgent" }
+        };
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "High Priority Issue Assigned to Me",
+                Priority = new Priority { Id = 4, Name = "High" },
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                AssignedTo = new User { Id = 123, Name = "Current User" },
+                Project = new Project { Id = 1, Name = "Test Project" }
+            }
+        };
+
+        _redmineService.GetCurrentUserAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new User { Id = 123, Name = "Current User" }));
+        _redmineService.GetPrioritiesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(priorities));
+        _redmineService.GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.PriorityId == priorityId && f.StatusId == statusId && f.AssignedToId == expectedAssigneeId),
+            Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(assignee, statusId, null, null, null, false, false, false, null, null, priorityId, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).GetCurrentUserAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetPrioritiesAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.PriorityId == priorityId && f.StatusId == statusId && f.AssignedToId == expectedAssigneeId),
+            Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
     }
 
@@ -1185,7 +1363,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(assigneeName, null, null, null, null, false, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(assigneeName, null, null, null, null, false, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -1217,7 +1395,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(assigneeId, null, null, null, null, false, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(assigneeId, null, null, null, null, false, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -1243,7 +1421,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(users));
 
         // Act
-        var result = await _issueCommand.ListAsync(unknownUser, null, null, null, null, false, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(unknownUser, null, null, null, null, false, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(1); // Error code
@@ -1281,7 +1459,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(assigneeDisplayName, null, null, null, null, false, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(assigneeDisplayName, null, null, null, null, false, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -1322,7 +1500,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(assigneeDisplayName, null, null, null, null, false, false, false, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(assigneeDisplayName, null, null, null, null, false, false, false, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);

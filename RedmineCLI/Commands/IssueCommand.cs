@@ -57,6 +57,7 @@ public class IssueCommand
         statusOption.Aliases.Add("-s");
         var projectOption = new Option<string?>("--project") { Description = "Filter by project (identifier or ID)" };
         projectOption.Aliases.Add("-p");
+        var priorityOption = new Option<string?>("--priority") { Description = "Filter by priority (name or ID)" };
         var limitOption = new Option<int?>("--limit") { Description = "Limit number of results (default: 30)" };
         limitOption.Aliases.Add("-L");
         var offsetOption = new Option<int?>("--offset") { Description = "Offset for pagination" };
@@ -71,6 +72,7 @@ public class IssueCommand
         listCommand.Add(assigneeOption);
         listCommand.Add(statusOption);
         listCommand.Add(projectOption);
+        listCommand.Add(priorityOption);
         listCommand.Add(limitOption);
         listCommand.Add(offsetOption);
         listCommand.Add(jsonOption);
@@ -84,6 +86,7 @@ public class IssueCommand
             var assignee = parseResult.GetValue(assigneeOption);
             var status = parseResult.GetValue(statusOption);
             var project = parseResult.GetValue(projectOption);
+            var priority = parseResult.GetValue(priorityOption);
             var limit = parseResult.GetValue(limitOption);
             var offset = parseResult.GetValue(offsetOption);
             var json = parseResult.GetValue(jsonOption);
@@ -92,7 +95,7 @@ public class IssueCommand
             var search = parseResult.GetValue(searchOption);
             var sort = parseResult.GetValue(sortOption);
 
-            Environment.ExitCode = await issueCommand.ListAsync(assignee, status, project, limit, offset, json, web, absoluteTime, search, sort, CancellationToken.None);
+            Environment.ExitCode = await issueCommand.ListAsync(assignee, status, project, limit, offset, json, web, absoluteTime, search, sort, priority, CancellationToken.None);
         });
 
         command.Add(listCommand);
@@ -269,12 +272,13 @@ public class IssueCommand
         bool absoluteTime,
         string? search,
         string? sort,
+        string? priority,
         CancellationToken cancellationToken)
     {
         try
         {
-            _logger.LogDebug("Listing issues with filters - Assignee: {Assignee}, Status: {Status}, Project: {Project}, Search: {Search}, Sort: {Sort}",
-                assignee, status, project, search, sort);
+            _logger.LogDebug("Listing issues with filters - Assignee: {Assignee}, Status: {Status}, Project: {Project}, Priority: {Priority}, Search: {Search}, Sort: {Sort}",
+                assignee, status, project, priority, search, sort);
 
             // Handle @me special value
             assignee = await ResolveAssigneeAsync(assignee, cancellationToken);
@@ -284,6 +288,9 @@ public class IssueCommand
 
             // Handle status resolution
             string? statusFilter = await ResolveStatusAsync(status, cancellationToken);
+
+            // Handle priority resolution
+            string? priorityFilter = await ResolvePriorityAsync(priority, cancellationToken);
 
             // Validate sort parameter if provided
             if (!string.IsNullOrEmpty(sort))
@@ -328,13 +335,14 @@ public class IssueCommand
                     AssignedToId = assignee,
                     StatusId = statusFilter,
                     ProjectId = project,
+                    PriorityId = priorityFilter,
                     Limit = limit ?? 30, // Default limit to 30
                     Offset = offset,
                     Sort = sort
                 };
 
                 // If no filters are specified, default to open issues
-                if (string.IsNullOrEmpty(assignee) && string.IsNullOrEmpty(status) && string.IsNullOrEmpty(project))
+                if (string.IsNullOrEmpty(assignee) && string.IsNullOrEmpty(status) && string.IsNullOrEmpty(project) && string.IsNullOrEmpty(priority))
                 {
                     filter.StatusId = "open";
                 }
@@ -978,6 +986,65 @@ public class IssueCommand
         {
             _logger.LogError(ex, "Failed to resolve status '{Status}'", status);
             throw new ValidationException($"Failed to resolve status '{status}': {ex.Message}", ex);
+        }
+    }
+
+    private async Task<string?> ResolvePriorityAsync(string? priority, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(priority))
+            return null;
+
+        // If numeric, validate it's a valid priority ID
+        if (int.TryParse(priority, out var priorityId))
+        {
+            try
+            {
+                var priorities = await _redmineService.GetPrioritiesAsync(cancellationToken);
+                if (priorities.Any(p => p.Id == priorityId))
+                {
+                    return priority;
+                }
+                else
+                {
+                    throw new ValidationException($"Priority ID '{priority}' not found.");
+                }
+            }
+            catch (ValidationException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to validate priority ID '{PriorityId}'", priority);
+                throw new ValidationException($"Failed to validate priority ID '{priority}': {ex.Message}", ex);
+            }
+        }
+
+        // Try to match by priority name
+        try
+        {
+            var priorities = await _redmineService.GetPrioritiesAsync(cancellationToken);
+            var matchedPriority = priorities.FirstOrDefault(p =>
+                p.Name.Equals(priority, StringComparison.OrdinalIgnoreCase));
+
+            if (matchedPriority != null)
+            {
+                _logger.LogDebug("Resolved priority '{Priority}' to ID {PriorityId}", priority, matchedPriority.Id);
+                return matchedPriority.Id.ToString();
+            }
+
+            // Priority not found
+            _logger.LogError("Could not find priority with name '{Priority}'", priority);
+            throw new ValidationException($"Priority '{priority}' not found.");
+        }
+        catch (ValidationException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to resolve priority '{Priority}'", priority);
+            throw new ValidationException($"Failed to resolve priority '{priority}': {ex.Message}", ex);
         }
     }
 

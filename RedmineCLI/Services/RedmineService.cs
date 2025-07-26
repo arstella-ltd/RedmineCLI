@@ -23,6 +23,8 @@ public class RedmineService : IRedmineService
     private DateTime _statusesCacheTime = DateTime.MinValue;
     private List<Project>? _projectsCache;
     private DateTime _projectsCacheTime = DateTime.MinValue;
+    private List<Priority>? _prioritiesCache;
+    private DateTime _prioritiesCacheTime = DateTime.MinValue;
     private readonly TimeSpan _cacheExpiration = TimeSpan.FromMinutes(5);
 
     public RedmineService(IRedmineApiClient apiClient, ILogger<RedmineService> logger)
@@ -224,6 +226,33 @@ public class RedmineService : IRedmineService
     }
 
     /// <inheritdoc/>
+    public async Task<int?> ResolvePriorityIdAsync(string? priorityIdOrName, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(priorityIdOrName))
+        {
+            return null;
+        }
+
+        // 数値の場合はそのまま返す
+        if (int.TryParse(priorityIdOrName, out var priorityId))
+        {
+            return priorityId;
+        }
+
+        // 優先度一覧から名前で検索
+        var priorities = await GetCachedPrioritiesAsync(cancellationToken);
+        var priority = priorities.FirstOrDefault(p =>
+            p.Name.Equals(priorityIdOrName, StringComparison.OrdinalIgnoreCase));
+
+        if (priority == null)
+        {
+            throw new ValidationException($"Priority '{priorityIdOrName}' not found");
+        }
+
+        return priority.Id;
+    }
+
+    /// <inheritdoc/>
     public async Task<int> ResolveProjectIdAsync(string projectIdOrIdentifier, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(projectIdOrIdentifier))
@@ -267,6 +296,12 @@ public class RedmineService : IRedmineService
     public async Task<List<IssueStatus>> GetIssueStatusesAsync(CancellationToken cancellationToken = default)
     {
         return await GetCachedStatusesAsync(cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task<List<Priority>> GetPrioritiesAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetCachedPrioritiesAsync(cancellationToken);
     }
 
     /// <inheritdoc/>
@@ -358,5 +393,26 @@ public class RedmineService : IRedmineService
         _projectsCacheTime = DateTime.UtcNow;
 
         return projects;
+    }
+
+    /// <summary>
+    /// キャッシュされた優先度一覧を取得する
+    /// </summary>
+    private async Task<List<Priority>> GetCachedPrioritiesAsync(CancellationToken cancellationToken)
+    {
+        // キャッシュが有効な場合は返す
+        if (_prioritiesCache != null && DateTime.UtcNow - _prioritiesCacheTime < _cacheExpiration)
+        {
+            return _prioritiesCache;
+        }
+
+        _logger.LogDebug("Fetching issue priorities from API");
+        var priorities = await _apiClient.GetPrioritiesAsync(cancellationToken);
+
+        // キャッシュに保存
+        _prioritiesCache = priorities;
+        _prioritiesCacheTime = DateTime.UtcNow;
+
+        return priorities;
     }
 }
