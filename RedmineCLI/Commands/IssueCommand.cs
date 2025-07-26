@@ -287,7 +287,7 @@ public class IssueCommand
             string? statusFilter = status;
             if (status == "all")
             {
-                statusFilter = null; // No status filter means all statuses
+                statusFilter = "*"; // Use * to get all statuses per Redmine API
             }
 
             // Validate sort parameter if provided

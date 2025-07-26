@@ -652,7 +652,7 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == null && f.Limit == 30), Arg.Any<CancellationToken>())
+        _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.StatusId == "*" && f.Limit == 30), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
 
         // Act
@@ -661,7 +661,7 @@ public class IssueCommandTests
         // Assert
         result.Should().Be(0);
         await _apiClient.Received(1).GetIssuesAsync(
-            Arg.Is<IssueFilter>(f => f.StatusId == null && f.Limit == 30),
+            Arg.Is<IssueFilter>(f => f.StatusId == "*" && f.Limit == 30),
             Arg.Any<CancellationToken>());
         _tableFormatter.Received(1).FormatIssues(issues);
     }
