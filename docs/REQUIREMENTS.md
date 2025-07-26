@@ -171,16 +171,14 @@ RedmineCLIは、Redmineのチケット管理をコマンドラインから効率
 #### 受け入れ基準
 1. WHEN `redmine user list` または `redmine user ls` を実行 THEN ユーザー一覧が表示される SHALL
 2. WHEN ユーザー一覧を表示 THEN ID、ログイン名、氏名、メールアドレス、作成日時が表示される SHALL
-3. WHEN `--filter <keyword>` または `-f <keyword>` オプションを指定 THEN ログイン名または氏名に部分一致するユーザーが表示される SHALL
-4. WHEN `--limit <number>` または `-L <number>` オプションを指定 THEN 表示件数を制限できる SHALL
-5. WHEN `--json` オプションを指定 THEN JSON形式で出力される SHALL
-6. WHEN `redmine project list` または `redmine project ls` を実行 THEN プロジェクト一覧が表示される SHALL
-7. WHEN プロジェクト一覧を表示 THEN ID、識別子、名前、説明、作成日時が表示される SHALL
-8. WHEN `--public` オプションを指定 THEN 公開プロジェクトのみが表示される SHALL
-9. WHEN `--filter <keyword>` または `-f <keyword>` オプションを指定 THEN 名前または識別子に部分一致するプロジェクトが表示される SHALL
-10. WHEN `--json` オプションを指定 THEN JSON形式で出力される SHALL
-11. WHEN `redmine status list` または `redmine status ls` を実行 THEN チケットステータス一覧が表示される SHALL
-12. WHEN ステータス一覧を表示 THEN ID、名前、終了ステータスかどうか、デフォルトステータスかどうかが表示される SHALL
-13. WHEN `--json` オプションを指定 THEN JSON形式で出力される SHALL
-14. WHEN 権限がない情報を取得しようとする THEN 適切なエラーメッセージが表示される SHALL
-15. WHEN API接続エラーが発生 THEN 適切なエラーメッセージが表示される SHALL
+3. WHEN `--limit <number>` または `-L <number>` オプションを指定 THEN 表示件数を制限できる SHALL
+4. WHEN `--json` オプションを指定 THEN JSON形式で出力される SHALL
+5. WHEN `redmine project list` または `redmine project ls` を実行 THEN プロジェクト一覧が表示される SHALL
+6. WHEN プロジェクト一覧を表示 THEN ID、識別子、名前、説明、作成日時が表示される SHALL
+7. WHEN `--public` オプションを指定 THEN 公開プロジェクトのみが表示される SHALL
+8. WHEN `--json` オプションを指定 THEN JSON形式で出力される SHALL
+9. WHEN `redmine status list` または `redmine status ls` を実行 THEN チケットステータス一覧が表示される SHALL
+10. WHEN ステータス一覧を表示 THEN ID、名前、終了ステータスかどうか、デフォルトステータスかどうかが表示される SHALL
+11. WHEN `--json` オプションを指定 THEN JSON形式で出力される SHALL
+12. WHEN 権限がない情報を取得しようとする THEN 適切なエラーメッセージが表示される SHALL
+13. WHEN API接続エラーが発生 THEN 適切なエラーメッセージが表示される SHALL

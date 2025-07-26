@@ -660,15 +660,13 @@
 - [ ] 22. マスターデータ一覧表示コマンドの実装（TDD）
   - **Red**: User/Project/StatusCommandのテストを先に作成
     - UserListCommandTests
-      - List_Should_ReturnAllUsers_When_NoFilterProvided
-      - List_Should_ReturnFilteredUsers_When_KeywordProvided
+      - List_Should_ReturnAllUsers_When_Called
       - List_Should_LimitResults_When_LimitOptionIsSet
       - List_Should_FormatAsJson_When_JsonOptionIsSet
       - List_Should_HandleApiError_When_UnauthorizedAccess
     - ProjectListCommandTests
-      - List_Should_ReturnAllProjects_When_NoFilterProvided
+      - List_Should_ReturnAllProjects_When_Called
       - List_Should_ReturnPublicProjects_When_PublicOptionProvided
-      - List_Should_ReturnFilteredProjects_When_KeywordProvided
       - List_Should_FormatAsJson_When_JsonOptionIsSet
     - StatusListCommandTests
       - List_Should_ReturnAllStatuses_When_Called
@@ -678,16 +676,14 @@
   - **Green**: テストを通すための実装
     - UserCommand（list/lsサブコマンド）の実装
       - ユーザー一覧表示（ID、ログイン名、氏名、メールアドレス、作成日時）
-      - --filter/-fオプションによるキーワードフィルタリング
       - --limit/-Lオプションによる表示件数制限
       - TableFormatterとJsonFormatterの活用
     - ProjectCommand（list/lsサブコマンド）の実装
       - プロジェクト一覧表示（ID、識別子、名前、説明、作成日時）
-      - --filter/-fオプションによるキーワードフィルタリング
       - --publicオプションによる公開プロジェクトのみ表示
     - StatusCommand（list/lsサブコマンド）の実装
       - ステータス一覧表示（ID、名前、終了ステータス、デフォルトステータス）
-      - シンプルなテーブル表示（フィルタリングなし）
+      - シンプルなテーブル表示
     - RedmineApiClientのGetUsers/GetProjects/GetIssueStatusesメソッドの活用
   - **Refactor**: コードの共通化とエラーハンドリングの改善
     - 権限エラー（403 Forbidden）の適切な処理
