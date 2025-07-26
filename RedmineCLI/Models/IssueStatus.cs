@@ -12,4 +12,7 @@ public class IssueStatus
 
     [JsonPropertyName("is_closed")]
     public bool? IsClosed { get; set; }
+
+    [JsonPropertyName("is_default")]
+    public bool? IsDefault { get; set; }
 }

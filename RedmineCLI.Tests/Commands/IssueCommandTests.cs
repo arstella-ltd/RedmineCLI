@@ -228,7 +228,7 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetUsersAsync(Arg.Any<CancellationToken>())
+        _apiClient.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(users));
         _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == assigneeUserId), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
@@ -238,7 +238,7 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetUsersAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
         await _apiClient.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.AssignedToId == assigneeUserId),
             Arg.Any<CancellationToken>());
@@ -404,7 +404,7 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetUsersAsync(Arg.Any<CancellationToken>())
+        _apiClient.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(users));
         _apiClient.GetProjectsAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(projects));
@@ -422,7 +422,7 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetUsersAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
         await _apiClient.Received(1).GetProjectsAsync(Arg.Any<CancellationToken>());
         await _apiClient.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f =>
@@ -1180,7 +1180,7 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetUsersAsync(Arg.Any<CancellationToken>())
+        _apiClient.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(users));
         _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
@@ -1190,7 +1190,7 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetUsersAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
         await _apiClient.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId),
             Arg.Any<CancellationToken>());
@@ -1222,7 +1222,7 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.DidNotReceive().GetUsersAsync(Arg.Any<CancellationToken>());
+        await _apiClient.DidNotReceive().GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
         await _apiClient.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.AssignedToId == assigneeId),
             Arg.Any<CancellationToken>());
@@ -1240,7 +1240,7 @@ public class IssueCommandTests
             new User { Id = 2, Name = "Tanaka Hanako", Login = "tanaka" }
         };
 
-        _apiClient.GetUsersAsync(Arg.Any<CancellationToken>())
+        _apiClient.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(users));
 
         // Act
@@ -1248,7 +1248,7 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(1); // Error code
-        await _apiClient.Received(1).GetUsersAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
         await _apiClient.DidNotReceive().GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>());
     }
 
@@ -1276,7 +1276,7 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetUsersAsync(Arg.Any<CancellationToken>())
+        _apiClient.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(users));
         _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
@@ -1286,7 +1286,7 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetUsersAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
         await _apiClient.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId),
             Arg.Any<CancellationToken>());
@@ -1317,7 +1317,7 @@ public class IssueCommandTests
             }
         };
 
-        _apiClient.GetUsersAsync(Arg.Any<CancellationToken>())
+        _apiClient.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(users));
         _apiClient.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(issues));
@@ -1327,7 +1327,7 @@ public class IssueCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _apiClient.Received(1).GetUsersAsync(Arg.Any<CancellationToken>());
+        await _apiClient.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
         await _apiClient.Received(1).GetIssuesAsync(
             Arg.Is<IssueFilter>(f => f.AssignedToId == expectedUserId),
             Arg.Any<CancellationToken>());

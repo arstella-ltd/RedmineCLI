@@ -46,11 +46,21 @@ public class Program
         var fileSystem = serviceProvider.GetRequiredService<IFileSystem>();
         var attachmentCommand = new AttachmentCommand().CreateCommand(configService, apiClient, tableFormatter, jsonFormatter, fileSystem);
         var llmsLogger = serviceProvider.GetRequiredService<ILogger<LlmsCommand>>();
+        var userLogger = serviceProvider.GetRequiredService<ILogger<UserCommand>>();
+        var projectLogger = serviceProvider.GetRequiredService<ILogger<ProjectCommand>>();
+        var statusLogger = serviceProvider.GetRequiredService<ILogger<StatusCommand>>();
+
+        var userCommand = UserCommand.Create(apiClient, configService, tableFormatter, jsonFormatter, userLogger);
+        var projectCommand = ProjectCommand.Create(apiClient, configService, tableFormatter, jsonFormatter, projectLogger);
+        var statusCommand = StatusCommand.Create(apiClient, configService, tableFormatter, jsonFormatter, statusLogger);
 
         rootCommand.Add(authCommand);
         rootCommand.Add(issueCommand);
         rootCommand.Add(configCommand);
         rootCommand.Add(attachmentCommand);
+        rootCommand.Add(userCommand);
+        rootCommand.Add(projectCommand);
+        rootCommand.Add(statusCommand);
 
         // Add llms command after all other commands are added so it can access them
         var llmsCommand = LlmsCommand.Create(llmsLogger, rootCommand);

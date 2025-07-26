@@ -358,4 +358,71 @@ public class TableFormatter : ITableFormatter
     {
         return contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
     }
+
+    public void FormatUsers(List<User> users)
+    {
+        var table = new Table();
+        table.AddColumn("ID");
+        table.AddColumn("LOGIN");
+        table.AddColumn("NAME");
+        table.AddColumn("EMAIL");
+        table.AddColumn("CREATED");
+
+        foreach (var user in users)
+        {
+            table.AddRow(
+                user.Id.ToString(),
+                Markup.Escape(user.Login ?? string.Empty),
+                Markup.Escape(user.Name),
+                Markup.Escape(user.Email ?? string.Empty),
+                _timeHelper.FormatTime(user.CreatedOn, _timeFormat)
+            );
+        }
+
+        AnsiConsole.Write(table);
+    }
+
+    public void FormatProjects(List<Project> projects)
+    {
+        var table = new Table();
+        table.AddColumn("ID");
+        table.AddColumn("IDENTIFIER");
+        table.AddColumn("NAME");
+        table.AddColumn("DESCRIPTION");
+        table.AddColumn("CREATED");
+
+        foreach (var project in projects)
+        {
+            table.AddRow(
+                project.Id.ToString(),
+                Markup.Escape(project.Identifier ?? string.Empty),
+                Markup.Escape(project.Name),
+                Markup.Escape(project.Description ?? string.Empty),
+                project.CreatedOn.HasValue ? _timeHelper.FormatTime(project.CreatedOn.Value, _timeFormat) : string.Empty
+            );
+        }
+
+        AnsiConsole.Write(table);
+    }
+
+    public void FormatIssueStatuses(List<IssueStatus> statuses)
+    {
+        var table = new Table();
+        table.AddColumn("ID");
+        table.AddColumn("NAME");
+        table.AddColumn("CLOSED");
+        table.AddColumn("DEFAULT");
+
+        foreach (var status in statuses)
+        {
+            table.AddRow(
+                status.Id.ToString(),
+                Markup.Escape(status.Name),
+                status.IsClosed.GetValueOrDefault() ? "Yes" : "No",
+                status.IsDefault.GetValueOrDefault() ? "Yes" : "No"
+            );
+        }
+
+        AnsiConsole.Write(table);
+    }
 }

@@ -1,0 +1,127 @@
+using System.CommandLine;
+
+using Microsoft.Extensions.Logging;
+
+using RedmineCLI.ApiClient;
+using RedmineCLI.Exceptions;
+using RedmineCLI.Formatters;
+using RedmineCLI.Models;
+using RedmineCLI.Services;
+
+using Spectre.Console;
+
+namespace RedmineCLI.Commands;
+
+public class UserCommand
+{
+    private readonly IRedmineApiClient _apiClient;
+    private readonly IConfigService _configService;
+    private readonly ITableFormatter _tableFormatter;
+    private readonly IJsonFormatter _jsonFormatter;
+    private readonly ILogger<UserCommand> _logger;
+
+    public UserCommand(
+        IRedmineApiClient apiClient,
+        IConfigService configService,
+        ITableFormatter tableFormatter,
+        IJsonFormatter jsonFormatter,
+        ILogger<UserCommand> logger)
+    {
+        _apiClient = apiClient;
+        _configService = configService;
+        _tableFormatter = tableFormatter;
+        _jsonFormatter = jsonFormatter;
+        _logger = logger;
+    }
+
+    public static Command Create(
+        IRedmineApiClient apiClient,
+        IConfigService configService,
+        ITableFormatter tableFormatter,
+        IJsonFormatter jsonFormatter,
+        ILogger<UserCommand> logger)
+    {
+        var command = new Command("user", "Manage users");
+        var userCommand = new UserCommand(apiClient, configService, tableFormatter, jsonFormatter, logger);
+
+        var listCommand = new Command("list", "List users");
+        listCommand.Aliases.Add("ls");
+
+        var limitOption = new Option<int?>("--limit") { Description = "Limit the number of users (default: 30)" };
+        limitOption.Aliases.Add("-L");
+        var jsonOption = new Option<bool>("--json") { Description = "Output in JSON format" };
+
+        listCommand.Add(limitOption);
+        listCommand.Add(jsonOption);
+
+        listCommand.SetAction(async (parseResult) =>
+        {
+            var limit = parseResult.GetValue(limitOption);
+            var json = parseResult.GetValue(jsonOption);
+            Environment.ExitCode = await userCommand.ListUsersAsync(limit, json);
+        });
+
+        command.Add(listCommand);
+        return command;
+    }
+
+    private async Task<int> ListUsersAsync(int? limit, bool json)
+    {
+        try
+        {
+            _logger.LogDebug("Listing users with limit: {Limit}", limit);
+
+            // 時刻フォーマット設定を読み込む
+            var config = await _configService.LoadConfigAsync();
+            var timeFormat = config.Preferences?.Time?.Format ?? "relative";
+            _tableFormatter.SetTimeFormat(TimeFormat.Relative);
+
+            if (timeFormat == "absolute")
+            {
+                _tableFormatter.SetTimeFormat(TimeFormat.Absolute);
+            }
+            else if (timeFormat == "utc")
+            {
+                _tableFormatter.SetTimeFormat(TimeFormat.Utc);
+            }
+
+            // デフォルトのlimitは30
+            if (!limit.HasValue)
+            {
+                limit = 30;
+            }
+
+            var users = await _apiClient.GetUsersAsync(limit);
+
+            if (json)
+            {
+                _jsonFormatter.FormatUsers(users);
+            }
+            else
+            {
+                _tableFormatter.FormatUsers(users);
+            }
+
+            return 0;
+        }
+        catch (RedmineApiException ex)
+        {
+            _logger.LogError(ex, "API error while listing users");
+
+            if (ex.StatusCode == 403)
+            {
+                AnsiConsole.MarkupLine("[red]Error:[/] You do not have permission to view users.");
+                return 1;
+            }
+
+            AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while listing users");
+            AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+            return 1;
+        }
+    }
+}

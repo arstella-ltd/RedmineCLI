@@ -28,7 +28,7 @@ public interface IRedmineApiClient
 
     Task<List<Project>> GetProjectsAsync(CancellationToken cancellationToken = default);
 
-    Task<List<User>> GetUsersAsync(CancellationToken cancellationToken = default);
+    Task<List<User>> GetUsersAsync(int? limit = null, CancellationToken cancellationToken = default);
 
     Task<List<IssueStatus>> GetIssueStatusesAsync(CancellationToken cancellationToken = default);
 

@@ -21,4 +21,10 @@ public class User
 
     [JsonPropertyName("mail")]
     public string? Email { get; set; }
+
+    [JsonIgnore]
+    public string? Mail => Email;
+
+    [JsonPropertyName("created_on")]
+    public DateTime CreatedOn { get; set; }
 }

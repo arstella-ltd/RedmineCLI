@@ -893,7 +893,7 @@ public class IssueCommand
         // 文字列の場合はユーザー名として扱い、ユーザーIDを検索する
         try
         {
-            var users = await _apiClient.GetUsersAsync(cancellationToken);
+            var users = await _apiClient.GetUsersAsync(null, cancellationToken);
             var matchedUser = users.FirstOrDefault(u =>
                 u.Name.Equals(assignee, StringComparison.OrdinalIgnoreCase) ||
                 u.Login?.Equals(assignee, StringComparison.OrdinalIgnoreCase) == true ||
@@ -1322,7 +1322,7 @@ public class IssueCommand
                         }
                         else
                         {
-                            var users = await _apiClient.GetUsersAsync(cancellationToken);
+                            var users = await _apiClient.GetUsersAsync(null, cancellationToken);
                             var selectedUser = AnsiConsole.Prompt(
                                 new SelectionPrompt<User>()
                                     .Title("Select assignee:")

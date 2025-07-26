@@ -54,4 +54,22 @@ public class JsonFormatter : IJsonFormatter
             AnsiConsole.WriteLine(obj?.ToString() ?? "null");
         }
     }
+
+    public void FormatUsers(List<User> users)
+    {
+        var json = JsonSerializer.Serialize(users, RedmineJsonContext.Default.ListUser);
+        AnsiConsole.WriteLine(json);
+    }
+
+    public void FormatProjects(List<Project> projects)
+    {
+        var json = JsonSerializer.Serialize(projects, RedmineJsonContext.Default.ListProject);
+        AnsiConsole.WriteLine(json);
+    }
+
+    public void FormatIssueStatuses(List<IssueStatus> statuses)
+    {
+        var json = JsonSerializer.Serialize(statuses, RedmineJsonContext.Default.ListIssueStatus);
+        AnsiConsole.WriteLine(json);
+    }
 }

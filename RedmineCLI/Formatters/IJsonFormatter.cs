@@ -9,4 +9,7 @@ public interface IJsonFormatter
     void FormatAttachments(List<Attachment> attachments);
     void FormatAttachmentDetails(Attachment attachment);
     void FormatObject<T>(T obj);
+    void FormatUsers(List<User> users);
+    void FormatProjects(List<Project> projects);
+    void FormatIssueStatuses(List<IssueStatus> statuses);
 }
