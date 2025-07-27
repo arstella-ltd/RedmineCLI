@@ -123,6 +123,16 @@ redmine issue create
 redmine issue edit 12345 --status=closed
 ```
 
+### 優先度管理
+
+```bash
+# 優先度一覧を表示
+redmine priority list
+
+# JSON形式で出力
+redmine priority list --json
+```
+
 ### 設定
 
 ```bash
