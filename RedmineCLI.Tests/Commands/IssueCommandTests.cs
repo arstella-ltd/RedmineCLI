@@ -94,7 +94,8 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, null, null, CancellationToken.None);
+        var options = new IssueListOptions();
+        var result = await _issueCommand.ListAsync(options, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -132,7 +133,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, status, null, null, null, false, false, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Status = status
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -165,7 +169,11 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, limit, offset, false, false, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Limit = limit,
+            Offset = offset
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -195,7 +203,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, true, false, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Json = true
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -233,7 +244,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(assignee, null, null, null, null, false, false, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Assignee = assignee
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -271,7 +285,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, project, null, null, false, false, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Project = project
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -309,7 +326,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, projectName, null, null, false, false, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Project = projectName
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -341,7 +361,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, projectId, null, null, false, false, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Project = projectId
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -364,7 +387,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(projects));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, projectName, null, null, false, false, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Project = projectName
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(1); // Should return error
@@ -417,7 +443,13 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(assignee, status, project, limit, null, false, false, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Assignee = assignee,
+            Status = status,
+            Project = project,
+            Limit = limit
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -441,7 +473,9 @@ public class IssueCommandTests
             .Returns(Task.FromException<List<Issue>>(new HttpRequestException("API Error")));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -476,7 +510,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(searchResults));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, searchQuery, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Search = searchQuery
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -510,7 +547,12 @@ public class IssueCommandTests
             .Returns(Task.FromResult(searchResults));
 
         // Act
-        var result = await _issueCommand.ListAsync(assignee, status, null, null, null, false, false, false, searchQuery, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Assignee = assignee,
+            Status = status,
+            Search = searchQuery
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -548,7 +590,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(searchResults));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, searchQuery, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Search = searchQuery
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -618,7 +663,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync("@me", null, null, null, null, false, false, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Assignee = "@me"
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -655,7 +703,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, "all", null, null, null, false, false, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Status = "all"
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -693,7 +744,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, statusId, null, null, null, false, false, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Status = statusId
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -733,7 +787,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, statusName, null, null, null, false, false, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Status = statusName
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -760,7 +817,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(statuses));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, invalidStatusId, null, null, null, false, false, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Status = invalidStatusId
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(1); // Error
@@ -784,7 +844,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(statuses));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, unknownStatus, null, null, null, false, false, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Status = unknownStatus
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(1); // Error
@@ -821,7 +884,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, statusName, null, null, null, false, false, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Status = statusName
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -840,7 +906,10 @@ public class IssueCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, true, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Web = true
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -855,7 +924,10 @@ public class IssueCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(null));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, true, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Web = true
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -878,7 +950,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, "updated_on:desc", null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Sort = "updated_on:desc"
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -904,7 +979,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, "priority:desc,id", null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Sort = "priority:desc,id"
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -918,7 +996,10 @@ public class IssueCommandTests
     public async Task List_Should_ReturnError_When_InvalidSortFieldProvided()
     {
         // Arrange & Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, "invalid_field", null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Sort = "invalid_field"
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -930,7 +1011,10 @@ public class IssueCommandTests
     public async Task List_Should_ReturnError_When_InvalidSortDirectionProvided()
     {
         // Arrange & Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, "id:invalid", null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Sort = "id:invalid"
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -954,7 +1038,11 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, searchQuery, sort, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Search = searchQuery,
+            Sort = sort
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -991,7 +1079,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, null, priorityId, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Priority = priorityId
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -1032,7 +1123,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, null, priorityName, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Priority = priorityName
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -1059,7 +1153,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(priorities));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, null, invalidPriorityId, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Priority = invalidPriorityId
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(1); // Error
@@ -1083,7 +1180,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(priorities));
 
         // Act
-        var result = await _issueCommand.ListAsync(null, null, null, null, null, false, false, false, null, null, unknownPriority, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Priority = unknownPriority
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(1); // Error
@@ -1128,7 +1228,12 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(assignee, statusId, null, null, null, false, false, false, null, null, priorityId, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Assignee = assignee,
+            Status = statusId,
+            Priority = priorityId
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -1363,7 +1468,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(assigneeName, null, null, null, null, false, false, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Assignee = assigneeName
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -1395,7 +1503,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(assigneeId, null, null, null, null, false, false, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Assignee = assigneeId
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -1421,7 +1532,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(users));
 
         // Act
-        var result = await _issueCommand.ListAsync(unknownUser, null, null, null, null, false, false, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Assignee = unknownUser
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(1); // Error code
@@ -1459,7 +1573,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(assigneeDisplayName, null, null, null, null, false, false, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Assignee = assigneeDisplayName
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -1500,7 +1617,10 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issues));
 
         // Act
-        var result = await _issueCommand.ListAsync(assigneeDisplayName, null, null, null, null, false, false, false, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Assignee = assigneeDisplayName
+        }, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
