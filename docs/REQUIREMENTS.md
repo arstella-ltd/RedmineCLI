@@ -182,3 +182,18 @@ RedmineCLIは、Redmineのチケット管理をコマンドラインから効率
 11. WHEN `--json` オプションを指定 THEN JSON形式で出力される SHALL
 12. WHEN 権限がない情報を取得しようとする THEN 適切なエラーメッセージが表示される SHALL
 13. WHEN API接続エラーが発生 THEN 適切なエラーメッセージが表示される SHALL
+
+### 要求 14
+**ユーザーストーリー:** 開発者として、チケットを素早くクローズしたいので、専用のcloseコマンドで効率的にチケットを終了できる
+
+#### 受け入れ基準
+1. WHEN `redmine issue close <ID>` を実行 THEN チケットがクローズステータスに変更され、進捗率が100%に設定される SHALL
+2. WHEN システムに複数のクローズステータスが存在する THEN `IsClosed = true` のステータスから最初のものが自動的に選択される SHALL
+3. WHEN `--comment <text>` または `-c <text>` オプションを指定 THEN クローズと同時にコメントが追加される SHALL
+4. WHEN `--status <status>` または `-s <status>` オプションを指定 THEN 指定されたステータスでクローズされる SHALL
+5. WHEN `--done-ratio <percent>` または `-d <percent>` オプションを指定 THEN 指定された進捗率でクローズされる SHALL
+6. WHEN クローズステータスでないステータスが `--status` で指定された THEN 警告メッセージを表示するが処理は続行される SHALL
+7. WHEN チケットが既にクローズされている THEN 警告メッセージが表示されるがエラーとしては扱われない SHALL
+8. WHEN システムにクローズステータスが存在しない THEN 利用可能なステータス一覧を表示してエラーとなる SHALL
+9. WHEN クローズが成功 THEN 確認メッセージとチケットのURL/IDが表示される SHALL
+10. WHEN API接続エラーやアクセス権限エラーが発生 THEN 適切なエラーメッセージが表示される SHALL

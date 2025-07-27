@@ -691,6 +691,31 @@
     - テーブル表示の共通化
   - _要求: 13_
 
+- [ ] 23. チケットクローズコマンドの実装（TDD）
+  - **Red**: IssueCloseCommandのテストを先に作成
+    - Close_Should_UpdateStatusToClosed_When_ValidIdProvided
+    - Close_Should_SetDoneRatioTo100_When_NoOptionProvided
+    - Close_Should_AddComment_When_CommentOptionProvided
+    - Close_Should_UseSpecifiedStatus_When_StatusOptionProvided
+    - Close_Should_UseCustomDoneRatio_When_DoneRatioOptionProvided
+    - Close_Should_WarnButContinue_When_StatusIsNotClosed
+    - Close_Should_ShowWarning_When_IssueAlreadyClosed
+    - Close_Should_ShowError_When_NoClosedStatusExists
+    - Close_Should_ShowAvailableStatuses_When_ErrorOccurs
+  - **Green**: テストを通すための実装
+    - `issue close <ID>`コマンドの実装
+    - クローズステータスの自動選択（IsClosed = true）
+    - --comment/-cオプションによるコメント追加
+    - --status/-sオプションによるステータス指定
+    - --done-ratio/-dオプションによる進捗率指定（デフォルト: 100）
+    - RedmineServiceにResolveClosedStatusAsyncメソッドを追加
+    - 既存のUpdateIssueAsyncメソッドの活用
+  - **Refactor**: エラーハンドリングとメッセージの改善
+    - ステータス一覧の表示（エラー時）
+    - 警告メッセージの適切な表示
+    - 成功メッセージの表示
+  - _要求: 14_
+
 ## 使用方法
 
 ### 実行可能ファイル名
