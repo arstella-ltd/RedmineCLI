@@ -212,6 +212,38 @@ public class IssueCommand
 
         command.Add(commentCommand);
 
+        // Close command
+        var closeCommand = new Command("close", "Close issues");
+        var closeIdsArgument = new Argument<int[]>("IDs");
+        closeIdsArgument.Description = "Issue IDs to close";
+        closeIdsArgument.Arity = ArgumentArity.OneOrMore;
+        var closeMessageOption = new Option<string?>("--message") { Description = "Add a comment when closing" };
+        closeMessageOption.Aliases.Add("-m");
+        var closeStatusOption = new Option<string?>("--status") { Description = "Specific status to use for closing" };
+        closeStatusOption.Aliases.Add("-s");
+        var closeDoneRatioOption = new Option<int?>("--done-ratio") { Description = "Progress percentage (default: 100)" };
+        closeDoneRatioOption.Aliases.Add("-d");
+        var closeJsonOption = new Option<bool>("--json") { Description = "Output in JSON format" };
+
+        closeCommand.Add(closeIdsArgument);
+        closeCommand.Add(closeMessageOption);
+        closeCommand.Add(closeStatusOption);
+        closeCommand.Add(closeDoneRatioOption);
+        closeCommand.Add(closeJsonOption);
+
+        closeCommand.SetAction(async (parseResult) =>
+        {
+            var ids = parseResult.GetValue(closeIdsArgument) ?? Array.Empty<int>();
+            var message = parseResult.GetValue(closeMessageOption);
+            var status = parseResult.GetValue(closeStatusOption);
+            var doneRatio = parseResult.GetValue(closeDoneRatioOption);
+            var json = parseResult.GetValue(closeJsonOption);
+
+            Environment.ExitCode = await issueCommand.CloseAsync(ids, message, status, doneRatio, json, CancellationToken.None);
+        });
+
+        command.Add(closeCommand);
+
         // Attachment command
         var attachmentCommand = new Command("attachment", "Manage issue attachments");
 
@@ -1880,5 +1912,173 @@ public class IssueCommand
         }
 
         return true;
+    }
+
+    public async Task<int> CloseAsync(
+        int[] issueIds,
+        string? message,
+        string? status,
+        int? doneRatio,
+        bool json,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            _logger.LogDebug("Closing issues {IssueIds} - Message: {HasMessage}, Status: {Status}, DoneRatio: {DoneRatio}",
+                issueIds, !string.IsNullOrEmpty(message), status, doneRatio);
+
+            if (issueIds.Length == 0)
+            {
+                AnsiConsole.MarkupLine("[red]Error:[/] No issue IDs specified");
+                return 1;
+            }
+
+            // If no done ratio specified, default to 100
+            doneRatio ??= 100;
+
+            // Validate done ratio
+            if (doneRatio < 0 || doneRatio > 100)
+            {
+                AnsiConsole.MarkupLine("[red]Error:[/] Done ratio must be between 0 and 100");
+                return 1;
+            }
+
+            var closedIssues = new List<Issue>();
+            var errors = new List<string>();
+
+            // Get available statuses to find default close status if needed
+            List<IssueStatus>? statuses = null;
+            string? closeStatusId = status;
+
+            if (string.IsNullOrEmpty(status))
+            {
+                // Get statuses and find the first closed status
+                statuses = await _redmineService.GetIssueStatusesAsync(cancellationToken);
+                var defaultCloseStatus = statuses.FirstOrDefault(s => s.IsClosed == true);
+
+                if (defaultCloseStatus == null)
+                {
+                    AnsiConsole.MarkupLine("[red]Error:[/] No closed status found in the system");
+                    return 1;
+                }
+
+                closeStatusId = defaultCloseStatus.Id.ToString();
+                _logger.LogDebug("Using default close status: {StatusName} (ID: {StatusId})", defaultCloseStatus.Name, defaultCloseStatus.Id);
+            }
+            else
+            {
+                // Validate the specified status
+                statuses = await _redmineService.GetIssueStatusesAsync(cancellationToken);
+                var (resolvedStatusId, resolvedStatus) = await ResolveStatusForEditAsync(status, cancellationToken);
+
+                if (resolvedStatus != null && resolvedStatus.IsClosed != true)
+                {
+                    AnsiConsole.MarkupLine($"[yellow]Warning:[/] Status '{resolvedStatus.Name}' is not a closed status, but proceeding anyway");
+                }
+
+                closeStatusId = resolvedStatusId;
+            }
+
+            // Process each issue
+            foreach (var issueId in issueIds)
+            {
+                try
+                {
+                    // Get current issue to check if already closed
+                    var currentIssue = await _redmineService.GetIssueAsync(issueId, false, cancellationToken);
+
+                    // Check if already closed
+                    if (currentIssue.Status?.IsClosed == true)
+                    {
+                        AnsiConsole.MarkupLine($"[yellow]Warning:[/] Issue #{issueId} is already closed (status: {currentIssue.Status.Name})");
+                        closedIssues.Add(currentIssue);
+                        continue;
+                    }
+
+                    // Update the issue
+                    var updatedIssue = await _redmineService.UpdateIssueAsync(
+                        issueId,
+                        null, // keep existing subject
+                        closeStatusId,
+                        null, // keep existing assignee
+                        doneRatio,
+                        cancellationToken);
+
+                    // Add comment if specified
+                    if (!string.IsNullOrEmpty(message))
+                    {
+                        await _redmineService.AddCommentAsync(issueId, message, cancellationToken);
+                    }
+
+                    closedIssues.Add(updatedIssue);
+
+                    if (!json)
+                    {
+                        var profile = await _configService.GetActiveProfileAsync();
+                        if (profile != null)
+                        {
+                            var issueUrl = $"{profile.Url.TrimEnd('/')}/issues/{updatedIssue.Id}";
+                            AnsiConsole.MarkupLine($"[green]✓[/] Issue #{updatedIssue.Id} closed: {Markup.Escape(updatedIssue.Subject)}");
+                            AnsiConsole.MarkupLine($"[dim]View at: {Markup.Escape(issueUrl)}[/]");
+                        }
+                        else
+                        {
+                            AnsiConsole.MarkupLine($"[green]✓[/] Issue #{updatedIssue.Id} closed: {Markup.Escape(updatedIssue.Subject)}");
+                        }
+                    }
+                }
+                catch (RedmineApiException ex) when (ex.StatusCode == 404)
+                {
+                    errors.Add($"Issue #{issueId}: Not found");
+                    _logger.LogError(ex, "Issue {IssueId} not found", issueId);
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"Issue #{issueId}: {ex.Message}");
+                    _logger.LogError(ex, "Failed to close issue {IssueId}", issueId);
+                }
+            }
+
+            // Output results
+            if (json)
+            {
+                var result = new
+                {
+                    closed = closedIssues.Select(i => new
+                    {
+                        i.Id,
+                        i.Subject,
+                        Status = i.Status?.Name,
+                        DoneRatio = i.DoneRatio
+                    }),
+                    errors = errors.Select(e => new { error = e })
+                };
+                _jsonFormatter.FormatObject(result);
+            }
+            else if (errors.Count > 0)
+            {
+                AnsiConsole.WriteLine();
+                AnsiConsole.MarkupLine("[red]Failed to close some issues:[/]");
+                foreach (var error in errors)
+                {
+                    AnsiConsole.MarkupLine($"  [red]✗[/] {Markup.Escape(error)}");
+                }
+            }
+
+            // Return non-zero if any errors occurred
+            return errors.Count > 0 ? 1 : 0;
+        }
+        catch (ValidationException ex)
+        {
+            _logger.LogError(ex, "Validation error while closing issues");
+            AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while closing issues");
+            AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+            return 1;
+        }
     }
 }
