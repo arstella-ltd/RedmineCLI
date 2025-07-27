@@ -1245,6 +1245,250 @@ public class IssueCommandTests
         _tableFormatter.Received(1).FormatIssues(issues);
     }
 
+    [Fact]
+    public async Task List_Should_FilterByAuthor_When_AuthorUsernameIsSpecified()
+    {
+        // Arrange
+        var author = "john.doe";
+        var authorUserId = "5";
+        var users = new List<User>
+        {
+            new User { Id = 5, Name = "John Doe", Login = "john.doe", FirstName = "John", LastName = "Doe" }
+        };
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "Issue created by John",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                Author = users[0],
+                Project = new Project { Id = 1, Name = "Test Project" }
+            }
+        };
+
+        _redmineService.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(users));
+        _redmineService.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AuthorId == authorUserId), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Author = author
+        }, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.AuthorId == authorUserId),
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
+    }
+
+    [Fact]
+    public async Task List_Should_FilterByAuthor_When_AuthorIdIsSpecified()
+    {
+        // Arrange
+        var authorId = "5";
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "Issue created by user 5",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                Author = new User { Id = 5, Name = "John Doe" },
+                Project = new Project { Id = 1, Name = "Test Project" }
+            }
+        };
+
+        // When author is numeric, it should be passed as-is without resolution
+        _redmineService.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AuthorId == authorId), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Author = authorId
+        }, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        // GetUsersAsync should NOT be called when using numeric ID
+        await _redmineService.DidNotReceive().GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.AuthorId == authorId),
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
+    }
+
+    [Fact]
+    public async Task List_Should_FilterByCurrentUser_When_AuthorIsAtMe()
+    {
+        // Arrange
+        var author = "@me";
+        var currentUser = new User { Id = 123, Name = "Current User", Login = "current.user" };
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "My issue",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                Author = currentUser,
+                Project = new Project { Id = 1, Name = "Test Project" }
+            }
+        };
+
+        _redmineService.GetCurrentUserAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(currentUser));
+        _redmineService.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AuthorId == currentUser.Id.ToString()), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Author = author
+        }, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).GetCurrentUserAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.AuthorId == currentUser.Id.ToString()),
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
+    }
+
+    [Fact]
+    public async Task List_Should_ReturnError_When_AuthorNotFound()
+    {
+        // Arrange
+        var authorName = "NonExistentUser";
+        var users = new List<User>(); // Empty list, user not found
+
+        _redmineService.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(users));
+
+        // Act
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Author = authorName
+        }, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(1); // Should return error
+        await _redmineService.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
+        // GetIssuesAsync should NOT be called when user is not found
+        await _redmineService.DidNotReceive().GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task List_Should_UseCaseInsensitiveMatching_When_AuthorNameProvided()
+    {
+        // Arrange
+        var authorName = "JOHN DOE"; // uppercase
+        var expectedAuthorId = "5";
+        var users = new List<User>
+        {
+            new User { Id = 5, Name = "John Doe", Login = "john.doe" }
+        };
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "Issue by John",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                Author = users[0],
+                Project = new Project { Id = 1, Name = "Test Project" }
+            }
+        };
+
+        _redmineService.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(users));
+        _redmineService.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.AuthorId == expectedAuthorId), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Author = authorName
+        }, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.AuthorId == expectedAuthorId),
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
+    }
+
+    [Fact]
+    public async Task List_Should_ApplyMultipleFilters_When_AuthorAndOtherOptionsSpecified()
+    {
+        // Arrange
+        var author = "jane.smith";
+        var authorUserId = "8";
+        var status = "open";
+        var project = "my-project";
+        var projectIdentifier = "my-project";
+        var users = new List<User>
+        {
+            new User { Id = 8, Name = "Jane Smith", Login = "jane.smith" }
+        };
+        var projects = new List<Project>
+        {
+            new Project { Id = 10, Name = "My Project", Identifier = projectIdentifier }
+        };
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "Issue by Jane in My Project",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                Author = users[0],
+                Project = projects[0]
+            }
+        };
+
+        _redmineService.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(users));
+        _redmineService.GetProjectsAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(projects));
+        _redmineService.GetIssuesAsync(
+            Arg.Is<IssueFilter>(f =>
+                f.AuthorId == authorUserId &&
+                f.StatusId == status &&
+                f.ProjectId == projectIdentifier),
+            Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            Author = author,
+            Status = status,
+            Project = project
+        }, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetProjectsAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f =>
+                f.AuthorId == authorUserId &&
+                f.StatusId == status &&
+                f.ProjectId == projectIdentifier),
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
+    }
+
     #endregion
 
     #region View Command Tests

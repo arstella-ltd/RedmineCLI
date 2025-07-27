@@ -59,4 +59,9 @@ public class IssueListOptions
     /// 優先度フィルター（名前またはID）
     /// </summary>
     public string? Priority { get; set; }
+
+    /// <summary>
+    /// 作成者フィルター（ユーザー名、ID、または @me）
+    /// </summary>
+    public string? Author { get; set; }
 }
