@@ -50,10 +50,12 @@ public class Program
         var userLogger = serviceProvider.GetRequiredService<ILogger<UserCommand>>();
         var projectLogger = serviceProvider.GetRequiredService<ILogger<ProjectCommand>>();
         var statusLogger = serviceProvider.GetRequiredService<ILogger<StatusCommand>>();
+        var priorityLogger = serviceProvider.GetRequiredService<ILogger<PriorityCommand>>();
 
         var userCommand = UserCommand.Create(redmineService, configService, tableFormatter, jsonFormatter, userLogger);
         var projectCommand = ProjectCommand.Create(redmineService, configService, tableFormatter, jsonFormatter, projectLogger);
         var statusCommand = StatusCommand.Create(redmineService, configService, tableFormatter, jsonFormatter, statusLogger);
+        var priorityCommand = PriorityCommand.Create(redmineService, configService, tableFormatter, jsonFormatter, priorityLogger);
 
         rootCommand.Add(authCommand);
         rootCommand.Add(issueCommand);
@@ -62,6 +64,7 @@ public class Program
         rootCommand.Add(userCommand);
         rootCommand.Add(projectCommand);
         rootCommand.Add(statusCommand);
+        rootCommand.Add(priorityCommand);
 
         // Add llms command after all other commands are added so it can access them
         var llmsCommand = LlmsCommand.Create(llmsLogger, rootCommand);

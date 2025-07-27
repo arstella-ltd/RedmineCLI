@@ -99,12 +99,19 @@ redmine issue list --status=open
 redmine issue list --project "管理"
 redmine issue list -p my-project
 
+# 優先度でフィルタ（優先度名またはIDが使用可能）
+redmine issue list --priority "高"
+redmine issue list --priority 5
+
 # キーワードでチケットを検索
 redmine issue list --search "会議"
 redmine issue list -q "バグ修正"
 
 # 複合検索（検索と他のフィルターの組み合わせ）
 redmine issue list --search "会議" --status open --assignee @me --project "開発"
+
+# 複数のフィルターを組み合わせ
+redmine issue list --status open --priority "高" --assignee @me
 
 # チケットの詳細を表示
 redmine issue view 12345
@@ -114,6 +121,16 @@ redmine issue create
 
 # チケットを更新
 redmine issue edit 12345 --status=closed
+```
+
+### 優先度管理
+
+```bash
+# 優先度一覧を表示
+redmine priority list
+
+# JSON形式で出力
+redmine priority list --json
 ```
 
 ### 設定

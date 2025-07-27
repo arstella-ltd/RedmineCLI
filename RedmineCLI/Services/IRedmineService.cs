@@ -67,6 +67,11 @@ public interface IRedmineService
     Task<int?> ResolveStatusIdAsync(string? statusIdOrName, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// 優先度名をIDに解決する
+    /// </summary>
+    Task<int?> ResolvePriorityIdAsync(string? priorityIdOrName, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// プロジェクト識別子/名前をIDに解決する
     /// </summary>
     Task<int> ResolveProjectIdAsync(string projectIdOrIdentifier, CancellationToken cancellationToken = default);
@@ -85,6 +90,11 @@ public interface IRedmineService
     /// ステータス一覧を取得する
     /// </summary>
     Task<List<IssueStatus>> GetIssueStatusesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 優先度一覧を取得する
+    /// </summary>
+    Task<List<Priority>> GetPrioritiesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 現在のユーザーを取得する
