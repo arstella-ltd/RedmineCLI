@@ -14,4 +14,5 @@ public interface ITableFormatter
     void FormatUsers(List<User> users);
     void FormatProjects(List<Project> projects);
     void FormatIssueStatuses(List<IssueStatus> statuses);
+    void FormatPriorities(List<Priority> priorities);
 }

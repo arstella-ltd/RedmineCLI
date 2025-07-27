@@ -11,11 +11,8 @@ namespace RedmineCLI.Tests.ApiClient;
 
 public class ApiResponsesTests
 {
-    private readonly JsonSerializerOptions _jsonOptions;
-
     public ApiResponsesTests()
     {
-        _jsonOptions = RedmineJsonContext.Default.Options;
     }
 
     [Fact]
@@ -33,7 +30,7 @@ public class ApiResponsesTests
         }";
 
         // Act
-        var response = JsonSerializer.Deserialize<ProjectsResponse>(json, _jsonOptions);
+        var response = JsonSerializer.Deserialize(json, RedmineJsonContext.Default.ProjectsResponse);
 
         // Assert
         response.Should().NotBeNull();
@@ -59,7 +56,7 @@ public class ApiResponsesTests
         }";
 
         // Act
-        var response = JsonSerializer.Deserialize<UsersResponse>(json, _jsonOptions);
+        var response = JsonSerializer.Deserialize(json, RedmineJsonContext.Default.UsersResponse);
 
         // Assert
         response.Should().NotBeNull();
@@ -85,7 +82,7 @@ public class ApiResponsesTests
         }";
 
         // Act
-        var response = JsonSerializer.Deserialize<IssueStatusesResponse>(json, _jsonOptions);
+        var response = JsonSerializer.Deserialize(json, RedmineJsonContext.Default.IssueStatusesResponse);
 
         // Assert
         response.Should().NotBeNull();
@@ -113,7 +110,7 @@ public class ApiResponsesTests
         }";
 
         // Act
-        var response = JsonSerializer.Deserialize<UserResponse>(json, _jsonOptions);
+        var response = JsonSerializer.Deserialize(json, RedmineJsonContext.Default.UserResponse);
 
         // Assert
         response.Should().NotBeNull();
@@ -143,7 +140,7 @@ public class ApiResponsesTests
         };
 
         // Act
-        var json = JsonSerializer.Serialize(issueRequest, _jsonOptions);
+        var json = JsonSerializer.Serialize(issueRequest, RedmineJsonContext.Default.IssueRequest);
 
         // Assert
         json.Should().NotBeNullOrEmpty();
@@ -168,7 +165,7 @@ public class ApiResponsesTests
         };
 
         // Act
-        var json = JsonSerializer.Serialize(commentRequest, _jsonOptions);
+        var json = JsonSerializer.Serialize(commentRequest, RedmineJsonContext.Default.CommentRequest);
 
         // Assert
         json.Should().NotBeNullOrEmpty();
@@ -188,7 +185,7 @@ public class ApiResponsesTests
         }";
 
         // Act
-        var response = JsonSerializer.Deserialize<ProjectsResponse>(json, _jsonOptions);
+        var response = JsonSerializer.Deserialize(json, RedmineJsonContext.Default.ProjectsResponse);
 
         // Assert
         response.Should().NotBeNull();
@@ -207,7 +204,7 @@ public class ApiResponsesTests
         }";
 
         // Act
-        var response = JsonSerializer.Deserialize<UsersResponse>(json, _jsonOptions);
+        var response = JsonSerializer.Deserialize(json, RedmineJsonContext.Default.UsersResponse);
 
         // Assert
         response.Should().NotBeNull();
@@ -223,7 +220,7 @@ public class ApiResponsesTests
         }";
 
         // Act
-        var response = JsonSerializer.Deserialize<IssueStatusesResponse>(json, _jsonOptions);
+        var response = JsonSerializer.Deserialize(json, RedmineJsonContext.Default.IssueStatusesResponse);
 
         // Assert
         response.Should().NotBeNull();

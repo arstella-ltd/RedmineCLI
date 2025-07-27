@@ -425,4 +425,21 @@ public class TableFormatter : ITableFormatter
 
         AnsiConsole.Write(table);
     }
+
+    public void FormatPriorities(List<Priority> priorities)
+    {
+        var table = new Table();
+        table.AddColumn("ID");
+        table.AddColumn("NAME");
+
+        foreach (var priority in priorities)
+        {
+            table.AddRow(
+                priority.Id.ToString(),
+                Markup.Escape(priority.Name)
+            );
+        }
+
+        AnsiConsole.Write(table);
+    }
 }

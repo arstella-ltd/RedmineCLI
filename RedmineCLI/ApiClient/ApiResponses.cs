@@ -61,6 +61,12 @@ public class IssueStatusesResponse
     public List<IssueStatus> IssueStatuses { get; set; } = new();
 }
 
+public class PrioritiesResponse
+{
+    [JsonPropertyName("issue_priorities")]
+    public List<Priority> Priorities { get; set; } = new();
+}
+
 public class ErrorResponse
 {
     [JsonPropertyName("errors")]
