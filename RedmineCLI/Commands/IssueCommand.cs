@@ -95,7 +95,22 @@ public class IssueCommand
             var search = parseResult.GetValue(searchOption);
             var sort = parseResult.GetValue(sortOption);
 
-            Environment.ExitCode = await issueCommand.ListAsync(assignee, status, project, limit, offset, json, web, absoluteTime, search, sort, priority, CancellationToken.None);
+            var options = new IssueListOptions
+            {
+                Assignee = assignee,
+                Status = status,
+                Project = project,
+                Limit = limit,
+                Offset = offset,
+                Json = json,
+                Web = web,
+                AbsoluteTime = absoluteTime,
+                Search = search,
+                Sort = sort,
+                Priority = priority
+            };
+
+            Environment.ExitCode = await issueCommand.ListAsync(options, CancellationToken.None);
         });
 
         command.Add(listCommand);
@@ -443,6 +458,30 @@ public class IssueCommand
             AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
             return 1;
         }
+    }
+
+    /// <summary>
+    /// チケット一覧を表示する（新しいオーバーロード）
+    /// </summary>
+    /// <param name="options">一覧表示オプション</param>
+    /// <param name="cancellationToken">キャンセルトークン</param>
+    /// <returns>終了コード</returns>
+    public async Task<int> ListAsync(IssueListOptions options, CancellationToken cancellationToken)
+    {
+        // 既存のListAsyncメソッドを呼び出す
+        return await ListAsync(
+            options.Assignee,
+            options.Status,
+            options.Project,
+            options.Limit,
+            options.Offset,
+            options.Json,
+            options.Web,
+            options.AbsoluteTime,
+            options.Search,
+            options.Sort,
+            options.Priority,
+            cancellationToken);
     }
 
     private static string BuildIssuesUrl(string baseUrl, IssueFilter filter)
