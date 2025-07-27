@@ -83,7 +83,7 @@ jobs:
     - name: Generate coverage report
       run: |
         dotnet tool install -g dotnet-reportgenerator-globaltool
-        reportgenerator -reports:"./coverage/**/coverage.cobertura.xml" -targetdir:"./coverage/report" -reporttypes:"Html;TextSummary"
+        reportgenerator -reports:"./coverage/**/coverage.cobertura.xml" -targetdir:"./coverage/report" -reporttypes:"Html;Cobertura;MarkdownSummaryGithub;TextSummary"
 
     - name: Check coverage threshold
       run: |
@@ -96,16 +96,46 @@ jobs:
         fi
         echo "Coverage ${COVERAGE}% meets threshold ${THRESHOLD}%"
 
+    - name: Read coverage summary
+      id: read-coverage
+      if: github.event_name == 'pull_request'
+      run: |
+        echo "summary<<EOF" >> $GITHUB_OUTPUT
+        cat ./coverage/report/Summary.txt >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Add coverage summary to job summary
+      run: |
+        echo "## 📊 Code Coverage Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        cat ./coverage/report/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
+
+    - name: Upload coverage report artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: ./coverage/report/
+        retention-days: 7
+
     - name: Comment coverage on PR
       if: github.event_name == 'pull_request'
       uses: marocchino/sticky-pull-request-comment@v2
       with:
         header: coverage
-        path: ./coverage/report/Summary.txt
+        path: ./coverage/report/SummaryGithub.md
         message: |
           ## 📊 Test Coverage Report
           
-          [View detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          <details>
+          <summary>📋 Detailed Text Summary</summary>
+          
+          ```
+          ${{ steps.read-coverage.outputs.summary }}
+          ```
+          
+          </details>
+          
+          📁 **[View Full HTML Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})** (Download artifacts → coverage-report)
 
   aot-compatibility:
     name: AOT Compatibility Check
