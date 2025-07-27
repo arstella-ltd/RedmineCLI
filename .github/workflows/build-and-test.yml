@@ -35,14 +35,45 @@ jobs:
       run: dotnet build --configuration Release --no-restore
 
     - name: Run tests
-      run: dotnet test --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage"
+      run: dotnet test --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./TestResults
+
+    - name: Install ReportGenerator
+      if: matrix.os == 'ubuntu-latest'
+      run: dotnet tool install --global dotnet-reportgenerator-globaltool
+
+    - name: Generate coverage report
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        reportgenerator \
+          -reports:"TestResults/**/coverage.cobertura.xml" \
+          -targetdir:"coveragereport" \
+          -reporttypes:"Html;Cobertura;MarkdownSummaryGithub;TextSummary"
+
+    - name: Display coverage summary
+      if: matrix.os == 'ubuntu-latest'
+      run: cat coveragereport/Summary.txt
+
+    - name: Add coverage summary to job summary
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        echo "## 📊 Code Coverage Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        cat coveragereport/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
+
+    - name: Upload coverage report artifact
+      if: matrix.os == 'ubuntu-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: coveragereport/
+        retention-days: 7
 
     - name: Upload coverage reports to Codecov
       if: matrix.os == 'ubuntu-latest'
       uses: codecov/codecov-action@v4
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        files: '**/coverage.cobertura.xml'
+        files: 'coveragereport/Cobertura.xml'
         fail_ci_if_error: false
 
   build-native:
