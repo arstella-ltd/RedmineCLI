@@ -5,8 +5,10 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using RedmineCLI.Commands;
+using RedmineCLI.Exceptions;
 using RedmineCLI.Formatters;
 using RedmineCLI.Models;
 using RedmineCLI.Services;
@@ -133,5 +135,131 @@ public class PriorityCommandTests
                 list.Count == 2 &&
                 list.Any(p => p.Id == 2 && p.Name == "Normal") &&
                 list.Any(p => p.Id == 3 && p.Name == "High")));
+    }
+
+    [Fact]
+    public async Task List_Should_SetAbsoluteTimeFormat_When_ConfiguredAsAbsolute()
+    {
+        // Arrange
+        var config = new Config
+        {
+            CurrentProfile = "default",
+            Profiles = new Dictionary<string, Profile>(),
+            Preferences = new Preferences
+            {
+                Time = new TimeSettings { Format = "absolute" }
+            }
+        };
+        _configService.LoadConfigAsync().Returns(Task.FromResult(config));
+
+        var priorities = new List<Priority>
+        {
+            new Priority { Id = 1, Name = "Low" }
+        };
+        _redmineService.GetPrioritiesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(priorities));
+
+        var command = PriorityCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var parseResult = command.Parse("list");
+
+        // Act
+        var result = await parseResult.InvokeAsync();
+
+        // Assert
+        result.Should().Be(0);
+        _tableFormatter.Received(1).SetTimeFormat(TimeFormat.Absolute);
+    }
+
+    [Fact]
+    public async Task List_Should_SetUtcTimeFormat_When_ConfiguredAsUtc()
+    {
+        // Arrange
+        var config = new Config
+        {
+            CurrentProfile = "default",
+            Profiles = new Dictionary<string, Profile>(),
+            Preferences = new Preferences
+            {
+                Time = new TimeSettings { Format = "utc" }
+            }
+        };
+        _configService.LoadConfigAsync().Returns(Task.FromResult(config));
+
+        var priorities = new List<Priority>
+        {
+            new Priority { Id = 1, Name = "Low" }
+        };
+        _redmineService.GetPrioritiesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(priorities));
+
+        var command = PriorityCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var parseResult = command.Parse("list");
+
+        // Act
+        var result = await parseResult.InvokeAsync();
+
+        // Assert
+        result.Should().Be(0);
+        _tableFormatter.Received(1).SetTimeFormat(TimeFormat.Utc);
+    }
+
+    [Fact]
+    public async Task List_Should_HandleApiException_When_ForbiddenError()
+    {
+        // Arrange
+        var apiException = new RedmineApiException(403, "Forbidden");
+        _redmineService.GetPrioritiesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(apiException);
+
+        var command = PriorityCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var parseResult = command.Parse("list");
+
+        // Act
+        Environment.ExitCode = 0; // Reset exit code
+        await parseResult.InvokeAsync();
+
+        // Assert
+        Environment.ExitCode.Should().Be(1);
+        _logger.Received(1).LogError(apiException, "API error while listing priorities");
+    }
+
+    [Fact]
+    public async Task List_Should_HandleApiException_When_OtherApiError()
+    {
+        // Arrange
+        var apiException = new RedmineApiException(400, "Bad Request");
+        _redmineService.GetPrioritiesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(apiException);
+
+        var command = PriorityCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var parseResult = command.Parse("list");
+
+        // Act
+        Environment.ExitCode = 0; // Reset exit code
+        await parseResult.InvokeAsync();
+
+        // Assert
+        Environment.ExitCode.Should().Be(1);
+        _logger.Received(1).LogError(apiException, "API error while listing priorities");
+    }
+
+    [Fact]
+    public async Task List_Should_HandleGeneralException_When_UnexpectedError()
+    {
+        // Arrange
+        var exception = new InvalidOperationException("Something went wrong");
+        _redmineService.GetPrioritiesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(exception);
+
+        var command = PriorityCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var parseResult = command.Parse("list");
+
+        // Act
+        Environment.ExitCode = 0; // Reset exit code
+        await parseResult.InvokeAsync();
+
+        // Assert
+        Environment.ExitCode.Should().Be(1);
+        _logger.Received(1).LogError(exception, "Unexpected error while listing priorities");
     }
 }

@@ -189,4 +189,209 @@ public class JsonFormatterTests
         var exception = Record.Exception(() => _formatter.FormatIssues(issues));
         exception.Should().BeNull();
     }
+
+    [Fact]
+    public void FormatAttachments_Should_NotThrowException_When_AttachmentsProvided()
+    {
+        // Arrange
+        var attachments = new List<Attachment>
+        {
+            new Attachment
+            {
+                Id = 1,
+                Filename = "test.pdf",
+                Filesize = 1024,
+                ContentType = "application/pdf",
+                Description = "Test PDF file",
+                CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0),
+                Author = new User { Id = 10, Name = "Author Name" }
+            },
+            new Attachment
+            {
+                Id = 2,
+                Filename = "image.png",
+                Filesize = 2048,
+                ContentType = "image/png",
+                Description = "Test image",
+                CreatedOn = new DateTime(2024, 1, 2, 11, 0, 0),
+                Author = new User { Id = 11, Name = "Another Author" }
+            }
+        };
+
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.FormatAttachments(attachments));
+        exception.Should().BeNull();
+    }
+
+    [Fact]
+    public void FormatAttachmentDetails_Should_NotThrowException_When_AttachmentProvided()
+    {
+        // Arrange
+        var attachment = new Attachment
+        {
+            Id = 123,
+            Filename = "document.docx",
+            Filesize = 4096,
+            ContentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            Description = "Detailed document description",
+            CreatedOn = new DateTime(2024, 1, 5, 14, 30, 0),
+            Author = new User { Id = 20, Name = "Document Author" }
+        };
+
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.FormatAttachmentDetails(attachment));
+        exception.Should().BeNull();
+    }
+
+    [Fact]
+    public void FormatUsers_Should_NotThrowException_When_UsersProvided()
+    {
+        // Arrange
+        var users = new List<User>
+        {
+            new User
+            {
+                Id = 1,
+                Login = "user1",
+                FirstName = "John",
+                LastName = "Doe",
+                Email = "john.doe@example.com",
+                CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0)
+            },
+            new User
+            {
+                Id = 2,
+                Login = "user2",
+                FirstName = "Jane",
+                LastName = "Smith",
+                Email = "jane.smith@example.com",
+                CreatedOn = new DateTime(2024, 1, 2, 11, 0, 0)
+            }
+        };
+
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.FormatUsers(users));
+        exception.Should().BeNull();
+    }
+
+    [Fact]
+    public void FormatProjects_Should_NotThrowException_When_ProjectsProvided()
+    {
+        // Arrange
+        var projects = new List<Project>
+        {
+            new Project
+            {
+                Id = 1,
+                Name = "Test Project 1",
+                Identifier = "test-proj-1",
+                Description = "First test project",
+                CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0),
+                UpdatedOn = new DateTime(2024, 1, 5, 15, 0, 0)
+            },
+            new Project
+            {
+                Id = 2,
+                Name = "Test Project 2",
+                Identifier = "test-proj-2",
+                Description = "Second test project",
+                CreatedOn = new DateTime(2024, 1, 2, 11, 0, 0),
+                UpdatedOn = new DateTime(2024, 1, 6, 16, 0, 0)
+            }
+        };
+
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.FormatProjects(projects));
+        exception.Should().BeNull();
+    }
+
+    [Fact]
+    public void FormatPriorities_Should_NotThrowException_When_PrioritiesProvided()
+    {
+        // Arrange
+        var priorities = new List<Priority>
+        {
+            new Priority { Id = 1, Name = "Low" },
+            new Priority { Id = 2, Name = "Normal" },
+            new Priority { Id = 3, Name = "High" },
+            new Priority { Id = 4, Name = "Urgent" },
+            new Priority { Id = 5, Name = "Immediate" }
+        };
+
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.FormatPriorities(priorities));
+        exception.Should().BeNull();
+    }
+
+    [Fact]
+    public void FormatAttachments_Should_HandleEmptyList_When_NoAttachments()
+    {
+        // Arrange
+        var attachments = new List<Attachment>();
+
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.FormatAttachments(attachments));
+        exception.Should().BeNull();
+    }
+
+    [Fact]
+    public void FormatUsers_Should_HandleEmptyList_When_NoUsers()
+    {
+        // Arrange
+        var users = new List<User>();
+
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.FormatUsers(users));
+        exception.Should().BeNull();
+    }
+
+    [Fact]
+    public void FormatProjects_Should_HandleEmptyList_When_NoProjects()
+    {
+        // Arrange
+        var projects = new List<Project>();
+
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.FormatProjects(projects));
+        exception.Should().BeNull();
+    }
+
+    [Fact]
+    public void FormatPriorities_Should_HandleEmptyList_When_NoPriorities()
+    {
+        // Arrange
+        var priorities = new List<Priority>();
+
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.FormatPriorities(priorities));
+        exception.Should().BeNull();
+    }
+
+    [Fact]
+    public void FormatIssueStatuses_Should_NotThrowException_When_StatusesProvided()
+    {
+        // Arrange
+        var statuses = new List<IssueStatus>
+        {
+            new IssueStatus { Id = 1, Name = "New" },
+            new IssueStatus { Id = 2, Name = "In Progress" },
+            new IssueStatus { Id = 3, Name = "Resolved" },
+            new IssueStatus { Id = 4, Name = "Closed" }
+        };
+
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.FormatIssueStatuses(statuses));
+        exception.Should().BeNull();
+    }
+
+    [Fact]
+    public void FormatIssueStatuses_Should_HandleEmptyList_When_NoStatuses()
+    {
+        // Arrange
+        var statuses = new List<IssueStatus>();
+
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.FormatIssueStatuses(statuses));
+        exception.Should().BeNull();
+    }
 }

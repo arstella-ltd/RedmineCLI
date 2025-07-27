@@ -505,4 +505,123 @@ public class TableFormatterTests
         var exception = Record.Exception(() => _formatter.FormatIssueDetails(issue, false));
         exception.Should().BeNull();
     }
+
+    [Fact]
+    public void SetTimeFormat_Should_ChangeTimeFormat_When_Called()
+    {
+        // Arrange & Act
+        _formatter.SetTimeFormat(TimeFormat.Absolute);
+
+        // Assert - The method just sets a private field, so we test by formatting something with time
+        var issue = new Issue
+        {
+            Id = 1,
+            Subject = "Test Issue",
+            Status = new IssueStatus { Id = 1, Name = "New" },
+            Priority = new Priority { Id = 2, Name = "Normal" },
+            Project = new Project { Id = 1, Name = "Test Project" },
+            CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0),
+            UpdatedOn = new DateTime(2024, 1, 2, 15, 30, 0)
+        };
+
+        // Should not throw and should format correctly
+        var exception = Record.Exception(() => _formatter.FormatIssues(new List<Issue> { issue }));
+        exception.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData(TimeFormat.Relative)]
+    [InlineData(TimeFormat.Absolute)]
+    [InlineData(TimeFormat.Utc)]
+    public void SetTimeFormat_Should_AcceptAllTimeFormats_When_ValidFormatProvided(TimeFormat format)
+    {
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.SetTimeFormat(format));
+        exception.Should().BeNull();
+    }
+
+    [Fact]
+    public void FormatAttachments_Should_NotThrowException_When_AttachmentsProvided()
+    {
+        // Arrange
+        var attachments = new List<Attachment>
+        {
+            new Attachment
+            {
+                Id = 1,
+                Filename = "test.pdf",
+                Filesize = 1024,
+                ContentType = "application/pdf",
+                Description = "Test PDF",
+                Author = new User { Id = 10, Name = "Test Author" },
+                CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0)
+            }
+        };
+
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.FormatAttachments(attachments));
+        exception.Should().BeNull();
+    }
+
+    [Fact]
+    public void FormatPriorities_Should_NotThrowException_When_PrioritiesProvided()
+    {
+        // Arrange
+        var priorities = new List<Priority>
+        {
+            new Priority { Id = 1, Name = "Low" },
+            new Priority { Id = 2, Name = "Normal" },
+            new Priority { Id = 3, Name = "High" }
+        };
+
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.FormatPriorities(priorities));
+        exception.Should().BeNull();
+    }
+
+    [Fact]
+    public void FormatUsers_Should_NotThrowException_When_UsersProvided()
+    {
+        // Arrange
+        var users = new List<User>
+        {
+            new User { Id = 1, Login = "user1", Name = "User 1" },
+            new User { Id = 2, Login = "user2", Name = "User 2" }
+        };
+
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.FormatUsers(users));
+        exception.Should().BeNull();
+    }
+
+    [Fact]
+    public void FormatProjects_Should_NotThrowException_When_ProjectsProvided()
+    {
+        // Arrange
+        var projects = new List<Project>
+        {
+            new Project { Id = 1, Name = "Project 1", Identifier = "proj1" },
+            new Project { Id = 2, Name = "Project 2", Identifier = "proj2" }
+        };
+
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.FormatProjects(projects));
+        exception.Should().BeNull();
+    }
+
+    [Fact]
+    public void FormatIssueStatuses_Should_NotThrowException_When_StatusesProvided()
+    {
+        // Arrange
+        var statuses = new List<IssueStatus>
+        {
+            new IssueStatus { Id = 1, Name = "New" },
+            new IssueStatus { Id = 2, Name = "In Progress" }
+        };
+
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.FormatIssueStatuses(statuses));
+        exception.Should().BeNull();
+    }
+
 }

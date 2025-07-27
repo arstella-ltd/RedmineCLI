@@ -496,4 +496,150 @@ public class RedmineServiceTests
         result.Should().BeTrue();
         await _mockApiClient.Received(1).TestConnectionAsync(url, apiKey, Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task GetPrioritiesAsync_Should_ReturnPriorities_When_Called()
+    {
+        // Arrange
+        var expectedPriorities = new List<Priority>
+        {
+            new() { Id = 1, Name = "Low" },
+            new() { Id = 2, Name = "Normal" },
+            new() { Id = 3, Name = "High" }
+        };
+        _mockApiClient.GetPrioritiesAsync(Arg.Any<CancellationToken>())
+            .Returns(expectedPriorities);
+
+        // Act
+        var result = await _sut.GetPrioritiesAsync();
+
+        // Assert
+        result.Should().BeEquivalentTo(expectedPriorities);
+        await _mockApiClient.Received(1).GetPrioritiesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetPrioritiesAsync_Should_UseCache_When_CacheIsValid()
+    {
+        // Arrange
+        var priorities = new List<Priority>
+        {
+            new() { Id = 1, Name = "Low" },
+            new() { Id = 2, Name = "Normal" }
+        };
+        _mockApiClient.GetPrioritiesAsync(Arg.Any<CancellationToken>())
+            .Returns(priorities);
+
+        // Act
+        var result1 = await _sut.GetPrioritiesAsync();
+        var result2 = await _sut.GetPrioritiesAsync();
+
+        // Assert
+        result1.Should().BeEquivalentTo(priorities);
+        result2.Should().BeEquivalentTo(priorities);
+        await _mockApiClient.Received(1).GetPrioritiesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ResolvePriorityIdAsync_Should_ReturnNull_When_PriorityIsNullOrEmpty()
+    {
+        // Arrange & Act
+        var result1 = await _sut.ResolvePriorityIdAsync(null);
+        var result2 = await _sut.ResolvePriorityIdAsync(string.Empty);
+
+        // Assert
+        result1.Should().BeNull();
+        result2.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ResolvePriorityIdAsync_Should_ReturnSameValue_When_PriorityIsNumeric()
+    {
+        // Arrange
+        const string numericPriority = "3";
+
+        // Act
+        var result = await _sut.ResolvePriorityIdAsync(numericPriority);
+
+        // Assert
+        result.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task ResolvePriorityIdAsync_Should_ReturnPriorityId_When_PriorityNameProvided()
+    {
+        // Arrange
+        const string priorityName = "high";
+        var priorities = new List<Priority>
+        {
+            new() { Id = 1, Name = "Low" },
+            new() { Id = 2, Name = "Normal" },
+            new() { Id = 3, Name = "High" }
+        };
+        _mockApiClient.GetPrioritiesAsync(Arg.Any<CancellationToken>())
+            .Returns(priorities);
+
+        // Act
+        var result = await _sut.ResolvePriorityIdAsync(priorityName);
+
+        // Assert
+        result.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task ResolvePriorityIdAsync_Should_ThrowValidationException_When_PriorityNotFound()
+    {
+        // Arrange
+        const string unknownPriority = "Unknown";
+        var priorities = new List<Priority>
+        {
+            new() { Id = 1, Name = "Low" },
+            new() { Id = 2, Name = "Normal" }
+        };
+        _mockApiClient.GetPrioritiesAsync(Arg.Any<CancellationToken>())
+            .Returns(priorities);
+
+        // Act
+        var act = async () => await _sut.ResolvePriorityIdAsync(unknownPriority);
+
+        // Assert
+        await act.Should().ThrowAsync<ValidationException>()
+            .WithMessage($"Priority '{unknownPriority}' not found");
+    }
+
+    [Fact]
+    public async Task GetUsersAsync_Should_CallApiClient()
+    {
+        // Arrange
+        var expectedUsers = new List<User>
+        {
+            new() { Id = 1, Login = "user1", Name = "User 1" },
+            new() { Id = 2, Login = "user2", Name = "User 2" }
+        };
+        _mockApiClient.GetUsersAsync(null, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(expectedUsers));
+
+        // Act
+        var result = await _sut.GetUsersAsync();
+
+        // Assert
+        result.Should().BeEquivalentTo(expectedUsers);
+        await _mockApiClient.Received(1).GetUsersAsync(null, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AddCommentAsync_Should_CallApiClient()
+    {
+        // Arrange
+        const int issueId = 123;
+        const string comment = "This is a test comment";
+        _mockApiClient.AddCommentAsync(issueId, comment, Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        // Act
+        await _sut.AddCommentAsync(issueId, comment);
+
+        // Assert
+        await _mockApiClient.Received(1).AddCommentAsync(issueId, comment, Arg.Any<CancellationToken>());
+    }
 }
