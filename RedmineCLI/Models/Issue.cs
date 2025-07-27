@@ -27,6 +27,9 @@ public class Issue : IEquatable<Issue>
     [JsonPropertyName("assigned_to")]
     public User? AssignedTo { get; set; }
 
+    [JsonPropertyName("author")]
+    public User? Author { get; set; }
+
     [JsonPropertyName("created_on")]
     public DateTime CreatedOn { get; set; }
 

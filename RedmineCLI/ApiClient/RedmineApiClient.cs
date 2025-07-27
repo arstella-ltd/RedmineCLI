@@ -280,6 +280,7 @@ public class RedmineApiClient : IRedmineApiClient
             ["project_id"] = filter.ProjectId,
             ["status_id"] = filter.StatusId,
             ["priority_id"] = filter.PriorityId,
+            ["author_id"] = filter.AuthorId,
             ["limit"] = filter.Limit?.ToString(),
             ["offset"] = filter.Offset?.ToString(),
             ["sort"] = filter.Sort,

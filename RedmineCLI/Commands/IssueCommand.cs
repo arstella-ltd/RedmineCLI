@@ -68,6 +68,7 @@ public class IssueCommand
         var searchOption = new Option<string?>("--search") { Description = "Search in issue titles and descriptions" };
         searchOption.Aliases.Add("-q");
         var sortOption = new Option<string?>("--sort") { Description = "Sort by field (e.g., updated_on:desc, priority:desc,id)" };
+        var authorOption = new Option<string?>("--author") { Description = "Filter by author (username, ID, or @me)" };
 
         listCommand.Add(assigneeOption);
         listCommand.Add(statusOption);
@@ -80,6 +81,7 @@ public class IssueCommand
         listCommand.Add(absoluteTimeOption);
         listCommand.Add(searchOption);
         listCommand.Add(sortOption);
+        listCommand.Add(authorOption);
 
         listCommand.SetAction(async (parseResult) =>
         {
@@ -94,6 +96,7 @@ public class IssueCommand
             var absoluteTime = parseResult.GetValue(absoluteTimeOption);
             var search = parseResult.GetValue(searchOption);
             var sort = parseResult.GetValue(sortOption);
+            var author = parseResult.GetValue(authorOption);
 
             var options = new IssueListOptions
             {
@@ -107,7 +110,8 @@ public class IssueCommand
                 AbsoluteTime = absoluteTime,
                 Search = search,
                 Sort = sort,
-                Priority = priority
+                Priority = priority,
+                Author = author
             };
 
             Environment.ExitCode = await issueCommand.ListAsync(options, CancellationToken.None);
@@ -320,15 +324,19 @@ public class IssueCommand
         string? search,
         string? sort,
         string? priority,
+        string? author,
         CancellationToken cancellationToken)
     {
         try
         {
-            _logger.LogDebug("Listing issues with filters - Assignee: {Assignee}, Status: {Status}, Project: {Project}, Priority: {Priority}, Search: {Search}, Sort: {Sort}",
-                assignee, status, project, priority, search, sort);
+            _logger.LogDebug("Listing issues with filters - Assignee: {Assignee}, Status: {Status}, Project: {Project}, Priority: {Priority}, Author: {Author}, Search: {Search}, Sort: {Sort}",
+                assignee, status, project, priority, author, search, sort);
 
             // Handle @me special value
             assignee = await ResolveAssigneeAsync(assignee, cancellationToken);
+
+            // Handle author resolution
+            author = await ResolveAuthorAsync(author, cancellationToken);
 
             // Handle project name to identifier resolution
             project = await ResolveProjectAsync(project, cancellationToken);
@@ -383,6 +391,7 @@ public class IssueCommand
                     StatusId = statusFilter,
                     ProjectId = project,
                     PriorityId = priorityFilter,
+                    AuthorId = author,
                     Limit = limit ?? 30, // Default limit to 30
                     Offset = offset,
                     Sort = sort
@@ -481,6 +490,7 @@ public class IssueCommand
             options.Search,
             options.Sort,
             options.Priority,
+            options.Author,
             cancellationToken);
     }
 
@@ -986,6 +996,56 @@ public class IssueCommand
         {
             _logger.LogError(ex, "Failed to resolve assignee '{Assignee}'", assignee);
             throw new ValidationException($"Failed to resolve user '{assignee}': {ex.Message}", ex);
+        }
+    }
+
+    private async Task<string?> ResolveAuthorAsync(string? author, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(author))
+            return null;
+
+        if (author == "@me")
+        {
+            var currentUser = await _redmineService.GetCurrentUserAsync(cancellationToken);
+            return currentUser.Id.ToString();
+        }
+
+        // 数値の場合はそのままIDとして返す
+        if (int.TryParse(author, out _))
+        {
+            return author;
+        }
+
+        // 文字列の場合はユーザー名として扱い、ユーザーIDを検索する
+        try
+        {
+            var users = await _redmineService.GetUsersAsync(null, cancellationToken);
+            var matchedUser = users.FirstOrDefault(u =>
+                u.DisplayName.Equals(author, StringComparison.OrdinalIgnoreCase) ||
+                u.Login?.Equals(author, StringComparison.OrdinalIgnoreCase) == true ||
+                (!string.IsNullOrEmpty(u.FirstName) && !string.IsNullOrEmpty(u.LastName) &&
+                 ($"{u.FirstName} {u.LastName}".Equals(author, StringComparison.OrdinalIgnoreCase) ||
+                  $"{u.LastName} {u.FirstName}".Equals(author, StringComparison.OrdinalIgnoreCase))));
+
+            if (matchedUser != null)
+            {
+                _logger.LogDebug("Resolved author '{Author}' to user ID {UserId}", author, matchedUser.Id);
+                return matchedUser.Id.ToString();
+            }
+
+            // ユーザーが見つからない場合はエラーをスロー
+            _logger.LogError("Could not find user with name '{Author}'", author);
+            throw new ValidationException($"User '{author}' not found.");
+        }
+        catch (ValidationException)
+        {
+            // ValidationExceptionはそのまま再スロー
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to resolve author '{Author}'", author);
+            throw new ValidationException($"Failed to resolve user '{author}': {ex.Message}", ex);
         }
     }
 

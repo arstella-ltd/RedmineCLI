@@ -26,6 +26,7 @@ public class IssueListOptionsTests
         options.Search.Should().BeNull();
         options.Sort.Should().BeNull();
         options.Priority.Should().BeNull();
+        options.Author.Should().BeNull();
     }
 
     [Fact]
@@ -46,6 +47,7 @@ public class IssueListOptionsTests
         options.Search = "bug";
         options.Sort = "priority:desc";
         options.Priority = "high";
+        options.Author = "jane.smith";
 
         // Assert
         options.Assignee.Should().Be("john.doe");
@@ -59,6 +61,7 @@ public class IssueListOptionsTests
         options.Search.Should().Be("bug");
         options.Sort.Should().Be("priority:desc");
         options.Priority.Should().Be("high");
+        options.Author.Should().Be("jane.smith");
     }
 
     [Fact]
@@ -77,7 +80,8 @@ public class IssueListOptionsTests
             AbsoluteTime = true,
             Search = "keyword",
             Sort = "updated_on:desc",
-            Priority = "urgent"
+            Priority = "urgent",
+            Author = "@me"
         };
 
         // Assert
@@ -92,5 +96,6 @@ public class IssueListOptionsTests
         options.Search.Should().Be("keyword");
         options.Sort.Should().Be("updated_on:desc");
         options.Priority.Should().Be("urgent");
+        options.Author.Should().Be("@me");
     }
 }
