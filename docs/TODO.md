@@ -691,6 +691,35 @@
     - テーブル表示の共通化
   - _要求: 13_
 
+- [ ] 23. チケットクローズコマンドの実装（TDD）
+  - **Red**: IssueCloseCommandのテストを先に作成
+    - Close_Should_CloseIssue_When_ValidIdProvided
+    - Close_Should_AddComment_When_MessageOptionProvided
+    - Close_Should_UseSpecifiedStatus_When_StatusOptionProvided
+    - Close_Should_UseFirstClosedStatus_When_NoStatusSpecified
+    - Close_Should_SetDoneRatio_When_DoneRatioOptionProvided
+    - Close_Should_SetDoneRatioTo100_When_NoRatioSpecified
+    - Close_Should_ShowWarning_When_IssueAlreadyClosed
+    - Close_Should_ShowError_When_NoClosedStatusExists
+    - Close_Should_Warn_When_SpecifiedStatusNotClosed
+    - Close_Should_CloseMultipleIssues_When_MultipleIdsProvided
+    - Close_Should_FormatAsJson_When_JsonOptionIsSet
+  - **Green**: テストを通すための実装
+    - `issue close <ID>`コマンドの実装
+    - --message/-mオプションによるコメント追加（issue commentと同じ）
+    - --status/-sオプションによるステータス指定
+    - --done-ratio/-dオプションによる進捗率設定
+    - デフォルトでIsClosed=trueの最初のステータスを自動選択
+    - デフォルトで進捗率を100%に設定
+    - 既にクローズされている場合の警告表示（エラーにはしない）
+    - クローズステータスが存在しない場合のエラー処理
+    - 複数ID対応（バッチ処理）
+  - **Refactor**: ステータス選択ロジックの共通化とエラーハンドリング
+    - IssueStatusServiceの作成（クローズステータス検索ロジック）
+    - 警告とエラーの適切な使い分け
+    - コメント処理の共通化（issue commentとの共有）
+  - _要求: 14_
+
 ## 使用方法
 
 ### 実行可能ファイル名
