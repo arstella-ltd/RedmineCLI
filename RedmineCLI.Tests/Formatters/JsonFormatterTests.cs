@@ -346,6 +346,50 @@ public class JsonFormatterTests
     }
 
     [Fact]
+    public void FormatUsers_Should_NotThrowException_When_ShowAllDetailsIsTrue()
+    {
+        // Arrange
+        var users = new List<User>
+        {
+            new User
+            {
+                Id = 1,
+                Login = "user1",
+                FirstName = "John",
+                LastName = "Doe",
+                Email = "john.doe@example.com",
+                CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0)
+            }
+        };
+
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.FormatUsers(users, true));
+        exception.Should().BeNull();
+    }
+
+    [Fact]
+    public void FormatUsers_Should_NotThrowException_When_ShowAllDetailsIsFalse()
+    {
+        // Arrange
+        var users = new List<User>
+        {
+            new User
+            {
+                Id = 1,
+                Login = "user1",
+                FirstName = "John",
+                LastName = "Doe",
+                Email = "john.doe@example.com",
+                CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0)
+            }
+        };
+
+        // Act & Assert - Should not throw exception
+        var exception = Record.Exception(() => _formatter.FormatUsers(users, false));
+        exception.Should().BeNull();
+    }
+
+    [Fact]
     public void FormatProjects_Should_HandleEmptyList_When_NoProjects()
     {
         // Arrange

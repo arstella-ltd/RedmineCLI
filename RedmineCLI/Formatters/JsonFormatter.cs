@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 using RedmineCLI.ApiClient;
@@ -55,8 +56,11 @@ public class JsonFormatter : IJsonFormatter
         }
     }
 
-    public void FormatUsers(List<User> users)
+    public void FormatUsers(List<User> users, bool showAllDetails = false)
     {
+        // For JSON output, we always serialize the full user object
+        // The showAllDetails parameter is preserved for API consistency with TableFormatter
+        // Clients consuming JSON can filter fields as needed
         var json = JsonSerializer.Serialize(users, RedmineJsonContext.Default.ListUser);
         AnsiConsole.WriteLine(json);
     }

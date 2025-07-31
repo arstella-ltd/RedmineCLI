@@ -359,24 +359,39 @@ public class TableFormatter : ITableFormatter
         return contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
     }
 
-    public void FormatUsers(List<User> users)
+    public void FormatUsers(List<User> users, bool showAllDetails = false)
     {
         var table = new Table();
         table.AddColumn("ID");
         table.AddColumn("LOGIN");
         table.AddColumn("NAME");
-        table.AddColumn("EMAIL");
+        if (showAllDetails)
+        {
+            table.AddColumn("EMAIL");
+        }
         table.AddColumn("CREATED");
 
         foreach (var user in users)
         {
-            table.AddRow(
-                user.Id.ToString(),
-                Markup.Escape(user.Login ?? string.Empty),
-                Markup.Escape(user.DisplayName),
-                Markup.Escape(user.Email ?? string.Empty),
-                _timeHelper.FormatTime(user.CreatedOn, _timeFormat)
-            );
+            if (showAllDetails)
+            {
+                table.AddRow(
+                    user.Id.ToString(),
+                    Markup.Escape(user.Login ?? string.Empty),
+                    Markup.Escape(user.DisplayName),
+                    Markup.Escape(user.Email ?? string.Empty),
+                    _timeHelper.FormatTime(user.CreatedOn, _timeFormat)
+                );
+            }
+            else
+            {
+                table.AddRow(
+                    user.Id.ToString(),
+                    Markup.Escape(user.Login ?? string.Empty),
+                    Markup.Escape(user.DisplayName),
+                    _timeHelper.FormatTime(user.CreatedOn, _timeFormat)
+                );
+            }
         }
 
         AnsiConsole.Write(table);
