@@ -11,7 +11,7 @@ public interface ITableFormatter
     void FormatAttachments(List<Attachment> attachments);
     void FormatAttachmentDetails(Attachment attachment);
     void FormatAttachmentDetails(Attachment attachment, bool showImages);
-    void FormatUsers(List<User> users);
+    void FormatUsers(List<User> users, bool showAllDetails = false);
     void FormatProjects(List<Project> projects);
     void FormatIssueStatuses(List<IssueStatus> statuses);
     void FormatPriorities(List<Priority> priorities);

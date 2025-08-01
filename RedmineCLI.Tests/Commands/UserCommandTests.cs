@@ -91,7 +91,7 @@ public class UserCommandTests
         // Assert
         result.Should().Be(0);
         await _redmineService.Received(1).GetUsersAsync(30, Arg.Any<CancellationToken>());
-        _tableFormatter.Received(1).FormatUsers(users);
+        _tableFormatter.Received(1).FormatUsers(users, false);
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public class UserCommandTests
         // Assert
         result.Should().Be(0);
         await _redmineService.Received(1).GetUsersAsync(10, Arg.Any<CancellationToken>());
-        _tableFormatter.Received(1).FormatUsers(users);
+        _tableFormatter.Received(1).FormatUsers(users, false);
     }
 
     [Fact]
@@ -155,8 +155,8 @@ public class UserCommandTests
         // Assert
         result.Should().Be(0);
         await _redmineService.Received(1).GetUsersAsync(30, Arg.Any<CancellationToken>());
-        _jsonFormatter.Received(1).FormatUsers(users);
-        _tableFormatter.DidNotReceive().FormatUsers(Arg.Any<List<User>>());
+        _jsonFormatter.Received(1).FormatUsers(users, false);
+        _tableFormatter.DidNotReceive().FormatUsers(Arg.Any<List<User>>(), Arg.Any<bool>());
     }
 
     [Fact]
@@ -207,5 +207,102 @@ public class UserCommandTests
         // Assert
         result.Should().Be(0);
         await _redmineService.Received(1).GetUsersAsync(5, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task List_Should_ShowEmailAddresses_When_AllOptionIsSet()
+    {
+        // Arrange
+        var users = new List<User>
+        {
+            new User
+            {
+                Id = 1,
+                Login = "admin",
+                FirstName = "Administrator",
+                LastName = "",
+                Email = "admin@example.com",
+                CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0, DateTimeKind.Utc)
+            }
+        };
+
+        _redmineService.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(users));
+
+        var command = UserCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var parseResult = command.Parse("list --all");
+
+        // Act
+        var result = await parseResult.InvokeAsync();
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).GetUsersAsync(30, Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatUsers(users, true);
+    }
+
+    [Fact]
+    public async Task List_Should_AcceptShortHandAllOption()
+    {
+        // Arrange
+        var users = new List<User>
+        {
+            new User
+            {
+                Id = 1,
+                Login = "admin",
+                FirstName = "Administrator",
+                LastName = "",
+                Email = "admin@example.com",
+                CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0, DateTimeKind.Utc)
+            }
+        };
+
+        _redmineService.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(users));
+
+        var command = UserCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var parseResult = command.Parse("list -a");
+
+        // Act
+        var result = await parseResult.InvokeAsync();
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).GetUsersAsync(30, Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatUsers(users, true);
+    }
+
+    [Fact]
+    public async Task List_Should_ShowEmailAddressesInJson_When_AllAndJsonOptionsAreSet()
+    {
+        // Arrange
+        var users = new List<User>
+        {
+            new User
+            {
+                Id = 1,
+                Login = "admin",
+                FirstName = "Administrator",
+                LastName = "",
+                Email = "admin@example.com",
+                CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0, DateTimeKind.Utc)
+            }
+        };
+
+        _redmineService.GetUsersAsync(Arg.Any<int?>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(users));
+
+        var command = UserCommand.Create(_redmineService, _configService, _tableFormatter, _jsonFormatter, _logger);
+        var parseResult = command.Parse("list --json --all");
+
+        // Act
+        var result = await parseResult.InvokeAsync();
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).GetUsersAsync(30, Arg.Any<CancellationToken>());
+        _jsonFormatter.Received(1).FormatUsers(users, true);
+        _tableFormatter.DidNotReceive().FormatUsers(Arg.Any<List<User>>(), Arg.Any<bool>());
     }
 }

@@ -49,22 +49,26 @@ public class UserCommand
         var limitOption = new Option<int?>("--limit") { Description = "Limit the number of users (default: 30)" };
         limitOption.Aliases.Add("-L");
         var jsonOption = new Option<bool>("--json") { Description = "Output in JSON format" };
+        var allOption = new Option<bool>("--all") { Description = "Show all details including email addresses" };
+        allOption.Aliases.Add("-a");
 
         listCommand.Add(limitOption);
         listCommand.Add(jsonOption);
+        listCommand.Add(allOption);
 
         listCommand.SetAction(async (parseResult) =>
         {
             var limit = parseResult.GetValue(limitOption);
             var json = parseResult.GetValue(jsonOption);
-            Environment.ExitCode = await userCommand.ListUsersAsync(limit, json);
+            var all = parseResult.GetValue(allOption);
+            Environment.ExitCode = await userCommand.ListUsersAsync(limit, json, all);
         });
 
         command.Add(listCommand);
         return command;
     }
 
-    private async Task<int> ListUsersAsync(int? limit, bool json)
+    private async Task<int> ListUsersAsync(int? limit, bool json, bool all)
     {
         try
         {
@@ -94,11 +98,11 @@ public class UserCommand
 
             if (json)
             {
-                _jsonFormatter.FormatUsers(users);
+                _jsonFormatter.FormatUsers(users, all);
             }
             else
             {
-                _tableFormatter.FormatUsers(users);
+                _tableFormatter.FormatUsers(users, all);
             }
 
             return 0;
