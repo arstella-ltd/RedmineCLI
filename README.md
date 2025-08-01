@@ -116,6 +116,11 @@ redmine issue list --status open --priority "高" --assignee @me
 # チケットの詳細を表示
 redmine issue view 12345
 
+# チケットの詳細を表示（全てのコメントを表示）
+redmine issue view 12345 --comments
+# または
+redmine issue view 12345 -c
+
 # 新しいチケットを作成
 redmine issue create
 

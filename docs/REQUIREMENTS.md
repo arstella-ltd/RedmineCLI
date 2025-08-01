@@ -50,11 +50,12 @@ RedmineCLIは、Redmineのチケット管理をコマンドラインから効率
 
 #### 受け入れ基準
 1. WHEN `redmine issue view <ID>` を実行 THEN チケットの詳細情報が表示される SHALL
-2. WHEN チケットにコメントがある THEN 履歴も含めて表示される SHALL
-3. WHEN `--json` オプションを指定 THEN JSON形式で出力される SHALL
-4. WHEN 存在しないIDを指定 THEN エラーメッセージが表示される SHALL
-5. WHEN `--web` または `-w` オプションを指定 THEN 該当チケットの詳細ページをWebブラウザで開く SHALL
-6. WHEN チケットに期日（Due Date）が設定されている THEN 詳細情報に期日が表示される SHALL
+2. WHEN チケットにコメントがある THEN 最新のコメントのみが表示され、残りのコメント数が表示される SHALL
+3. WHEN `--comments` または `-c` オプションを指定 THEN 全ての履歴とコメントが表示される SHALL
+4. WHEN `--json` オプションを指定 THEN JSON形式で出力される SHALL
+5. WHEN 存在しないIDを指定 THEN エラーメッセージが表示される SHALL
+6. WHEN `--web` または `-w` オプションを指定 THEN 該当チケットの詳細ページをWebブラウザで開く SHALL
+7. WHEN チケットに期日（Due Date）が設定されている THEN 詳細情報に期日が表示される SHALL
 
 ### 要求 4
 **ユーザーストーリー:** 開発者として、必要な情報を入力して登録したいので、新しいチケットを作成できる
