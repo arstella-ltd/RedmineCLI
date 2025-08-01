@@ -128,12 +128,15 @@ public class IssueCommand
         viewWebOption.Aliases.Add("-w");
         var viewAbsoluteTimeOption = new Option<bool>("--absolute-time") { Description = "Display absolute time instead of relative time" };
         var viewImageOption = new Option<bool>("--image") { Description = "Display inline images using Sixel protocol" };
+        var viewCommentsOption = new Option<bool>("--comments") { Description = "Show all comments (default: show only the latest comment)" };
+        viewCommentsOption.Aliases.Add("-c");
 
         viewCommand.Add(idArgument);
         viewCommand.Add(viewJsonOption);
         viewCommand.Add(viewWebOption);
         viewCommand.Add(viewAbsoluteTimeOption);
         viewCommand.Add(viewImageOption);
+        viewCommand.Add(viewCommentsOption);
 
         viewCommand.SetAction(async (parseResult) =>
         {
@@ -142,8 +145,9 @@ public class IssueCommand
             var web = parseResult.GetValue(viewWebOption);
             var absoluteTime = parseResult.GetValue(viewAbsoluteTimeOption);
             var showImages = parseResult.GetValue(viewImageOption);
+            var showAllComments = parseResult.GetValue(viewCommentsOption);
 
-            Environment.ExitCode = await issueCommand.ViewAsync(id, json, web, absoluteTime, showImages, CancellationToken.None);
+            Environment.ExitCode = await issueCommand.ViewAsync(id, json, web, absoluteTime, showImages, showAllComments, CancellationToken.None);
         });
 
         command.Add(viewCommand);
@@ -684,7 +688,7 @@ public class IssueCommand
         return 0;
     }
 
-    public async Task<int> ViewAsync(int issueId, bool json, bool web, bool absoluteTime, bool showImages, CancellationToken cancellationToken)
+    public async Task<int> ViewAsync(int issueId, bool json, bool web, bool absoluteTime, bool showImages, bool showAllComments, CancellationToken cancellationToken)
     {
         try
         {
@@ -732,7 +736,7 @@ public class IssueCommand
                 }
 
                 _tableFormatter.SetTimeFormat(timeFormat);
-                _tableFormatter.FormatIssueDetails(issue, showImages);
+                _tableFormatter.FormatIssueDetails(issue, showImages, showAllComments);
             }
 
             return 0;

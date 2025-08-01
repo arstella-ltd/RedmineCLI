@@ -94,6 +94,11 @@ public class TableFormatter : ITableFormatter
 
     public void FormatIssueDetails(Issue issue, bool showImages)
     {
+        FormatIssueDetails(issue, showImages, false);
+    }
+
+    public void FormatIssueDetails(Issue issue, bool showImages, bool showAllComments)
+    {
         // Basic issue details
         var panel = new Panel(new Markup($"[bold]{Markup.Escape(issue.Subject)}[/]"))
         {
@@ -133,7 +138,45 @@ public class TableFormatter : ITableFormatter
         if (issue.Journals != null && issue.Journals.Count > 0)
         {
             AnsiConsole.MarkupLine("[bold]History:[/]");
-            foreach (var journal in issue.Journals.OrderBy(j => j.CreatedOn))
+
+            // Filter journals to show only comments (journals with notes)
+            var journalsWithNotes = issue.Journals
+                .Where(j => !string.IsNullOrWhiteSpace(j.Notes))
+                .OrderBy(j => j.CreatedOn)
+                .ToList();
+
+            // Determine which journals to show
+            List<Journal> journalsToShow;
+            int hiddenCommentsCount = 0;
+
+            if (showAllComments)
+            {
+                // Show all journals (including status changes)
+                journalsToShow = issue.Journals.OrderBy(j => j.CreatedOn).ToList();
+            }
+            else
+            {
+                // Show only the latest comment and all status changes
+                var statusChangeJournals = issue.Journals
+                    .Where(j => string.IsNullOrWhiteSpace(j.Notes) && j.Details != null && j.Details.Count > 0)
+                    .ToList();
+
+                var latestComment = journalsWithNotes.LastOrDefault();
+
+                if (latestComment != null)
+                {
+                    journalsToShow = statusChangeJournals.Concat(new[] { latestComment })
+                        .OrderBy(j => j.CreatedOn)
+                        .ToList();
+                    hiddenCommentsCount = journalsWithNotes.Count - 1;
+                }
+                else
+                {
+                    journalsToShow = statusChangeJournals.OrderBy(j => j.CreatedOn).ToList();
+                }
+            }
+
+            foreach (var journal in journalsToShow)
             {
                 AnsiConsole.WriteLine();
                 AnsiConsole.MarkupLine($"[grey]#{journal.Id} - {Markup.Escape(journal.User?.DisplayName ?? "Unknown")} - {_timeHelper.FormatTime(journal.CreatedOn, _timeFormat)}[/]");
@@ -159,6 +202,15 @@ public class TableFormatter : ITableFormatter
                     _inlineImageRenderer.RenderTextWithInlineImages(journal.Notes, issue.Attachments, showImages);
                 }
             }
+
+            // Show hidden comments message
+            if (!showAllComments && hiddenCommentsCount > 0)
+            {
+                AnsiConsole.WriteLine();
+                AnsiConsole.WriteLine();
+                AnsiConsole.MarkupLine($"[grey]———————— Not showing {hiddenCommentsCount} comment{(hiddenCommentsCount > 1 ? "s" : "")} ————————[/]");
+            }
+
             AnsiConsole.WriteLine();
         }
 
@@ -188,9 +240,28 @@ public class TableFormatter : ITableFormatter
             AnsiConsole.Write(attachmentTable);
         }
 
-        // Show image notification at the end if not displaying images
+        // Show notifications at the end
+        bool showedNotification = false;
+
+        // Show comment notification if comments were hidden
+        if (!showAllComments && issue.Journals != null)
+        {
+            var journalsWithNotes = issue.Journals.Where(j => !string.IsNullOrWhiteSpace(j.Notes)).Count();
+            if (journalsWithNotes > 1)
+            {
+                AnsiConsole.WriteLine();
+                AnsiConsole.MarkupLine("[grey]Use --comments to view the full conversation[/]");
+                showedNotification = true;
+            }
+        }
+
+        // Show image notification if not displaying images
         if (!showImages)
         {
+            if (showedNotification)
+            {
+                AnsiConsole.WriteLine();
+            }
             CheckAndNotifyImageOption(issue);
         }
     }

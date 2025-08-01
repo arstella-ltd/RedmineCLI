@@ -1517,12 +1517,12 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issue));
 
         // Act
-        var result = await _issueCommand.ViewAsync(issueId, false, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ViewAsync(issueId, false, false, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
         await _redmineService.Received(1).GetIssueAsync(issueId, true, Arg.Any<CancellationToken>());
-        _tableFormatter.Received(1).FormatIssueDetails(issue, false);
+        _tableFormatter.Received(1).FormatIssueDetails(issue, false, false);
     }
 
     [Fact]
@@ -1573,12 +1573,12 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issue));
 
         // Act
-        var result = await _issueCommand.ViewAsync(issueId, false, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ViewAsync(issueId, false, false, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
         await _redmineService.Received(1).GetIssueAsync(issueId, true, Arg.Any<CancellationToken>());
-        _tableFormatter.Received(1).FormatIssueDetails(issue, false);
+        _tableFormatter.Received(1).FormatIssueDetails(issue, false, false);
     }
 
     [Fact]
@@ -1590,7 +1590,7 @@ public class IssueCommandTests
             .Returns(Task.FromException<Issue>(new RedmineApiException(404, "Issue not found")));
 
         // Act
-        var result = await _issueCommand.ViewAsync(issueId, false, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ViewAsync(issueId, false, false, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -1620,7 +1620,7 @@ public class IssueCommandTests
             .Returns(Task.FromResult(issue));
 
         // Act
-        var result = await _issueCommand.ViewAsync(issueId, true, false, false, false, CancellationToken.None);
+        var result = await _issueCommand.ViewAsync(issueId, true, false, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -1638,7 +1638,7 @@ public class IssueCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.ViewAsync(issueId, false, true, false, false, CancellationToken.None);
+        var result = await _issueCommand.ViewAsync(issueId, false, true, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -1655,7 +1655,7 @@ public class IssueCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(null));
 
         // Act
-        var result = await _issueCommand.ViewAsync(issueId, false, true, false, false, CancellationToken.None);
+        var result = await _issueCommand.ViewAsync(issueId, false, true, false, false, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -1675,9 +1675,137 @@ public class IssueCommandTests
         optionNames.Should().Contain("--json");
         optionNames.Should().Contain("--web");
         optionNames.Should().Contain("--absolute-time");
+        optionNames.Should().Contain("--comments");
 
         var argNames = viewCommand.Arguments.Select(a => a.Name).ToList();
         argNames.Should().Contain("ID");
+
+        // Check that --comments has -c alias
+        var commentsOption = viewCommand.Options.First(o => o.Name == "--comments");
+        commentsOption.Aliases.Should().Contain("-c");
+    }
+
+    [Fact]
+    public async Task View_Should_ShowOnlyLatestComment_When_CommentsOptionNotSet()
+    {
+        // Arrange
+        var issueId = 123;
+        var issue = new Issue
+        {
+            Id = issueId,
+            Subject = "Test Issue with Multiple Comments",
+            Description = "Issue with multiple comments",
+            Status = new IssueStatus { Id = 1, Name = "New" },
+            Project = new Project { Id = 10, Name = "Test Project" },
+            CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0),
+            UpdatedOn = new DateTime(2024, 1, 5, 16, 45, 0),
+            Journals = new List<Journal>
+            {
+                new Journal
+                {
+                    Id = 1,
+                    User = new User { Id = 2, Name = "Jane Smith" },
+                    Notes = "First comment",
+                    CreatedOn = new DateTime(2024, 1, 2, 14, 0, 0)
+                },
+                new Journal
+                {
+                    Id = 2,
+                    User = new User { Id = 3, Name = "Bob Johnson" },
+                    Notes = null, // Status change only
+                    CreatedOn = new DateTime(2024, 1, 3, 10, 0, 0),
+                    Details = new List<JournalDetail>
+                    {
+                        new JournalDetail
+                        {
+                            Property = "attr",
+                            Name = "status_id",
+                            OldValue = "1",
+                            NewValue = "2"
+                        }
+                    }
+                },
+                new Journal
+                {
+                    Id = 3,
+                    User = new User { Id = 4, Name = "Alice Brown" },
+                    Notes = "Second comment",
+                    CreatedOn = new DateTime(2024, 1, 4, 15, 30, 0)
+                },
+                new Journal
+                {
+                    Id = 4,
+                    User = new User { Id = 5, Name = "Charlie Davis" },
+                    Notes = "Latest comment",
+                    CreatedOn = new DateTime(2024, 1, 5, 16, 45, 0)
+                }
+            }
+        };
+
+        _redmineService.GetIssueAsync(issueId, true, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issue));
+
+        // Act
+        var result = await _issueCommand.ViewAsync(issueId, false, false, false, false, false, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).GetIssueAsync(issueId, true, Arg.Any<CancellationToken>());
+        // Verify that FormatIssueDetails is called with showAllComments = false
+        _tableFormatter.Received(1).FormatIssueDetails(issue, false, false);
+    }
+
+    [Fact]
+    public async Task View_Should_ShowAllComments_When_CommentsOptionIsSet()
+    {
+        // Arrange
+        var issueId = 123;
+        var issue = new Issue
+        {
+            Id = issueId,
+            Subject = "Test Issue with Multiple Comments",
+            Description = "Issue with multiple comments",
+            Status = new IssueStatus { Id = 1, Name = "New" },
+            Project = new Project { Id = 10, Name = "Test Project" },
+            CreatedOn = new DateTime(2024, 1, 1, 10, 0, 0),
+            UpdatedOn = new DateTime(2024, 1, 5, 16, 45, 0),
+            Journals = new List<Journal>
+            {
+                new Journal
+                {
+                    Id = 1,
+                    User = new User { Id = 2, Name = "Jane Smith" },
+                    Notes = "First comment",
+                    CreatedOn = new DateTime(2024, 1, 2, 14, 0, 0)
+                },
+                new Journal
+                {
+                    Id = 2,
+                    User = new User { Id = 3, Name = "Bob Johnson" },
+                    Notes = "Second comment",
+                    CreatedOn = new DateTime(2024, 1, 3, 15, 30, 0)
+                },
+                new Journal
+                {
+                    Id = 3,
+                    User = new User { Id = 4, Name = "Alice Brown" },
+                    Notes = "Third comment",
+                    CreatedOn = new DateTime(2024, 1, 4, 16, 45, 0)
+                }
+            }
+        };
+
+        _redmineService.GetIssueAsync(issueId, true, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issue));
+
+        // Act
+        var result = await _issueCommand.ViewAsync(issueId, false, false, false, false, true, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).GetIssueAsync(issueId, true, Arg.Any<CancellationToken>());
+        // Verify that FormatIssueDetails is called with showAllComments = true
+        _tableFormatter.Received(1).FormatIssueDetails(issue, false, true);
     }
 
     #endregion
