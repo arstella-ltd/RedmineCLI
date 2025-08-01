@@ -99,14 +99,8 @@ public class TableFormatter : ITableFormatter
 
     public void FormatIssueDetails(Issue issue, bool showImages, bool showAllComments)
     {
-        // Basic issue details
-        var panel = new Panel(new Markup($"[bold]{Markup.Escape(issue.Subject)}[/]"))
-        {
-            Header = new PanelHeader($"Issue #{issue.Id}"),
-            Padding = new Padding(1, 1)
-        };
-        AnsiConsole.Write(panel);
-
+        // Basic issue details - Display as bold title
+        AnsiConsole.MarkupLine($"[bold]#{issue.Id} {Markup.Escape(issue.Subject)}[/]");
         AnsiConsole.WriteLine();
 
         // Issue properties
@@ -130,7 +124,7 @@ public class TableFormatter : ITableFormatter
         if (!string.IsNullOrWhiteSpace(issue.Description))
         {
             AnsiConsole.MarkupLine("[bold]Description:[/]");
-            _inlineImageRenderer.RenderTextWithInlineImages(issue.Description, issue.Attachments, showImages);
+            RenderTextWithColoredHeaders(issue.Description, issue.Attachments, showImages, "  ");
             AnsiConsole.WriteLine();
         }
 
@@ -176,13 +170,58 @@ public class TableFormatter : ITableFormatter
                 }
             }
 
-            foreach (var journal in journalsToShow)
+            // Show hidden comments message before the latest comment if we're not showing all comments
+            if (!showAllComments && hiddenCommentsCount > 0)
+            {
+                // Show status changes first
+                var statusChanges = journalsToShow.Where(j => string.IsNullOrWhiteSpace(j.Notes) && j.Details != null && j.Details.Count > 0).ToList();
+                foreach (var journal in statusChanges)
+                {
+                    AnsiConsole.WriteLine();
+                    AnsiConsole.MarkupLine($"[grey]#{journal.Id} - {Markup.Escape(journal.User?.DisplayName ?? "Unknown")} - {_timeHelper.FormatTime(journal.CreatedOn, _timeFormat)}[/]");
+
+                    // Show changes
+                    if (journal.Details != null && journal.Details.Count > 0)
+                    {
+                        foreach (var detail in journal.Details)
+                        {
+                            if (detail.Property == "attr")
+                            {
+                                var oldValue = Markup.Escape(detail.OldValue ?? "");
+                                var newValue = Markup.Escape(detail.NewValue ?? "");
+                                AnsiConsole.MarkupLine($"  [yellow]Changed {detail.Name} from '{oldValue}' to '{newValue}'[/]");
+                            }
+                        }
+                    }
+                }
+
+                // Show separator
+                AnsiConsole.WriteLine();
+                AnsiConsole.MarkupLine($"[grey]———————— Not showing {hiddenCommentsCount} comment{(hiddenCommentsCount > 1 ? "s" : "")} ————————[/]");
+            }
+
+            // Show all journals or just the latest comment
+            var journalsToDisplay = showAllComments ? journalsToShow : journalsToShow.Where(j => !string.IsNullOrWhiteSpace(j.Notes)).ToList();
+
+            foreach (var journal in journalsToDisplay)
             {
                 AnsiConsole.WriteLine();
-                AnsiConsole.MarkupLine($"[grey]#{journal.Id} - {Markup.Escape(journal.User?.DisplayName ?? "Unknown")} - {_timeHelper.FormatTime(journal.CreatedOn, _timeFormat)}[/]");
 
-                // Show changes
-                if (journal.Details != null && journal.Details.Count > 0)
+                // Check if this is the newest comment
+                bool isNewestComment = !showAllComments && journal == journalsWithNotes.LastOrDefault();
+
+                if (isNewestComment)
+                {
+                    // Special formatting for newest comment
+                    AnsiConsole.MarkupLine($"[grey]#{journal.Id} - {Markup.Escape(journal.User?.DisplayName ?? "Unknown")} - {_timeHelper.FormatTime(journal.CreatedOn, _timeFormat)} - [/][yellow]Newest comment[/]");
+                }
+                else
+                {
+                    AnsiConsole.MarkupLine($"[grey]#{journal.Id} - {Markup.Escape(journal.User?.DisplayName ?? "Unknown")} - {_timeHelper.FormatTime(journal.CreatedOn, _timeFormat)}[/]");
+                }
+
+                // Show changes (only when showing all comments)
+                if (showAllComments && journal.Details != null && journal.Details.Count > 0)
                 {
                     foreach (var detail in journal.Details)
                     {
@@ -195,20 +234,11 @@ public class TableFormatter : ITableFormatter
                     }
                 }
 
-                // Show notes
+                // Show notes with colored headers
                 if (!string.IsNullOrWhiteSpace(journal.Notes))
                 {
-                    AnsiConsole.Write("  ");
-                    _inlineImageRenderer.RenderTextWithInlineImages(journal.Notes, issue.Attachments, showImages);
+                    RenderTextWithColoredHeaders(journal.Notes, issue.Attachments, showImages, "  ");
                 }
-            }
-
-            // Show hidden comments message
-            if (!showAllComments && hiddenCommentsCount > 0)
-            {
-                AnsiConsole.WriteLine();
-                AnsiConsole.WriteLine();
-                AnsiConsole.MarkupLine($"[grey]———————— Not showing {hiddenCommentsCount} comment{(hiddenCommentsCount > 1 ? "s" : "")} ————————[/]");
             }
 
             AnsiConsole.WriteLine();
@@ -428,6 +458,50 @@ public class TableFormatter : ITableFormatter
     private static bool IsImageType(string contentType)
     {
         return contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void RenderTextWithColoredHeaders(string? text, List<Attachment>? attachments = null, bool showImages = false, string indent = "")
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return;
+        }
+
+        var lines = text.Split('\n');
+        foreach (var line in lines)
+        {
+            var trimmedLine = line.TrimStart();
+
+            // Check for markdown headers
+            if (trimmedLine.StartsWith("###"))
+            {
+                var headerText = trimmedLine.Substring(3).Trim();
+                AnsiConsole.MarkupLine($"{indent}[green]### {Markup.Escape(headerText)}[/]");
+            }
+            else if (trimmedLine.StartsWith("##"))
+            {
+                var headerText = trimmedLine.Substring(2).Trim();
+                AnsiConsole.MarkupLine($"{indent}[green]## {Markup.Escape(headerText)}[/]");
+            }
+            else if (trimmedLine.StartsWith("#"))
+            {
+                var headerText = trimmedLine.Substring(1).Trim();
+                AnsiConsole.MarkupLine($"{indent}[green]# {Markup.Escape(headerText)}[/]");
+            }
+            else
+            {
+                // For regular lines, check if we need to render inline images
+                if (attachments != null && showImages && (_imageDetector.DetectImageReferences(line).Count > 0))
+                {
+                    AnsiConsole.Write(indent);
+                    _inlineImageRenderer.RenderTextWithInlineImages(line, attachments, showImages);
+                }
+                else
+                {
+                    AnsiConsole.WriteLine($"{indent}{line}");
+                }
+            }
+        }
     }
 
     public void FormatUsers(List<User> users, bool showAllDetails = false)

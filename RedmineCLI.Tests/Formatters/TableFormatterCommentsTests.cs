@@ -106,6 +106,7 @@ public class TableFormatterCommentsTests
 
         // Assert
         output.Should().Contain("Latest comment");
+        output.Should().Contain("Newest comment"); // Check for new label
         output.Should().NotContain("First comment");
         output.Should().NotContain("Second comment");
         output.Should().Contain("Changed status_id from '1' to '2'"); // Status changes should still be shown
