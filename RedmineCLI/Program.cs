@@ -86,6 +86,11 @@ public class Program
         // Get error message service
         var errorMessageService = serviceProvider.GetRequiredService<IErrorMessageService>();
 
+        // Create custom TextWriter to intercept and fix error messages
+        var originalError = Console.Error;
+        var errorInterceptor = new ErrorMessageInterceptor(originalError);
+        Console.SetError(errorInterceptor);
+
         // Create and use CLI configuration
         var config = new CommandLineConfiguration(rootCommand)
         {
