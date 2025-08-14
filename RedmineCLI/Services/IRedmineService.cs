@@ -48,6 +48,7 @@ public interface IRedmineService
         string? subject = null,
         string? statusIdOrName = null,
         string? assigneeIdOrUsername = null,
+        string? description = null,
         int? doneRatio = null,
         CancellationToken cancellationToken = default);
 

@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.IO;
 
 using FluentAssertions;
 
@@ -74,6 +75,7 @@ public class IssueEditCommandTests
             "in-progress",
             null,
             null,
+            null,
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
@@ -88,6 +90,7 @@ public class IssueEditCommandTests
             issueId,
             null,
             "in-progress",
+            null,
             null,
             null,
             Arg.Any<CancellationToken>());
@@ -129,6 +132,7 @@ public class IssueEditCommandTests
             null,
             newAssignee,
             null,
+            null,
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
@@ -144,6 +148,7 @@ public class IssueEditCommandTests
             null,
             null,
             newAssignee,
+            null,
             null,
             Arg.Any<CancellationToken>());
     }
@@ -177,6 +182,7 @@ public class IssueEditCommandTests
             null,
             null,
             null,
+            null,
             doneRatio,
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
@@ -189,6 +195,7 @@ public class IssueEditCommandTests
         await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
         await _redmineService.Received(1).UpdateIssueAsync(
             issueId,
+            null,
             null,
             null,
             null,
@@ -235,6 +242,7 @@ public class IssueEditCommandTests
             newStatus,
             null,
             null,
+            null,
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
@@ -262,7 +270,7 @@ public class IssueEditCommandTests
         // Assert
         result.Should().Be(0);
         await _configService.Received(1).GetActiveProfileAsync();
-        await _redmineService.DidNotReceive().UpdateIssueAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().UpdateIssueAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -296,6 +304,7 @@ public class IssueEditCommandTests
             null,
             "@me",
             null,
+            null,
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
@@ -311,6 +320,7 @@ public class IssueEditCommandTests
             null,
             null,
             "@me",
+            null,
             null,
             Arg.Any<CancellationToken>());
     }
@@ -362,6 +372,7 @@ public class IssueEditCommandTests
             null,
             newStatus,
             newAssignee,
+            null,
             doneRatio,
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
@@ -378,6 +389,7 @@ public class IssueEditCommandTests
             null,
             newStatus,
             newAssignee,
+            null,
             doneRatio,
             Arg.Any<CancellationToken>());
     }
@@ -405,7 +417,7 @@ public class IssueEditCommandTests
             .Returns(Task.FromResult(currentIssue));
         _redmineService.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(statusList));
-        _redmineService.UpdateIssueAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<CancellationToken>())
+        _redmineService.UpdateIssueAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException<Issue>(new RedmineApiException(404, "Issue not found")));
 
         // Act
@@ -414,7 +426,7 @@ public class IssueEditCommandTests
         // Assert
         result.Should().Be(1);
         await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
-        await _redmineService.Received(1).UpdateIssueAsync(issueId, null, "Closed", null, null, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).UpdateIssueAsync(issueId, null, "Closed", null, null, null, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -492,6 +504,261 @@ public class IssueEditCommandTests
         // Assert
         result.Should().Be(1);
         await _redmineService.DidNotReceive().GetIssueAsync(Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
-        await _redmineService.DidNotReceive().UpdateIssueAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().UpdateIssueAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Edit_Should_UpdateDescription_When_BodyOptionProvided()
+    {
+        // Arrange
+        var issueId = 999;
+        var newDescription = "This is the new description";
+        var currentIssue = new Issue
+        {
+            Id = issueId,
+            Subject = "Test Issue",
+            Description = "Old description",
+            Status = new IssueStatus { Id = 1, Name = "New" },
+            Project = new Project { Id = 1, Name = "Test Project" }
+        };
+        var updatedIssue = new Issue
+        {
+            Id = issueId,
+            Subject = "Test Issue",
+            Description = newDescription,
+            Status = new IssueStatus { Id = 1, Name = "New" },
+            Project = new Project { Id = 1, Name = "Test Project" }
+        };
+
+        _redmineService.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(currentIssue));
+        _redmineService.UpdateIssueAsync(
+            issueId,
+            null,
+            null,
+            null,
+            newDescription,
+            null,
+            Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(updatedIssue));
+
+        // Act
+        var result = await _issueCommand.EditAsync(issueId, null, null, null, newDescription, null, false, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).UpdateIssueAsync(
+            issueId,
+            null,
+            null,
+            null,
+            newDescription,
+            null,
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Edit_Should_UpdateDescription_When_BodyFileOptionProvided()
+    {
+        // Arrange
+        var issueId = 888;
+        var tempFile = Path.GetTempFileName();
+        var fileContent = "This is the description from file";
+        await File.WriteAllTextAsync(tempFile, fileContent);
+
+        try
+        {
+            var currentIssue = new Issue
+            {
+                Id = issueId,
+                Subject = "Test Issue",
+                Description = "Old description",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                Project = new Project { Id = 1, Name = "Test Project" }
+            };
+            var updatedIssue = new Issue
+            {
+                Id = issueId,
+                Subject = "Test Issue",
+                Description = fileContent,
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                Project = new Project { Id = 1, Name = "Test Project" }
+            };
+
+            _redmineService.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(currentIssue));
+            _redmineService.UpdateIssueAsync(
+                issueId,
+                null,
+                null,
+                null,
+                fileContent,
+                null,
+                Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(updatedIssue));
+
+            // Act
+            var result = await _issueCommand.EditAsync(issueId, null, null, null, null, tempFile, false, CancellationToken.None);
+
+            // Assert
+            result.Should().Be(0);
+            await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
+            await _redmineService.Received(1).UpdateIssueAsync(
+                issueId,
+                null,
+                null,
+                null,
+                fileContent,
+                null,
+                Arg.Any<CancellationToken>());
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task Edit_Should_UpdateDescription_When_BodyFileIsStdin()
+    {
+        // Arrange
+        var issueId = 777;
+        var stdinContent = "This is the description from stdin";
+        var currentIssue = new Issue
+        {
+            Id = issueId,
+            Subject = "Test Issue",
+            Description = "Old description",
+            Status = new IssueStatus { Id = 1, Name = "New" },
+            Project = new Project { Id = 1, Name = "Test Project" }
+        };
+        var updatedIssue = new Issue
+        {
+            Id = issueId,
+            Subject = "Test Issue",
+            Description = stdinContent,
+            Status = new IssueStatus { Id = 1, Name = "New" },
+            Project = new Project { Id = 1, Name = "Test Project" }
+        };
+
+        // Simulate stdin input
+        var originalInput = Console.In;
+        using var reader = new StringReader(stdinContent);
+        Console.SetIn(reader);
+
+        try
+        {
+            _redmineService.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(currentIssue));
+            _redmineService.UpdateIssueAsync(
+                issueId,
+                null,
+                null,
+                null,
+                stdinContent,
+                null,
+                Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(updatedIssue));
+
+            // Act
+            var result = await _issueCommand.EditAsync(issueId, null, null, null, null, "-", false, CancellationToken.None);
+
+            // Assert
+            result.Should().Be(0);
+            await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
+            await _redmineService.Received(1).UpdateIssueAsync(
+                issueId,
+                null,
+                null,
+                null,
+                stdinContent,
+                null,
+                Arg.Any<CancellationToken>());
+        }
+        finally
+        {
+            Console.SetIn(originalInput);
+        }
+    }
+
+    [Fact]
+    public async Task Edit_Should_UpdateMultipleFieldsIncludingDescription_When_CombinedOptionsProvided()
+    {
+        // Arrange
+        var issueId = 666;
+        var newStatus = "resolved";
+        var newDescription = "Updated description with status change";
+        var statusList = new List<IssueStatus>
+        {
+            new IssueStatus { Id = 1, Name = "New" },
+            new IssueStatus { Id = 3, Name = "Resolved" }
+        };
+        var currentIssue = new Issue
+        {
+            Id = issueId,
+            Subject = "Test Issue",
+            Status = new IssueStatus { Id = 1, Name = "New" },
+            Project = new Project { Id = 1, Name = "Test Project" }
+        };
+        var updatedIssue = new Issue
+        {
+            Id = issueId,
+            Subject = "Test Issue",
+            Description = newDescription,
+            Status = new IssueStatus { Id = 3, Name = "Resolved" },
+            Project = new Project { Id = 1, Name = "Test Project" }
+        };
+
+        _redmineService.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(currentIssue));
+        _redmineService.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(statusList));
+        _redmineService.UpdateIssueAsync(
+            issueId,
+            null,
+            newStatus,
+            null,
+            newDescription,
+            null,
+            Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(updatedIssue));
+
+        // Act
+        var result = await _issueCommand.EditAsync(issueId, newStatus, null, null, newDescription, null, false, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).UpdateIssueAsync(
+            issueId,
+            null,
+            newStatus,
+            null,
+            newDescription,
+            null,
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Edit_Should_ReturnError_When_BodyFileNotFound()
+    {
+        // Arrange
+        var issueId = 555;
+        var nonExistentFile = "non-existent-file.txt";
+
+        // Act
+        var result = await _issueCommand.EditAsync(issueId, null, null, null, null, nonExistentFile, false, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(1);
+        await _redmineService.DidNotReceive().UpdateIssueAsync(
+            Arg.Any<int>(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<int?>(),
+            Arg.Any<CancellationToken>());
     }
 }
