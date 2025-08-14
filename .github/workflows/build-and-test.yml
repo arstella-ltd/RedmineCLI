@@ -79,7 +79,6 @@ jobs:
   build-native:
     name: Native AOT Build - ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
-    needs: test
     strategy:
       matrix:
         config:
@@ -162,20 +161,23 @@ jobs:
   benchmark:
     name: Performance Benchmark
     runs-on: ubuntu-latest
-    needs: build-native
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Download Linux binary
-      uses: actions/download-artifact@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
       with:
-        name: redmine-cli-linux-x64
-        path: ./bin
+        dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Make binary executable
-      run: chmod +x ./bin/redmine
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build Native AOT for benchmark
+      run: |
+        dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r linux-x64 -p:PublishAot=true -p:StripSymbols=true --self-contained -o ./bin
+        chmod +x ./bin/redmine
 
     - name: Benchmark startup time
       run: |
