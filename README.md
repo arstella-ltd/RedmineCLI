@@ -145,6 +145,25 @@ echo "新しい説明文" | redmine issue edit 12345 -F -
 # 複数のフィールドを同時に更新
 redmine issue edit 12345 --status=resolved --assignee=@me --body "問題を解決しました"
 redmine issue edit 12345 -t "バグ修正完了" -s in-progress -a @me
+
+# コメントを追加
+redmine issue comment 12345 --message "作業を開始しました"
+redmine issue comment 12345 -m "確認しました"
+
+# チケットの説明欄を更新（コメント追加なし）
+redmine issue comment 12345 --body "更新された説明文"
+redmine issue comment 12345 -b "更新された説明文"
+
+# ファイルから説明欄を読み込んで更新
+redmine issue comment 12345 --body-file description.md
+redmine issue comment 12345 -F description.md
+
+# 標準入力から説明欄を読み込んで更新
+echo "新しい説明" | redmine issue comment 12345 --body-file -
+cat description.md | redmine issue comment 12345 -F -
+
+# コメント追加と説明欄更新を同時に実行
+redmine issue comment 12345 -m "説明を更新しました" --body "新しい説明文"
 ```
 
 ### 優先度管理
