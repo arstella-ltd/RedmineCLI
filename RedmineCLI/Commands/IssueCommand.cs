@@ -192,8 +192,8 @@ public class IssueCommand
         editTitleOption.Aliases.Add("-t");
         var editStatusOption = new Option<string?>("--status") { Description = "New status" };
         editStatusOption.Aliases.Add("-s");
-        var editAssigneeOption = new Option<string?>("--assignee") { Description = "New assignee (username, ID, or @me)" };
-        editAssigneeOption.Aliases.Add("-a");
+        var editAddAssigneeOption = new Option<string?>("--add-assignee") { Description = "New assignee (username, ID, or @me)" };
+        var editRemoveAssigneeOption = new Option<bool>("--remove-assignee") { Description = "Remove assignee" };
         var editDoneRatioOption = new Option<int?>("--done-ratio") { Description = "Progress percentage (0-100)" };
         var editBodyOption = new Option<string?>("--body") { Description = "New description text" };
         editBodyOption.Aliases.Add("-b");
@@ -205,7 +205,8 @@ public class IssueCommand
         editCommand.Add(editIdArgument);
         editCommand.Add(editTitleOption);
         editCommand.Add(editStatusOption);
-        editCommand.Add(editAssigneeOption);
+        editCommand.Add(editAddAssigneeOption);
+        editCommand.Add(editRemoveAssigneeOption);
         editCommand.Add(editDoneRatioOption);
         editCommand.Add(editBodyOption);
         editCommand.Add(editBodyFileOption);
@@ -216,11 +217,27 @@ public class IssueCommand
             var id = parseResult.GetValue(editIdArgument);
             var title = parseResult.GetValue(editTitleOption);
             var status = parseResult.GetValue(editStatusOption);
-            var assignee = parseResult.GetValue(editAssigneeOption);
+            var addAssignee = parseResult.GetValue(editAddAssigneeOption);
+            var removeAssignee = parseResult.GetValue(editRemoveAssigneeOption);
             var doneRatio = parseResult.GetValue(editDoneRatioOption);
             var body = parseResult.GetValue(editBodyOption);
             var bodyFile = parseResult.GetValue(editBodyFileOption);
             var web = parseResult.GetValue(editWebOption);
+
+            // Validate that both assignee options are not set
+            if (!string.IsNullOrEmpty(addAssignee) && removeAssignee)
+            {
+                AnsiConsole.MarkupLine("[red]Error:[/] Cannot use both --add-assignee and --remove-assignee at the same time");
+                Environment.ExitCode = 1;
+                return;
+            }
+
+            // Handle assignee parameter
+            string? assignee = addAssignee;
+            if (removeAssignee)
+            {
+                assignee = "__REMOVE__";
+            }
 
             Environment.ExitCode = await issueCommand.EditAsync(id, title, status, assignee, doneRatio, body, bodyFile, web, CancellationToken.None);
         });
@@ -1412,8 +1429,16 @@ public class IssueCommand
             {
                 assigneeIdOrUsername = assignee; // Let RedmineService handle the resolution
                 fieldsToUpdate.Add("assignee");
-                var resolvedAssignee = await ResolveAssigneeAsync(assignee, cancellationToken);
-                updateDetails["assignee"] = resolvedAssignee ?? assignee;
+
+                if (assignee == "__REMOVE__")
+                {
+                    updateDetails["assignee"] = "removed";
+                }
+                else
+                {
+                    var resolvedAssignee = await ResolveAssigneeAsync(assignee, cancellationToken);
+                    updateDetails["assignee"] = resolvedAssignee ?? assignee;
+                }
             }
 
             // Handle done ratio

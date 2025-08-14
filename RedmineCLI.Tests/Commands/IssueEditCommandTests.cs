@@ -687,7 +687,8 @@ public class IssueEditCommandTests
         var optionNames = editCommand!.Options.Select(o => o.Name).ToList();
         optionNames.Should().Contain("--title");
         optionNames.Should().Contain("--status");
-        optionNames.Should().Contain("--assignee");
+        optionNames.Should().Contain("--add-assignee");
+        optionNames.Should().Contain("--remove-assignee");
         optionNames.Should().Contain("--done-ratio");
         optionNames.Should().Contain("--body");
         optionNames.Should().Contain("--body-file");
@@ -1005,6 +1006,65 @@ public class IssueEditCommandTests
             Arg.Any<string>(),
             Arg.Any<string>(),
             Arg.Any<int?>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Edit_Should_RemoveAssignee_When_RemoveAssigneeOptionProvided()
+    {
+        // Arrange
+        var issueId = 1234;
+        var currentIssue = new Issue
+        {
+            Id = issueId,
+            Subject = "Test Issue",
+            Status = new IssueStatus { Id = 1, Name = "New" },
+            AssignedTo = new User { Id = 5, Name = "John Doe" },
+            Project = new Project { Id = 1, Name = "Test Project" }
+        };
+        var updatedIssue = new Issue
+        {
+            Id = issueId,
+            Subject = "Test Issue",
+            AssignedTo = null,
+            Project = new Project { Id = 1, Name = "Test Project" }
+        };
+
+        _redmineService.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(currentIssue));
+        _redmineService.UpdateIssueAsync(
+            issueId,
+            null,
+            null,
+            "__REMOVE__",
+            null,
+            null,
+            Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(updatedIssue));
+
+        // Mock config service
+        var profile = new Profile
+        {
+            Name = "test",
+            Url = "https://redmine.example.com",
+            ApiKey = "test-key"
+        };
+        _configService.GetActiveProfileAsync()
+            .Returns(Task.FromResult<Profile?>(profile));
+
+        // Act
+        var result = await _issueCommand.EditAsync(issueId, null, null, "__REMOVE__", null, null, null, false, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).UpdateIssueAsync(
+            issueId,
+            null,
+            null,
+            "__REMOVE__",
+            null,
+            null,
             Arg.Any<CancellationToken>());
     }
 }
