@@ -38,6 +38,88 @@ public class IssueEditCommandTests
     }
 
     [Fact]
+    public async Task Edit_Should_UpdateTitle_When_TitleOptionProvided()
+    {
+        // Arrange
+        var issueId = 222;
+        var newTitle = "Updated Issue Title";
+        var currentIssue = new Issue
+        {
+            Id = issueId,
+            Subject = "Original Issue Title",
+            Status = new IssueStatus { Id = 1, Name = "New" },
+            Project = new Project { Id = 1, Name = "Test Project" }
+        };
+        var updatedIssue = new Issue
+        {
+            Id = issueId,
+            Subject = newTitle,
+            Status = new IssueStatus { Id = 1, Name = "New" },
+            Project = new Project { Id = 1, Name = "Test Project" }
+        };
+
+        _redmineService.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(currentIssue));
+        _redmineService.UpdateIssueAsync(
+            issueId,
+            newTitle,
+            null,
+            null,
+            null,
+            null,
+            Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(updatedIssue));
+
+        // Mock config service
+        var profile = new Profile
+        {
+            Name = "test",
+            Url = "https://redmine.example.com",
+            ApiKey = "test-key"
+        };
+        _configService.GetActiveProfileAsync()
+            .Returns(Task.FromResult<Profile?>(profile));
+
+        // Act
+        var result = await _issueCommand.EditAsync(issueId, newTitle, null, null, null, null, null, false, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).UpdateIssueAsync(
+            issueId,
+            newTitle,
+            null,
+            null,
+            null,
+            null,
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Edit_Should_ReturnError_When_TitleIsEmpty()
+    {
+        // Arrange
+        var issueId = 333;
+        var emptyTitle = "";
+
+        // Act
+        var result = await _issueCommand.EditAsync(issueId, emptyTitle, null, null, null, null, null, false, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(1);
+        await _redmineService.DidNotReceive().GetIssueAsync(Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().UpdateIssueAsync(
+            Arg.Any<int>(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<int?>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task Edit_Should_UpdateStatus_When_StatusOptionProvided()
     {
         // Arrange
@@ -90,7 +172,7 @@ public class IssueEditCommandTests
             .Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.EditAsync(issueId, newStatus, null, null, null, null, false, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, null, newStatus, null, null, null, null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -157,7 +239,7 @@ public class IssueEditCommandTests
             .Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.EditAsync(issueId, null, newAssignee, null, null, null, false, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, null, null, newAssignee, null, null, null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -218,7 +300,7 @@ public class IssueEditCommandTests
             .Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.EditAsync(issueId, null, null, doneRatio, null, null, false, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, null, null, null, doneRatio, null, null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -277,7 +359,7 @@ public class IssueEditCommandTests
             .Returns(Task.FromResult(updatedIssue));
 
         // Act
-        var result = await _issueCommand.EditAsync(issueId, newStatus, null, null, null, null, false, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, null, newStatus, null, null, null, null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -295,7 +377,7 @@ public class IssueEditCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.EditAsync(issueId, null, null, null, null, null, true, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, null, null, null, null, null, null, true, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -349,7 +431,7 @@ public class IssueEditCommandTests
             .Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.EditAsync(issueId, null, "@me", null, null, null, false, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, null, null, "@me", null, null, null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -362,6 +444,77 @@ public class IssueEditCommandTests
             "@me",
             null,
             null,
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Edit_Should_UpdateTitleWithOtherFields_When_CombinedOptionsProvided()
+    {
+        // Arrange
+        var issueId = 444;
+        var newTitle = "Updated Title";
+        var newStatus = "in-progress";
+        var doneRatio = 50;
+        var statusList = new List<IssueStatus>
+        {
+            new IssueStatus { Id = 1, Name = "New" },
+            new IssueStatus { Id = 2, Name = "In-Progress" }
+        };
+        var currentIssue = new Issue
+        {
+            Id = issueId,
+            Subject = "Original Title",
+            Status = new IssueStatus { Id = 1, Name = "New" },
+            DoneRatio = 0,
+            Project = new Project { Id = 1, Name = "Test Project" }
+        };
+        var updatedIssue = new Issue
+        {
+            Id = issueId,
+            Subject = newTitle,
+            Status = new IssueStatus { Id = 2, Name = "In-Progress" },
+            DoneRatio = doneRatio,
+            Project = new Project { Id = 1, Name = "Test Project" }
+        };
+
+        _redmineService.GetIssueAsync(issueId, false, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(currentIssue));
+        _redmineService.GetIssueStatusesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(statusList));
+        _redmineService.UpdateIssueAsync(
+            issueId,
+            newTitle,
+            newStatus,
+            null,
+            null,
+            doneRatio,
+            Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(updatedIssue));
+
+        // Mock config service
+        var profile = new Profile
+        {
+            Name = "test",
+            Url = "https://redmine.example.com",
+            ApiKey = "test-key"
+        };
+        _configService.GetActiveProfileAsync()
+            .Returns(Task.FromResult<Profile?>(profile));
+
+        // Act
+        var result = await _issueCommand.EditAsync(issueId, newTitle, newStatus, null, doneRatio, null, null, false, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssueStatusesAsync(Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).UpdateIssueAsync(
+            issueId,
+            newTitle,
+            newStatus,
+            null,
+            null,
+            doneRatio,
             Arg.Any<CancellationToken>());
     }
 
@@ -428,7 +581,7 @@ public class IssueEditCommandTests
             .Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.EditAsync(issueId, newStatus, newAssignee, doneRatio, null, null, false, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, null, newStatus, newAssignee, doneRatio, null, null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -471,7 +624,7 @@ public class IssueEditCommandTests
             .Returns(Task.FromException<Issue>(new RedmineApiException(404, "Issue not found")));
 
         // Act
-        var result = await _issueCommand.EditAsync(issueId, "Closed", null, null, null, null, false, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, null, "Closed", null, null, null, null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -487,7 +640,7 @@ public class IssueEditCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(null));
 
         // Act
-        var result = await _issueCommand.EditAsync(issueId, null, null, null, null, null, true, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, null, null, null, null, null, null, true, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -513,7 +666,7 @@ public class IssueEditCommandTests
             .Returns(Task.FromResult(originalIssue));
 
         // Act
-        var result = await _issueCommand.EditAsync(issueId, null, null, null, null, null, false, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, null, null, null, null, null, null, false, CancellationToken.None);
 
         // Assert
         // Since this would launch interactive mode, we can't fully test it in unit tests
@@ -532,9 +685,12 @@ public class IssueEditCommandTests
         editCommand.Should().NotBeNull();
 
         var optionNames = editCommand!.Options.Select(o => o.Name).ToList();
+        optionNames.Should().Contain("--title");
         optionNames.Should().Contain("--status");
         optionNames.Should().Contain("--assignee");
         optionNames.Should().Contain("--done-ratio");
+        optionNames.Should().Contain("--body");
+        optionNames.Should().Contain("--body-file");
         optionNames.Should().Contain("--web");
 
         var argNames = editCommand.Arguments.Select(a => a.Name).ToList();
@@ -549,7 +705,7 @@ public class IssueEditCommandTests
         var invalidDoneRatio = 150; // Out of 0-100 range
 
         // Act
-        var result = await _issueCommand.EditAsync(issueId, null, null, invalidDoneRatio, null, null, false, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, null, null, null, invalidDoneRatio, null, null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -603,7 +759,7 @@ public class IssueEditCommandTests
             .Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.EditAsync(issueId, null, null, null, newDescription, null, false, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, null, null, null, null, newDescription, null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -669,7 +825,7 @@ public class IssueEditCommandTests
                 .Returns(Task.FromResult<Profile?>(profile));
 
             // Act
-            var result = await _issueCommand.EditAsync(issueId, null, null, null, null, tempFile, false, CancellationToken.None);
+            var result = await _issueCommand.EditAsync(issueId, null, null, null, null, null, tempFile, false, CancellationToken.None);
 
             // Assert
             result.Should().Be(0);
@@ -742,7 +898,7 @@ public class IssueEditCommandTests
                 .Returns(Task.FromResult<Profile?>(profile));
 
             // Act
-            var result = await _issueCommand.EditAsync(issueId, null, null, null, null, "-", false, CancellationToken.None);
+            var result = await _issueCommand.EditAsync(issueId, null, null, null, null, null, "-", false, CancellationToken.None);
 
             // Assert
             result.Should().Be(0);
@@ -815,7 +971,7 @@ public class IssueEditCommandTests
             .Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.EditAsync(issueId, newStatus, null, null, newDescription, null, false, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, null, newStatus, null, null, newDescription, null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -838,7 +994,7 @@ public class IssueEditCommandTests
         var nonExistentFile = "non-existent-file.txt";
 
         // Act
-        var result = await _issueCommand.EditAsync(issueId, null, null, null, null, nonExistentFile, false, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, null, null, null, null, null, nonExistentFile, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);

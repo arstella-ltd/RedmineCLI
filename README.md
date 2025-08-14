@@ -127,6 +127,10 @@ redmine issue create
 # チケットを更新
 redmine issue edit 12345 --status=closed
 
+# チケットのタイトルを更新
+redmine issue edit 12345 --title "新しいタイトル"
+redmine issue edit 12345 -t "新しいタイトル"
+
 # チケットの説明を更新
 redmine issue edit 12345 --body "新しい説明文"
 redmine issue edit 12345 -b "新しい説明文"
@@ -140,6 +144,7 @@ echo "新しい説明文" | redmine issue edit 12345 -F -
 
 # 複数のフィールドを同時に更新
 redmine issue edit 12345 --status=resolved --assignee=@me --body "問題を解決しました"
+redmine issue edit 12345 -t "バグ修正完了" -s in-progress -a @me
 ```
 
 ### 優先度管理
