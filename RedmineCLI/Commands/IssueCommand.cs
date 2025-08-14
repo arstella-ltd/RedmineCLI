@@ -193,6 +193,10 @@ public class IssueCommand
         var editAssigneeOption = new Option<string?>("--assignee") { Description = "New assignee (username, ID, or @me)" };
         editAssigneeOption.Aliases.Add("-a");
         var editDoneRatioOption = new Option<int?>("--done-ratio") { Description = "Progress percentage (0-100)" };
+        var editBodyOption = new Option<string?>("--body") { Description = "New description text" };
+        editBodyOption.Aliases.Add("-b");
+        var editBodyFileOption = new Option<string?>("--body-file") { Description = "Read description from file (use '-' for stdin)" };
+        editBodyFileOption.Aliases.Add("-F");
         var editWebOption = new Option<bool>("--web") { Description = "Open edit page in web browser" };
         editWebOption.Aliases.Add("-w");
 
@@ -200,6 +204,8 @@ public class IssueCommand
         editCommand.Add(editStatusOption);
         editCommand.Add(editAssigneeOption);
         editCommand.Add(editDoneRatioOption);
+        editCommand.Add(editBodyOption);
+        editCommand.Add(editBodyFileOption);
         editCommand.Add(editWebOption);
 
         editCommand.SetAction(async (parseResult) =>
@@ -208,9 +214,11 @@ public class IssueCommand
             var status = parseResult.GetValue(editStatusOption);
             var assignee = parseResult.GetValue(editAssigneeOption);
             var doneRatio = parseResult.GetValue(editDoneRatioOption);
+            var body = parseResult.GetValue(editBodyOption);
+            var bodyFile = parseResult.GetValue(editBodyFileOption);
             var web = parseResult.GetValue(editWebOption);
 
-            Environment.ExitCode = await issueCommand.EditAsync(id, status, assignee, doneRatio, web, CancellationToken.None);
+            Environment.ExitCode = await issueCommand.EditAsync(id, status, assignee, doneRatio, body, bodyFile, web, CancellationToken.None);
         });
 
         command.Add(editCommand);
@@ -1310,13 +1318,15 @@ public class IssueCommand
         string? status,
         string? assignee,
         int? doneRatio,
+        string? body,
+        string? bodyFile,
         bool web,
         CancellationToken cancellationToken)
     {
         try
         {
-            _logger.LogDebug("Editing issue {IssueId} - Status: {Status}, Assignee: {Assignee}, DoneRatio: {DoneRatio}, Web: {Web}",
-                issueId, status, assignee, doneRatio, web);
+            _logger.LogDebug("Editing issue {IssueId} - Status: {Status}, Assignee: {Assignee}, DoneRatio: {DoneRatio}, Body: {Body}, BodyFile: {BodyFile}, Web: {Web}",
+                issueId, status, assignee, doneRatio, body != null ? "[provided]" : null, bodyFile, web);
 
             // Handle --web option
             if (web)
@@ -1335,7 +1345,8 @@ public class IssueCommand
             }
 
             // If no options provided, launch interactive mode
-            if (string.IsNullOrEmpty(status) && string.IsNullOrEmpty(assignee) && !doneRatio.HasValue)
+            if (string.IsNullOrEmpty(status) && string.IsNullOrEmpty(assignee) && !doneRatio.HasValue &&
+                string.IsNullOrEmpty(body) && string.IsNullOrEmpty(bodyFile))
             {
                 return await EditInteractiveAsync(issueId, cancellationToken);
             }
@@ -1385,6 +1396,43 @@ public class IssueCommand
                 updateDetails["progress"] = $"{doneRatio.Value}%";
             }
 
+            // Handle description (body)
+            string? description = null;
+            if (!string.IsNullOrEmpty(body))
+            {
+                description = body;
+                fieldsToUpdate.Add("description");
+                updateDetails["description"] = "updated";
+            }
+            else if (!string.IsNullOrEmpty(bodyFile))
+            {
+                try
+                {
+                    if (bodyFile == "-")
+                    {
+                        // Read from stdin
+                        description = await Console.In.ReadToEndAsync();
+                    }
+                    else
+                    {
+                        // Read from file
+                        if (!File.Exists(bodyFile))
+                        {
+                            AnsiConsole.MarkupLine($"[red]Error:[/] File not found: {bodyFile}");
+                            return 1;
+                        }
+                        description = await File.ReadAllTextAsync(bodyFile, cancellationToken);
+                    }
+                    fieldsToUpdate.Add("description");
+                    updateDetails["description"] = "updated from file";
+                }
+                catch (Exception ex)
+                {
+                    AnsiConsole.MarkupLine($"[red]Error:[/] Failed to read body file: {ex.Message}");
+                    return 1;
+                }
+            }
+
             // Log what we're updating
             _logger.LogDebug("Updating issue {IssueId} fields: {Fields}", issueId, string.Join(", ", fieldsToUpdate));
 
@@ -1394,6 +1442,7 @@ public class IssueCommand
                 null, // subject - keep existing
                 statusIdOrName,
                 assigneeIdOrUsername,
+                description,
                 doneRatio,
                 cancellationToken);
 
@@ -1404,6 +1453,7 @@ public class IssueCommand
                     "status" => $"status → {updateDetails.GetValueOrDefault("status", "unknown")}",
                     "assignee" => $"assignee → {updateDetails.GetValueOrDefault("assignee", "unknown")}",
                     "progress" => $"progress → {updateDetails.GetValueOrDefault("progress", "unknown")}",
+                    "description" => $"description → {updateDetails.GetValueOrDefault("description", "unknown")}",
                     _ => f
                 }));
 
@@ -1559,6 +1609,7 @@ public class IssueCommand
                 null, // subject - keep existing
                 statusIdOrName,
                 assigneeIdOrUsername,
+                updateIssue.Description,
                 updateIssue.DoneRatio,
                 cancellationToken);
 
@@ -2104,6 +2155,7 @@ public class IssueCommand
                         null, // keep existing subject
                         closeStatusId,
                         null, // keep existing assignee
+                        null, // keep existing description
                         doneRatio,
                         cancellationToken);
 

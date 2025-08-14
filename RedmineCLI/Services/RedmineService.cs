@@ -118,6 +118,7 @@ public class RedmineService : IRedmineService
         string? subject = null,
         string? statusIdOrName = null,
         string? assigneeIdOrUsername = null,
+        string? description = null,
         int? doneRatio = null,
         CancellationToken cancellationToken = default)
     {
@@ -131,6 +132,12 @@ public class RedmineService : IRedmineService
             Id = id,
             Subject = subject ?? existingIssue.Subject
         };
+
+        // 説明の更新
+        if (description != null)
+        {
+            updateData.Description = description;
+        }
 
         // ステータスの解決
         if (!string.IsNullOrEmpty(statusIdOrName))
