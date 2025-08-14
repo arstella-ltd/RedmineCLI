@@ -164,4 +164,175 @@ public class IssueCommentCommandTests
     }
 
     #endregion
+
+    #region Comment Command Body Update Tests
+
+    [Fact]
+    public async Task Comment_Should_UpdateDescription_When_BodyProvided()
+    {
+        // Arrange
+        const int issueId = 123;
+        const string body = "New description text";
+
+        var updatedIssue = new Issue { Id = issueId, Subject = "Test Issue" };
+        _redmineService.UpdateIssueAsync(issueId, null, null, null, body, null, Arg.Any<CancellationToken>())
+            .Returns(updatedIssue);
+
+        var profile = new Profile
+        {
+            Name = "test",
+            Url = "https://redmine.example.com",
+            ApiKey = "test-key"
+        };
+        _configService.GetActiveProfileAsync().Returns(profile);
+
+        // Act
+        var result = await _issueCommand.CommentAsync(issueId, null, body, null, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).UpdateIssueAsync(issueId, null, null, null, body, null, Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().AddCommentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Comment_Should_UpdateDescriptionFromFile_When_BodyFileProvided()
+    {
+        // Arrange
+        const int issueId = 123;
+        var tempFile = Path.GetTempFileName();
+        const string fileContent = "Description from file";
+        await File.WriteAllTextAsync(tempFile, fileContent);
+
+        var updatedIssue = new Issue { Id = issueId, Subject = "Test Issue" };
+        _redmineService.UpdateIssueAsync(issueId, null, null, null, fileContent, null, Arg.Any<CancellationToken>())
+            .Returns(updatedIssue);
+
+        var profile = new Profile
+        {
+            Name = "test",
+            Url = "https://redmine.example.com",
+            ApiKey = "test-key"
+        };
+        _configService.GetActiveProfileAsync().Returns(profile);
+
+        try
+        {
+            // Act
+            var result = await _issueCommand.CommentAsync(issueId, null, null, tempFile, CancellationToken.None);
+
+            // Assert
+            result.Should().Be(0);
+            await _redmineService.Received(1).UpdateIssueAsync(issueId, null, null, null, fileContent, null, Arg.Any<CancellationToken>());
+        }
+        finally
+        {
+            // Cleanup
+            if (File.Exists(tempFile))
+                File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task Comment_Should_AddCommentAndUpdateDescription_When_BothProvided()
+    {
+        // Arrange
+        const int issueId = 123;
+        const string message = "Updated the description";
+        const string body = "New description text";
+
+        var updatedIssue = new Issue { Id = issueId, Subject = "Test Issue" };
+        _redmineService.UpdateIssueAsync(issueId, null, null, null, body, null, Arg.Any<CancellationToken>())
+            .Returns(updatedIssue);
+        _redmineService.AddCommentAsync(issueId, message, Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var profile = new Profile
+        {
+            Name = "test",
+            Url = "https://redmine.example.com",
+            ApiKey = "test-key"
+        };
+        _configService.GetActiveProfileAsync().Returns(profile);
+
+        // Act
+        var result = await _issueCommand.CommentAsync(issueId, message, body, null, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).UpdateIssueAsync(issueId, null, null, null, body, null, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).AddCommentAsync(issueId, message, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Comment_Should_ReturnError_When_NoActionProvided()
+    {
+        // Arrange
+        const int issueId = 123;
+
+        // Act
+        var result = await _issueCommand.CommentAsync(issueId, null, null, null, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(1);
+        await _redmineService.DidNotReceive().UpdateIssueAsync(Arg.Any<int>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<int?>(), Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().AddCommentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Comment_Should_ReturnError_When_BodyFileNotFound()
+    {
+        // Arrange
+        const int issueId = 123;
+        const string nonExistentFile = "/path/to/nonexistent/file.txt";
+
+        // Act
+        var result = await _issueCommand.CommentAsync(issueId, null, null, nonExistentFile, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(1);
+        await _redmineService.DidNotReceive().UpdateIssueAsync(Arg.Any<int>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<int?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Comment_Should_UpdateDescriptionFromStdin_When_BodyFileDash()
+    {
+        // Arrange
+        const int issueId = 123;
+        const string stdinContent = "Description from stdin";
+
+        // Simulate stdin input
+        var originalInput = Console.In;
+        using var stringReader = new StringReader(stdinContent);
+        Console.SetIn(stringReader);
+
+        var updatedIssue = new Issue { Id = issueId, Subject = "Test Issue" };
+        _redmineService.UpdateIssueAsync(issueId, null, null, null, stdinContent, null, Arg.Any<CancellationToken>())
+            .Returns(updatedIssue);
+
+        var profile = new Profile
+        {
+            Name = "test",
+            Url = "https://redmine.example.com",
+            ApiKey = "test-key"
+        };
+        _configService.GetActiveProfileAsync().Returns(profile);
+
+        try
+        {
+            // Act
+            var result = await _issueCommand.CommentAsync(issueId, null, null, "-", CancellationToken.None);
+
+            // Assert
+            result.Should().Be(0);
+            await _redmineService.Received(1).UpdateIssueAsync(issueId, null, null, null, stdinContent, null, Arg.Any<CancellationToken>());
+        }
+        finally
+        {
+            // Restore original stdin
+            Console.SetIn(originalInput);
+        }
+    }
+
+    #endregion
 }

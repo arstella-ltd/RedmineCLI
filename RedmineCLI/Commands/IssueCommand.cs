@@ -228,21 +228,29 @@ public class IssueCommand
         command.Add(editCommand);
 
         // Comment command
-        var commentCommand = new Command("comment", "Add a comment to an issue");
+        var commentCommand = new Command("comment", "Add a comment to an issue and/or update its description");
         var commentIdArgument = new Argument<int>("ID");
         commentIdArgument.Description = "Issue ID";
         var commentMessageOption = new Option<string?>("--message") { Description = "Comment text" };
         commentMessageOption.Aliases.Add("-m");
+        var commentBodyOption = new Option<string?>("--body") { Description = "New description text" };
+        commentBodyOption.Aliases.Add("-b");
+        var commentBodyFileOption = new Option<string?>("--body-file") { Description = "Read description from file (use '-' for stdin)" };
+        commentBodyFileOption.Aliases.Add("-F");
 
         commentCommand.Add(commentIdArgument);
         commentCommand.Add(commentMessageOption);
+        commentCommand.Add(commentBodyOption);
+        commentCommand.Add(commentBodyFileOption);
 
         commentCommand.SetAction(async (parseResult) =>
         {
             var id = parseResult.GetValue(commentIdArgument);
             var message = parseResult.GetValue(commentMessageOption);
+            var body = parseResult.GetValue(commentBodyOption);
+            var bodyFile = parseResult.GetValue(commentBodyFileOption);
 
-            Environment.ExitCode = await issueCommand.CommentAsync(id, message, CancellationToken.None);
+            Environment.ExitCode = await issueCommand.CommentAsync(id, message, body, bodyFile, CancellationToken.None);
         });
 
         command.Add(commentCommand);
@@ -1656,16 +1664,72 @@ public class IssueCommand
         }
     }
 
-    public async Task<int> CommentAsync(int issueId, string? message, CancellationToken cancellationToken)
+    public async Task<int> CommentAsync(int issueId, string? message, string? body, string? bodyFile, CancellationToken cancellationToken)
     {
         try
         {
-            _logger.LogDebug("Adding comment to issue {IssueId} - Message provided: {HasMessage}", issueId, !string.IsNullOrEmpty(message));
+            _logger.LogDebug("Processing issue {IssueId} - Message: {HasMessage}, Body: {HasBody}, BodyFile: {BodyFile}",
+                issueId, !string.IsNullOrEmpty(message), !string.IsNullOrEmpty(body), bodyFile);
 
-            string commentText;
+            // Check if at least one action is provided
+            if (string.IsNullOrEmpty(message) && string.IsNullOrEmpty(body) && string.IsNullOrEmpty(bodyFile))
+            {
+                AnsiConsole.MarkupLine("[red]Error:[/] At least one of --message, --body, or --body-file must be provided");
+                return 1;
+            }
 
-            // If message is provided via command line, use it directly
-            if (message != null)
+            // Handle description update
+            string? description = null;
+            if (!string.IsNullOrEmpty(body))
+            {
+                description = body;
+            }
+            else if (!string.IsNullOrEmpty(bodyFile))
+            {
+                try
+                {
+                    if (bodyFile == "-")
+                    {
+                        // Read from stdin
+                        description = await Console.In.ReadToEndAsync();
+                    }
+                    else
+                    {
+                        // Read from file
+                        if (!File.Exists(bodyFile))
+                        {
+                            AnsiConsole.MarkupLine($"[red]Error:[/] File not found: {bodyFile}");
+                            return 1;
+                        }
+                        description = await File.ReadAllTextAsync(bodyFile, cancellationToken);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    AnsiConsole.MarkupLine($"[red]Error:[/] Failed to read body file: {ex.Message}");
+                    return 1;
+                }
+            }
+
+            // Track what we're doing for success message
+            var actions = new List<string>();
+
+            // Update description if provided
+            if (!string.IsNullOrEmpty(description))
+            {
+                await _redmineService.UpdateIssueAsync(
+                    issueId,
+                    null, // title
+                    null, // status
+                    null, // assignee
+                    description,
+                    null, // doneRatio
+                    cancellationToken);
+                actions.Add("Description updated");
+            }
+
+            // Add comment if provided
+            if (!string.IsNullOrEmpty(message))
             {
                 // Check if the provided message is empty or whitespace
                 if (string.IsNullOrWhiteSpace(message))
@@ -1673,37 +1737,19 @@ public class IssueCommand
                     AnsiConsole.MarkupLine("[yellow]Comment cancelled: No text entered[/]");
                     return 1;
                 }
-                commentText = message.Trim();
-            }
-            else
-            {
-                // Open editor to get comment text
-                commentText = await OpenEditorForCommentAsync();
-                if (string.IsNullOrWhiteSpace(commentText))
-                {
-                    AnsiConsole.MarkupLine("[yellow]Comment cancelled: No text entered[/]");
-                    return 1;
-                }
-            }
 
-            // Final validation to ensure comment is not empty
-            if (string.IsNullOrEmpty(commentText))
-            {
-                AnsiConsole.MarkupLine("[red]Error:[/] Comment cannot be empty");
-                return 1;
+                await _redmineService.AddCommentAsync(issueId, message.Trim(), cancellationToken);
+                actions.Add("Comment added");
             }
-
-            // Add comment via API
-            await _redmineService.AddCommentAsync(issueId, commentText, cancellationToken);
 
             // Show success message with issue URL
-            await ShowSuccessMessageWithUrlAsync(issueId, "Comment added");
+            await ShowSuccessMessageWithUrlAsync(issueId, string.Join(" and ", actions));
 
             return 0;
         }
         catch (RedmineApiException ex)
         {
-            _logger.LogError(ex, "API error while adding comment to issue {IssueId}", issueId);
+            _logger.LogError(ex, "API error while processing issue {IssueId}", issueId);
 
             if (ex.StatusCode == 404)
             {
@@ -1717,10 +1763,28 @@ public class IssueCommand
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while adding comment to issue {IssueId}", issueId);
+            _logger.LogError(ex, "Unexpected error while processing issue {IssueId}", issueId);
             AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
             return 1;
         }
+    }
+
+    // Overload for backward compatibility (for existing tests)
+    public async Task<int> CommentAsync(int issueId, string? message, CancellationToken cancellationToken)
+    {
+        // If message is null, this will handle the editor opening scenario
+        if (message == null)
+        {
+            var commentText = await OpenEditorForCommentAsync();
+            if (string.IsNullOrWhiteSpace(commentText))
+            {
+                AnsiConsole.MarkupLine("[yellow]Comment cancelled: No text entered[/]");
+                return 1;
+            }
+            message = commentText;
+        }
+
+        return await CommentAsync(issueId, message, null, null, cancellationToken);
     }
 
     private async Task<string> OpenEditorForCommentAsync()
