@@ -188,6 +188,8 @@ public class IssueCommand
         var editCommand = new Command("edit", "Edit an existing issue");
         var editIdArgument = new Argument<int>("ID");
         editIdArgument.Description = "Issue ID";
+        var editTitleOption = new Option<string?>("--title") { Description = "New title for the issue" };
+        editTitleOption.Aliases.Add("-t");
         var editStatusOption = new Option<string?>("--status") { Description = "New status" };
         editStatusOption.Aliases.Add("-s");
         var editAssigneeOption = new Option<string?>("--assignee") { Description = "New assignee (username, ID, or @me)" };
@@ -201,6 +203,7 @@ public class IssueCommand
         editWebOption.Aliases.Add("-w");
 
         editCommand.Add(editIdArgument);
+        editCommand.Add(editTitleOption);
         editCommand.Add(editStatusOption);
         editCommand.Add(editAssigneeOption);
         editCommand.Add(editDoneRatioOption);
@@ -211,6 +214,7 @@ public class IssueCommand
         editCommand.SetAction(async (parseResult) =>
         {
             var id = parseResult.GetValue(editIdArgument);
+            var title = parseResult.GetValue(editTitleOption);
             var status = parseResult.GetValue(editStatusOption);
             var assignee = parseResult.GetValue(editAssigneeOption);
             var doneRatio = parseResult.GetValue(editDoneRatioOption);
@@ -218,7 +222,7 @@ public class IssueCommand
             var bodyFile = parseResult.GetValue(editBodyFileOption);
             var web = parseResult.GetValue(editWebOption);
 
-            Environment.ExitCode = await issueCommand.EditAsync(id, status, assignee, doneRatio, body, bodyFile, web, CancellationToken.None);
+            Environment.ExitCode = await issueCommand.EditAsync(id, title, status, assignee, doneRatio, body, bodyFile, web, CancellationToken.None);
         });
 
         command.Add(editCommand);
@@ -1315,6 +1319,7 @@ public class IssueCommand
 
     public async Task<int> EditAsync(
         int issueId,
+        string? title,
         string? status,
         string? assignee,
         int? doneRatio,
@@ -1325,8 +1330,8 @@ public class IssueCommand
     {
         try
         {
-            _logger.LogDebug("Editing issue {IssueId} - Status: {Status}, Assignee: {Assignee}, DoneRatio: {DoneRatio}, Body: {Body}, BodyFile: {BodyFile}, Web: {Web}",
-                issueId, status, assignee, doneRatio, body != null ? "[provided]" : null, bodyFile, web);
+            _logger.LogDebug("Editing issue {IssueId} - Title: {Title}, Status: {Status}, Assignee: {Assignee}, DoneRatio: {DoneRatio}, Body: {Body}, BodyFile: {BodyFile}, Web: {Web}",
+                issueId, title, status, assignee, doneRatio, body != null ? "[provided]" : null, bodyFile, web);
 
             // Handle --web option
             if (web)
@@ -1337,6 +1342,13 @@ public class IssueCommand
                     cancellationToken);
             }
 
+            // Validate title
+            if (title != null && string.IsNullOrWhiteSpace(title))
+            {
+                AnsiConsole.MarkupLine("[red]Error:[/] Title cannot be empty");
+                return 1;
+            }
+
             // Validate done ratio
             if (doneRatio.HasValue && (doneRatio.Value < 0 || doneRatio.Value > 100))
             {
@@ -1345,7 +1357,7 @@ public class IssueCommand
             }
 
             // If no options provided, launch interactive mode
-            if (string.IsNullOrEmpty(status) && string.IsNullOrEmpty(assignee) && !doneRatio.HasValue &&
+            if (string.IsNullOrEmpty(title) && string.IsNullOrEmpty(status) && string.IsNullOrEmpty(assignee) && !doneRatio.HasValue &&
                 string.IsNullOrEmpty(body) && string.IsNullOrEmpty(bodyFile))
             {
                 return await EditInteractiveAsync(issueId, cancellationToken);
@@ -1357,6 +1369,13 @@ public class IssueCommand
             // Track what's being updated for display
             var fieldsToUpdate = new List<string>();
             var updateDetails = new Dictionary<string, string>();
+
+            // Handle title
+            if (!string.IsNullOrEmpty(title))
+            {
+                fieldsToUpdate.Add("title");
+                updateDetails["title"] = title;
+            }
 
             // Handle status
             string? statusIdOrName = null;
@@ -1439,7 +1458,7 @@ public class IssueCommand
             // Update the issue using RedmineService
             var updatedIssue = await _redmineService.UpdateIssueAsync(
                 issueId,
-                null, // subject - keep existing
+                title,
                 statusIdOrName,
                 assigneeIdOrUsername,
                 description,
@@ -1450,6 +1469,7 @@ public class IssueCommand
             var updateSummary = string.Join(", ", fieldsToUpdate.Select(f =>
                 f switch
                 {
+                    "title" => $"title → {updateDetails.GetValueOrDefault("title", "unknown")}",
                     "status" => $"status → {updateDetails.GetValueOrDefault("status", "unknown")}",
                     "assignee" => $"assignee → {updateDetails.GetValueOrDefault("assignee", "unknown")}",
                     "progress" => $"progress → {updateDetails.GetValueOrDefault("progress", "unknown")}",
