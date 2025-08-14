@@ -79,8 +79,18 @@ public class IssueEditCommandTests
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
+        // Mock config service
+        var profile = new Profile
+        {
+            Name = "test",
+            Url = "https://redmine.example.com",
+            ApiKey = "test-key"
+        };
+        _configService.GetActiveProfileAsync()
+            .Returns(Task.FromResult<Profile?>(profile));
+
         // Act
-        var result = await _issueCommand.EditAsync(issueId, newStatus, null, null, false, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, newStatus, null, null, null, null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -136,8 +146,18 @@ public class IssueEditCommandTests
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
+        // Mock config service
+        var profile = new Profile
+        {
+            Name = "test",
+            Url = "https://redmine.example.com",
+            ApiKey = "test-key"
+        };
+        _configService.GetActiveProfileAsync()
+            .Returns(Task.FromResult<Profile?>(profile));
+
         // Act
-        var result = await _issueCommand.EditAsync(issueId, null, newAssignee, null, false, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, null, newAssignee, null, null, null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -187,8 +207,18 @@ public class IssueEditCommandTests
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
+        // Mock config service
+        var profile = new Profile
+        {
+            Name = "test",
+            Url = "https://redmine.example.com",
+            ApiKey = "test-key"
+        };
+        _configService.GetActiveProfileAsync()
+            .Returns(Task.FromResult<Profile?>(profile));
+
         // Act
-        var result = await _issueCommand.EditAsync(issueId, null, null, doneRatio, false, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, null, null, doneRatio, null, null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -247,12 +277,12 @@ public class IssueEditCommandTests
             .Returns(Task.FromResult(updatedIssue));
 
         // Act
-        var result = await _issueCommand.EditAsync(issueId, newStatus, null, null, false, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, newStatus, null, null, null, null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
         await _redmineService.Received(1).GetIssueAsync(issueId, false, Arg.Any<CancellationToken>());
-        await _redmineService.Received(1).UpdateIssueAsync(issueId, null, newStatus, null, null, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).UpdateIssueAsync(issueId, null, newStatus, null, null, null, Arg.Any<CancellationToken>());
         await _configService.Received(1).GetActiveProfileAsync();
     }
 
@@ -265,7 +295,7 @@ public class IssueEditCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(profile));
 
         // Act
-        var result = await _issueCommand.EditAsync(issueId, null, null, null, true, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, null, null, null, null, null, true, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -308,8 +338,18 @@ public class IssueEditCommandTests
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
+        // Mock config service
+        var profile = new Profile
+        {
+            Name = "test",
+            Url = "https://redmine.example.com",
+            ApiKey = "test-key"
+        };
+        _configService.GetActiveProfileAsync()
+            .Returns(Task.FromResult<Profile?>(profile));
+
         // Act
-        var result = await _issueCommand.EditAsync(issueId, null, "@me", null, false, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, null, "@me", null, null, null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -377,8 +417,18 @@ public class IssueEditCommandTests
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
+        // Mock config service
+        var profile = new Profile
+        {
+            Name = "test",
+            Url = "https://redmine.example.com",
+            ApiKey = "test-key"
+        };
+        _configService.GetActiveProfileAsync()
+            .Returns(Task.FromResult<Profile?>(profile));
+
         // Act
-        var result = await _issueCommand.EditAsync(issueId, newStatus, newAssignee, doneRatio, false, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, newStatus, newAssignee, doneRatio, null, null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -421,7 +471,7 @@ public class IssueEditCommandTests
             .Returns(Task.FromException<Issue>(new RedmineApiException(404, "Issue not found")));
 
         // Act
-        var result = await _issueCommand.EditAsync(issueId, "Closed", null, null, false, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, "Closed", null, null, null, null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -437,7 +487,7 @@ public class IssueEditCommandTests
         _configService.GetActiveProfileAsync().Returns(Task.FromResult<Profile?>(null));
 
         // Act
-        var result = await _issueCommand.EditAsync(issueId, null, null, null, true, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, null, null, null, null, null, true, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -463,7 +513,7 @@ public class IssueEditCommandTests
             .Returns(Task.FromResult(originalIssue));
 
         // Act
-        var result = await _issueCommand.EditAsync(issueId, null, null, null, false, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, null, null, null, null, null, false, CancellationToken.None);
 
         // Assert
         // Since this would launch interactive mode, we can't fully test it in unit tests
@@ -499,7 +549,7 @@ public class IssueEditCommandTests
         var invalidDoneRatio = 150; // Out of 0-100 range
 
         // Act
-        var result = await _issueCommand.EditAsync(issueId, null, null, invalidDoneRatio, false, CancellationToken.None);
+        var result = await _issueCommand.EditAsync(issueId, null, null, invalidDoneRatio, null, null, false, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -541,6 +591,16 @@ public class IssueEditCommandTests
             null,
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
+
+        // Mock config service
+        var profile = new Profile
+        {
+            Name = "test",
+            Url = "https://redmine.example.com",
+            ApiKey = "test-key"
+        };
+        _configService.GetActiveProfileAsync()
+            .Returns(Task.FromResult<Profile?>(profile));
 
         // Act
         var result = await _issueCommand.EditAsync(issueId, null, null, null, newDescription, null, false, CancellationToken.None);
@@ -597,6 +657,16 @@ public class IssueEditCommandTests
                 null,
                 Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(updatedIssue));
+
+            // Mock config service
+            var profile = new Profile
+            {
+                Name = "test",
+                Url = "https://redmine.example.com",
+                ApiKey = "test-key"
+            };
+            _configService.GetActiveProfileAsync()
+                .Returns(Task.FromResult<Profile?>(profile));
 
             // Act
             var result = await _issueCommand.EditAsync(issueId, null, null, null, null, tempFile, false, CancellationToken.None);
@@ -661,6 +731,16 @@ public class IssueEditCommandTests
                 Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(updatedIssue));
 
+            // Mock config service
+            var profile = new Profile
+            {
+                Name = "test",
+                Url = "https://redmine.example.com",
+                ApiKey = "test-key"
+            };
+            _configService.GetActiveProfileAsync()
+                .Returns(Task.FromResult<Profile?>(profile));
+
             // Act
             var result = await _issueCommand.EditAsync(issueId, null, null, null, null, "-", false, CancellationToken.None);
 
@@ -723,6 +803,16 @@ public class IssueEditCommandTests
             null,
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
+
+        // Mock config service
+        var profile = new Profile
+        {
+            Name = "test",
+            Url = "https://redmine.example.com",
+            ApiKey = "test-key"
+        };
+        _configService.GetActiveProfileAsync()
+            .Returns(Task.FromResult<Profile?>(profile));
 
         // Act
         var result = await _issueCommand.EditAsync(issueId, newStatus, null, null, newDescription, null, false, CancellationToken.None);

@@ -1411,8 +1411,7 @@ public class IssueCommand
                     if (bodyFile == "-")
                     {
                         // Read from stdin
-                        using var reader = new StreamReader(Console.OpenStandardInput());
-                        description = await reader.ReadToEndAsync();
+                        description = await Console.In.ReadToEndAsync();
                     }
                     else
                     {

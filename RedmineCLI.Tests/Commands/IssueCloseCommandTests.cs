@@ -74,7 +74,7 @@ public class IssueCloseCommandTests
             .Returns(Task.FromResult(statuses));
         _redmineService.GetIssueAsync(123, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
-        _redmineService.UpdateIssueAsync(123, null, "5", null, 100, Arg.Any<CancellationToken>())
+        _redmineService.UpdateIssueAsync(123, null, "5", null, null, 100, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
         // Act
@@ -82,7 +82,7 @@ public class IssueCloseCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _redmineService.Received(1).UpdateIssueAsync(123, null, "5", null, 100, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).UpdateIssueAsync(123, null, "5", null, null, 100, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -114,7 +114,7 @@ public class IssueCloseCommandTests
             .Returns(Task.FromResult(statuses));
         _redmineService.GetIssueAsync(123, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
-        _redmineService.UpdateIssueAsync(123, null, "6", null, 100, Arg.Any<CancellationToken>())
+        _redmineService.UpdateIssueAsync(123, null, "6", null, null, 100, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
         // Act
@@ -122,7 +122,7 @@ public class IssueCloseCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _redmineService.Received(1).UpdateIssueAsync(123, null, "6", null, 100, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).UpdateIssueAsync(123, null, "6", null, null, 100, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -153,7 +153,7 @@ public class IssueCloseCommandTests
             .Returns(Task.FromResult(statuses));
         _redmineService.GetIssueAsync(123, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
-        _redmineService.UpdateIssueAsync(123, null, "5", null, 100, Arg.Any<CancellationToken>())
+        _redmineService.UpdateIssueAsync(123, null, "5", null, null, 100, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
         // Act
@@ -192,7 +192,7 @@ public class IssueCloseCommandTests
             .Returns(Task.FromResult(statuses));
         _redmineService.GetIssueAsync(123, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
-        _redmineService.UpdateIssueAsync(123, null, "5", null, doneRatio, Arg.Any<CancellationToken>())
+        _redmineService.UpdateIssueAsync(123, null, "5", null, null, doneRatio, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
         // Act
@@ -200,7 +200,7 @@ public class IssueCloseCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _redmineService.Received(1).UpdateIssueAsync(123, null, "5", null, doneRatio, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).UpdateIssueAsync(123, null, "5", null, null, doneRatio, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -230,7 +230,7 @@ public class IssueCloseCommandTests
             .Returns(Task.FromResult(statuses));
         _redmineService.GetIssueAsync(123, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
-        _redmineService.UpdateIssueAsync(123, null, "5", null, 100, Arg.Any<CancellationToken>())
+        _redmineService.UpdateIssueAsync(123, null, "5", null, null, 100, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
         // Act
@@ -238,7 +238,7 @@ public class IssueCloseCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _redmineService.Received(1).UpdateIssueAsync(123, null, "5", null, 100, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).UpdateIssueAsync(123, null, "5", null, null, 100, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -267,7 +267,7 @@ public class IssueCloseCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _redmineService.DidNotReceive().UpdateIssueAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().UpdateIssueAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -298,7 +298,7 @@ public class IssueCloseCommandTests
             .Returns(Task.FromResult(statuses));
         _redmineService.GetIssueAsync(123, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
-        _redmineService.UpdateIssueAsync(123, null, "2", null, 100, Arg.Any<CancellationToken>())
+        _redmineService.UpdateIssueAsync(123, null, "2", null, null, 100, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
         // Act
@@ -306,7 +306,7 @@ public class IssueCloseCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _redmineService.Received(1).UpdateIssueAsync(123, null, "2", null, 100, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).UpdateIssueAsync(123, null, "2", null, null, 100, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -342,7 +342,7 @@ public class IssueCloseCommandTests
 
             _redmineService.GetIssueAsync(id, false, Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(issue));
-            _redmineService.UpdateIssueAsync(id, null, "5", null, 100, Arg.Any<CancellationToken>())
+            _redmineService.UpdateIssueAsync(id, null, "5", null, null, 100, Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(updatedIssue));
         }
 
@@ -351,7 +351,7 @@ public class IssueCloseCommandTests
 
         // Assert
         result.Should().Be(0);
-        await _redmineService.Received(3).UpdateIssueAsync(Arg.Any<int>(), null, "5", null, 100, Arg.Any<CancellationToken>());
+        await _redmineService.Received(3).UpdateIssueAsync(Arg.Any<int>(), null, "5", null, null, 100, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -373,7 +373,7 @@ public class IssueCloseCommandTests
 
         // Assert
         result.Should().Be(1);
-        await _redmineService.DidNotReceive().UpdateIssueAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().UpdateIssueAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -405,7 +405,7 @@ public class IssueCloseCommandTests
             .Returns(Task.FromResult(issue123));
         _redmineService.GetIssueAsync(999, false, Arg.Any<CancellationToken>())
             .Returns<Issue>(x => throw new RedmineApiException(404, "Not found"));
-        _redmineService.UpdateIssueAsync(123, null, "5", null, 100, Arg.Any<CancellationToken>())
+        _redmineService.UpdateIssueAsync(123, null, "5", null, null, 100, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue123));
 
         // Act
@@ -413,7 +413,7 @@ public class IssueCloseCommandTests
 
         // Assert
         result.Should().Be(1); // Error due to issue 999 not found
-        await _redmineService.Received(1).UpdateIssueAsync(123, null, "5", null, 100, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).UpdateIssueAsync(123, null, "5", null, null, 100, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -471,7 +471,7 @@ public class IssueCloseCommandTests
             .Returns(Task.FromResult(statuses));
         _redmineService.GetIssueAsync(123, false, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(currentIssue));
-        _redmineService.UpdateIssueAsync(123, null, "5", null, 100, Arg.Any<CancellationToken>())
+        _redmineService.UpdateIssueAsync(123, null, "5", null, null, 100, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(updatedIssue));
 
         // Act
