@@ -152,10 +152,18 @@ public class RedmineService : IRedmineService
         // 担当者の解決
         if (!string.IsNullOrEmpty(assigneeIdOrUsername))
         {
-            var resolvedAssignee = await ResolveAssigneeAsync(assigneeIdOrUsername, cancellationToken);
-            if (int.TryParse(resolvedAssignee, out var assigneeId))
+            if (assigneeIdOrUsername == "__REMOVE__")
             {
-                updateData.AssignedTo = new User { Id = assigneeId };
+                // 担当者を削除するために特別な値を設定
+                updateData.AssignedTo = new User { Id = -1 };
+            }
+            else
+            {
+                var resolvedAssignee = await ResolveAssigneeAsync(assigneeIdOrUsername, cancellationToken);
+                if (int.TryParse(resolvedAssignee, out var assigneeId))
+                {
+                    updateData.AssignedTo = new User { Id = assigneeId };
+                }
             }
         }
 

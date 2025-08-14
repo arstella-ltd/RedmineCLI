@@ -143,8 +143,14 @@ redmine issue edit 12345 -F description.md
 echo "新しい説明文" | redmine issue edit 12345 -F -
 
 # 複数のフィールドを同時に更新
-redmine issue edit 12345 --status=resolved --assignee=@me --body "問題を解決しました"
-redmine issue edit 12345 -t "バグ修正完了" -s in-progress -a @me
+redmine issue edit 12345 --status=resolved --add-assignee=@me --body "問題を解決しました"
+
+# 担当者を設定
+redmine issue edit 12345 --add-assignee=@me
+redmine issue edit 12345 --add-assignee=john.doe
+
+# 担当者を削除
+redmine issue edit 12345 --remove-assignee
 
 # コメントを追加
 redmine issue comment 12345 --message "作業を開始しました"

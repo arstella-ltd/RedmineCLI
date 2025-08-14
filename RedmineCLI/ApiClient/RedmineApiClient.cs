@@ -1,3 +1,4 @@
+using System.IO;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
@@ -141,7 +142,16 @@ public class RedmineApiClient : IRedmineApiClient
 
         if (issue.AssignedTo != null)
         {
-            updateData.AssignedToId = issue.AssignedTo.Id;
+            // Special handling for removing assignee
+            if (issue.AssignedTo.Id == -1)
+            {
+                // We'll handle this case separately with dynamic JSON
+                // For now, don't set AssignedToId
+            }
+            else
+            {
+                updateData.AssignedToId = issue.AssignedTo.Id;
+            }
         }
 
         if (issue.DoneRatio.HasValue)
@@ -154,16 +164,61 @@ public class RedmineApiClient : IRedmineApiClient
             updateData.PriorityId = issue.Priority.Id;
         }
 
-        var requestBody = new IssueUpdateRequest { Issue = updateData };
-        var issueResponse = await PutAsync(path, requestBody, RedmineJsonContext.Default.IssueUpdateRequest, RedmineJsonContext.Default.IssueResponse, $"update issue {id}", cancellationToken);
-
-        // If the response is empty (which is valid for Redmine), fetch the updated issue
-        if (issueResponse?.Issue == null)
+        // Check if we need to handle special assignee removal case
+        if (issue.AssignedTo != null && issue.AssignedTo.Id == -1)
         {
-            return await GetIssueAsync(id, false, cancellationToken);
-        }
+            // Build JSON manually for assignee removal case
+            var json = System.Text.Json.JsonSerializer.Serialize(updateData, RedmineJsonContext.Default.IssueUpdateData);
+            var jsonObj = System.Text.Json.JsonDocument.Parse(json);
 
-        return issueResponse.Issue;
+            using var stream = new MemoryStream();
+            using var writer = new System.Text.Json.Utf8JsonWriter(stream);
+
+            writer.WriteStartObject();
+            writer.WriteStartObject("issue");
+
+            // Copy all existing properties
+            foreach (var prop in jsonObj.RootElement.EnumerateObject())
+            {
+                prop.WriteTo(writer);
+            }
+
+            // Add assigned_to_id with empty string
+            writer.WriteString("assigned_to_id", "");
+
+            writer.WriteEndObject();
+            writer.WriteEndObject();
+            writer.Flush();
+
+            var jsonString = System.Text.Encoding.UTF8.GetString(stream.ToArray());
+            var content = new StringContent(jsonString, System.Text.Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PutAsync(path, content, cancellationToken);
+            await EnsureSuccessStatusCodeAsync(response);
+
+            // Redmine might return empty response for successful updates
+            var responseContent = await response.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(responseContent))
+            {
+                return await GetIssueAsync(id, false, cancellationToken);
+            }
+
+            var issueResponse = System.Text.Json.JsonSerializer.Deserialize(responseContent, RedmineJsonContext.Default.IssueResponse);
+            return issueResponse?.Issue ?? await GetIssueAsync(id, false, cancellationToken);
+        }
+        else
+        {
+            var requestBody = new IssueUpdateRequest { Issue = updateData };
+            var issueResponse = await PutAsync(path, requestBody, RedmineJsonContext.Default.IssueUpdateRequest, RedmineJsonContext.Default.IssueResponse, $"update issue {id}", cancellationToken);
+
+            // If the response is empty (which is valid for Redmine), fetch the updated issue
+            if (issueResponse?.Issue == null)
+            {
+                return await GetIssueAsync(id, false, cancellationToken);
+            }
+
+            return issueResponse.Issue;
+        }
     }
 
     public async Task AddCommentAsync(int issueId, string comment, CancellationToken cancellationToken = default)
