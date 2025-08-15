@@ -32,10 +32,10 @@ public class ExtensionExecutorTests
         // Arrange
         const string extensionName = "test";
         string[] args = ["list", "--all"];
-        var config = new Models.Config
+        var config = new RedmineCLI.Models.Config
         {
             CurrentProfile = "default",
-            Profiles = new Dictionary<string, Models.Profile>
+            Profiles = new Dictionary<string, RedmineCLI.Models.Profile>
             {
                 ["default"] = new()
                 {
@@ -68,10 +68,10 @@ public class ExtensionExecutorTests
         // Arrange
         const string extensionName = "test";
         string[] args = ["list"];
-        var config = new Models.Config
+        var config = new RedmineCLI.Models.Config
         {
             CurrentProfile = "production",
-            Profiles = new Dictionary<string, Models.Profile>
+            Profiles = new Dictionary<string, RedmineCLI.Models.Profile>
             {
                 ["production"] = new()
                 {
@@ -79,7 +79,7 @@ public class ExtensionExecutorTests
                     Url = "https://redmine.prod.com",
                     ApiKey = "prod-api-key",
                     DefaultProject = "main-project",
-                    TimeFormat = Models.TimeFormat.Absolute,
+                    TimeFormat = RedmineCLI.Models.TimeFormat.Absolute,
                     OutputFormat = "json"
                 }
             }
@@ -90,7 +90,7 @@ public class ExtensionExecutorTests
         // Act & Assert
         // In a real test, we would verify that environment variables are set correctly
         // This would require process start info mocking
-        await _mockConfigService.LoadAsync();
+        await _mockConfigService.LoadConfigAsync();
         config.CurrentProfile.Should().Be("production");
         config.Profiles["production"].Url.Should().Be("https://redmine.prod.com");
     }
@@ -121,10 +121,10 @@ public class ExtensionExecutorTests
         string[] args = ["error"];
         const int expectedExitCode = 42;
 
-        var config = new Models.Config
+        var config = new RedmineCLI.Models.Config
         {
             CurrentProfile = "default",
-            Profiles = new Dictionary<string, Models.Profile>
+            Profiles = new Dictionary<string, RedmineCLI.Models.Profile>
             {
                 ["default"] = new()
                 {

@@ -79,7 +79,7 @@ public class ExtensionExecutor : IExtensionExecutor
         }
     }
 
-    public string? FindExtension(string name)
+    public virtual string? FindExtension(string name)
     {
         var extensionName = $"redmine-{name}";
         var searchPaths = GetSearchPaths();
