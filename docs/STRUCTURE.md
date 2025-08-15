@@ -16,7 +16,7 @@ RedmineCLI/
 ├── RedmineCLI/                       # メインプロジェクト
 ├── RedmineCLI.Tests/                 # 単体テストプロジェクト
 ├── RedmineCLI.IntegrationTests/      # 統合テストプロジェクト
-├── redmine-example/                   # サンプル拡張機能
+├── RedmineCLI.Extension.Example/      # サンプル拡張機能
 ├── scripts/                          # ビルドやリリース用スクリプト
 ├── docs/                             # 詳細なドキュメント
 │   ├── PRODUCT.md                    # 製品概要書
@@ -141,8 +141,8 @@ RedmineCLI.IntegrationTests/          # 統合テストプロジェクト
 └── Fixtures/
     └── TestDataFixture.cs
 
-redmine-example/                       # サンプル拡張機能プロジェクト
-├── redmine-example.csproj            # Native AOT対応プロジェクトファイル
+RedmineCLI.Extension.Example/          # サンプル拡張機能プロジェクト
+├── RedmineCLI.Extension.Example.csproj # Native AOT対応プロジェクトファイル
 ├── Program.cs                        # 拡張機能のエントリーポイント
 └── README.md                         # 拡張機能の使用方法とビルド手順
 ```
