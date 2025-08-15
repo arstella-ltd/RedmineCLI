@@ -14,6 +14,9 @@ obj/
 *.swp
 *~
 
+# Serena cache and project files
+.serena/
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
