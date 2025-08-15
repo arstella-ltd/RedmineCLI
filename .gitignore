@@ -88,6 +88,10 @@ config.yml
 *.pdb
 *.dbg
 
+# Root level binaries
+/redmine
+/redmine-example
+
 # Claude settings (local overrides)
 claude/settings.local.json
 EOF < /dev/null

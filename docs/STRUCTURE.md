@@ -16,6 +16,7 @@ RedmineCLI/
 ├── RedmineCLI/                       # メインプロジェクト
 ├── RedmineCLI.Tests/                 # 単体テストプロジェクト
 ├── RedmineCLI.IntegrationTests/      # 統合テストプロジェクト
+├── RedmineCLI.Extension.Example/      # サンプル拡張機能
 ├── scripts/                          # ビルドやリリース用スクリプト
 ├── docs/                             # 詳細なドキュメント
 │   ├── PRODUCT.md                    # 製品概要書
@@ -87,9 +88,9 @@ RedmineCLI/                           # メインプロジェクトディレク�
 │   ├── ImageReferenceDetector.cs     # 画像参照検出ユーティリティ
 │   ├── TerminalCapabilityDetector.cs # ターミナル機能検出ユーティリティ
 │   └── SixelImageRenderer.cs         # Sixelプロトコル画像レンダリング
-├── Extensions/                       # 拡張機能サポート（未実装）
-│   ├── IExtensionExecutor.cs         # 拡張機能実行インターフェース（未実装）
-│   └── ExtensionExecutor.cs          # 拡張機能実行実装（未実装）
+├── Extensions/                       # 拡張機能サポート
+│   ├── IExtensionExecutor.cs         # 拡張機能実行インターフェース
+│   └── ExtensionExecutor.cs          # 拡張機能実行実装
 └── Resources/                        # 埋め込みリソース（未実装）
     └── THIRD-PARTY-NOTICES.txt       # ビルド時埋め込み用
 
@@ -121,7 +122,8 @@ RedmineCLI.Tests/                     # 単体テストプロジェクト
 ├── Services/
 │   ├── ConfigServiceTests.cs         # 設定サービスのテスト
 │   ├── ErrorMessageServiceTests.cs   # エラーメッセージサービスのテスト
-│   └── RedmineServiceTests.cs        # (今後実装予定)
+│   ├── ExtensionExecutorTests.cs     # 拡張機能実行のテスト
+│   └── RedmineServiceTests.cs        # Redmineサービスのテスト
 ├── Exceptions/
 │   └── ExceptionTests.cs             # カスタム例外のテスト
 ├── Utils/
@@ -138,6 +140,11 @@ RedmineCLI.IntegrationTests/          # 統合テストプロジェクト
 │   └── IssueManagementScenarios.cs
 └── Fixtures/
     └── TestDataFixture.cs
+
+RedmineCLI.Extension.Example/          # サンプル拡張機能プロジェクト
+├── RedmineCLI.Extension.Example.csproj # Native AOT対応プロジェクトファイル
+├── Program.cs                        # 拡張機能のエントリーポイント
+└── README.md                         # 拡張機能の使用方法とビルド手順
 ```
 
 ## コンポーネントアーキテクチャ
