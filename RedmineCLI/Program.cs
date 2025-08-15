@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 
 using RedmineCLI.ApiClient;
 using RedmineCLI.Commands;
+using RedmineCLI.Extensions;
 using RedmineCLI.Formatters;
 using RedmineCLI.Services;
 using RedmineCLI.Utils;
@@ -154,6 +155,25 @@ public class Program
         // Parse and execute with exception handling
         try
         {
+            // Check if the first argument might be an extension command
+            if (args.Length > 0 && !args[0].StartsWith("-") && !args[0].StartsWith("--"))
+            {
+                // Check if this is a known command
+                var knownCommands = rootCommand.Subcommands.Select(c => c.Name).ToHashSet();
+                if (!knownCommands.Contains(args[0]))
+                {
+                    // Try to execute as an extension
+                    var extensionExecutor = serviceProvider.GetRequiredService<IExtensionExecutor>();
+                    var extensionPath = extensionExecutor.FindExtension(args[0]);
+                    if (extensionPath != null)
+                    {
+                        // Found extension, execute it
+                        var extensionArgs = args.Skip(1).ToArray();
+                        return await extensionExecutor.ExecuteAsync(args[0], extensionArgs);
+                    }
+                }
+            }
+
             return await config.InvokeAsync(args);
         }
         catch (Exception ex)
@@ -219,5 +239,8 @@ public class Program
 
         // Error Message Service
         services.AddSingleton<IErrorMessageService, ErrorMessageService>();
+
+        // Extension Support
+        services.AddSingleton<IExtensionExecutor, ExtensionExecutor>();
     }
 }

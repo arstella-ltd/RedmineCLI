@@ -331,7 +331,7 @@
     - 「テストが書けない設計は悪い設計」の原則の徹底
   - _要件: 全体的な基盤_
 
-- [ ] 18. 拡張機能システムの実装（TDD）
+- [x] 18. 拡張機能システムの実装（TDD）
   - **Red**: ExtensionExecutorのテストを先に作成
     - Execute_Should_RunExtension_When_ExtensionExists
     - Execute_Should_PassEnvironmentVariables_When_ProfileActive
