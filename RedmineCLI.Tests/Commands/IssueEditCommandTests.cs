@@ -690,8 +690,8 @@ public class IssueEditCommandTests
         optionNames.Should().Contain("--add-assignee");
         optionNames.Should().Contain("--remove-assignee");
         optionNames.Should().Contain("--done-ratio");
-        optionNames.Should().Contain("--body");
-        optionNames.Should().Contain("--body-file");
+        optionNames.Should().Contain("--description");
+        optionNames.Should().Contain("--description-file");
         optionNames.Should().Contain("--web");
 
         var argNames = editCommand.Arguments.Select(a => a.Name).ToList();

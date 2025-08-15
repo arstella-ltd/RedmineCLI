@@ -195,10 +195,10 @@ public class IssueCommand
         var editAddAssigneeOption = new Option<string?>("--add-assignee") { Description = "New assignee (username, ID, or @me)" };
         var editRemoveAssigneeOption = new Option<bool>("--remove-assignee") { Description = "Remove assignee" };
         var editDoneRatioOption = new Option<int?>("--done-ratio") { Description = "Progress percentage (0-100)" };
-        var editBodyOption = new Option<string?>("--body") { Description = "New description text" };
-        editBodyOption.Aliases.Add("-b");
-        var editBodyFileOption = new Option<string?>("--body-file") { Description = "Read description from file (use '-' for stdin)" };
-        editBodyFileOption.Aliases.Add("-F");
+        var editBodyOption = new Option<string?>("--description") { Description = "New description text" };
+        editBodyOption.Aliases.Add("-d");
+        var editBodyFileOption = new Option<string?>("--description-file") { Description = "Read description from file (use '-' for stdin)" };
+        editBodyFileOption.Aliases.Add("-D");
         var editWebOption = new Option<bool>("--web") { Description = "Open edit page in web browser" };
         editWebOption.Aliases.Add("-w");
 
@@ -250,10 +250,10 @@ public class IssueCommand
         commentIdArgument.Description = "Issue ID";
         var commentMessageOption = new Option<string?>("--message") { Description = "Comment text" };
         commentMessageOption.Aliases.Add("-m");
-        var commentBodyOption = new Option<string?>("--body") { Description = "New description text" };
-        commentBodyOption.Aliases.Add("-b");
-        var commentBodyFileOption = new Option<string?>("--body-file") { Description = "Read description from file (use '-' for stdin)" };
-        commentBodyFileOption.Aliases.Add("-F");
+        var commentBodyOption = new Option<string?>("--description") { Description = "New description text" };
+        commentBodyOption.Aliases.Add("-d");
+        var commentBodyFileOption = new Option<string?>("--description-file") { Description = "Read description from file (use '-' for stdin)" };
+        commentBodyFileOption.Aliases.Add("-D");
         var commentAddAssigneeOption = new Option<string?>("--add-assignee") { Description = "New assignee (username, ID, or @me)" };
         var commentRemoveAssigneeOption = new Option<bool>("--remove-assignee") { Description = "Remove assignee" };
 
@@ -1720,7 +1720,7 @@ public class IssueCommand
             // Check if at least one action is provided
             if (string.IsNullOrEmpty(message) && string.IsNullOrEmpty(body) && string.IsNullOrEmpty(bodyFile) && string.IsNullOrEmpty(assignee))
             {
-                AnsiConsole.MarkupLine("[red]Error:[/] At least one of --message, --body, --body-file, --add-assignee, or --remove-assignee must be provided");
+                AnsiConsole.MarkupLine("[red]Error:[/] At least one of --message, --description, --description-file, --add-assignee, or --remove-assignee must be provided");
                 return 1;
             }
 

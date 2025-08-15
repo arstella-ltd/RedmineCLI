@@ -132,18 +132,18 @@ redmine issue edit 12345 --title "新しいタイトル"
 redmine issue edit 12345 -t "新しいタイトル"
 
 # チケットの説明を更新
-redmine issue edit 12345 --body "新しい説明文"
-redmine issue edit 12345 -b "新しい説明文"
+redmine issue edit 12345 --description "新しい説明文"
+redmine issue edit 12345 -d "新しい説明文"
 
 # ファイルから説明を読み込んで更新
-redmine issue edit 12345 --body-file description.md
-redmine issue edit 12345 -F description.md
+redmine issue edit 12345 --description-file description.md
+redmine issue edit 12345 -D description.md
 
 # 標準入力から説明を読み込んで更新
-echo "新しい説明文" | redmine issue edit 12345 -F -
+echo "新しい説明文" | redmine issue edit 12345 -D -
 
 # 複数のフィールドを同時に更新
-redmine issue edit 12345 --status=resolved --add-assignee=@me --body "問題を解決しました"
+redmine issue edit 12345 --status=resolved --add-assignee=@me --description "問題を解決しました"
 
 # 担当者を設定
 redmine issue edit 12345 --add-assignee=@me
@@ -157,19 +157,19 @@ redmine issue comment 12345 --message "作業を開始しました"
 redmine issue comment 12345 -m "確認しました"
 
 # チケットの説明欄を更新（コメント追加なし）
-redmine issue comment 12345 --body "更新された説明文"
-redmine issue comment 12345 -b "更新された説明文"
+redmine issue comment 12345 --description "更新された説明文"
+redmine issue comment 12345 -d "更新された説明文"
 
 # ファイルから説明欄を読み込んで更新
-redmine issue comment 12345 --body-file description.md
-redmine issue comment 12345 -F description.md
+redmine issue comment 12345 --description-file description.md
+redmine issue comment 12345 -D description.md
 
 # 標準入力から説明欄を読み込んで更新
-echo "新しい説明" | redmine issue comment 12345 --body-file -
-cat description.md | redmine issue comment 12345 -F -
+echo "新しい説明" | redmine issue comment 12345 --description-file -
+cat description.md | redmine issue comment 12345 -D -
 
 # コメント追加と説明欄更新を同時に実行
-redmine issue comment 12345 -m "説明を更新しました" --body "新しい説明文"
+redmine issue comment 12345 -m "説明を更新しました" --description "新しい説明文"
 ```
 
 ### 優先度管理
