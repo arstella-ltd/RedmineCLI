@@ -245,11 +245,16 @@ public class IssueCommand
         command.Add(editCommand);
 
         // Comment command
-        var commentCommand = new Command("comment", "Add a comment to an issue and/or update its description");
+        var commentCommand = new Command("comment", "Add a comment to an issue and/or update its attributes");
         var commentIdArgument = new Argument<int>("ID");
         commentIdArgument.Description = "Issue ID";
         var commentMessageOption = new Option<string?>("--message") { Description = "Comment text" };
         commentMessageOption.Aliases.Add("-m");
+        var commentTitleOption = new Option<string?>("--title") { Description = "New title for the issue" };
+        commentTitleOption.Aliases.Add("-t");
+        var commentStatusOption = new Option<string?>("--status") { Description = "New status" };
+        commentStatusOption.Aliases.Add("-s");
+        var commentDoneRatioOption = new Option<int?>("--done-ratio") { Description = "Progress percentage (0-100)" };
         var commentBodyOption = new Option<string?>("--description") { Description = "New description text" };
         commentBodyOption.Aliases.Add("-d");
         var commentBodyFileOption = new Option<string?>("--description-file") { Description = "Read description from file (use '-' for stdin)" };
@@ -259,6 +264,9 @@ public class IssueCommand
 
         commentCommand.Add(commentIdArgument);
         commentCommand.Add(commentMessageOption);
+        commentCommand.Add(commentTitleOption);
+        commentCommand.Add(commentStatusOption);
+        commentCommand.Add(commentDoneRatioOption);
         commentCommand.Add(commentBodyOption);
         commentCommand.Add(commentBodyFileOption);
         commentCommand.Add(commentAddAssigneeOption);
@@ -268,6 +276,9 @@ public class IssueCommand
         {
             var id = parseResult.GetValue(commentIdArgument);
             var message = parseResult.GetValue(commentMessageOption);
+            var title = parseResult.GetValue(commentTitleOption);
+            var status = parseResult.GetValue(commentStatusOption);
+            var doneRatio = parseResult.GetValue(commentDoneRatioOption);
             var body = parseResult.GetValue(commentBodyOption);
             var bodyFile = parseResult.GetValue(commentBodyFileOption);
             var addAssignee = parseResult.GetValue(commentAddAssigneeOption);
@@ -288,7 +299,19 @@ public class IssueCommand
                 assignee = "__REMOVE__";
             }
 
-            Environment.ExitCode = await issueCommand.CommentAsync(id, message, body, bodyFile, assignee, CancellationToken.None);
+            var options = new IssueCommentOptions
+            {
+                IssueId = id,
+                Message = message,
+                Title = title,
+                Status = status,
+                DoneRatio = doneRatio,
+                Description = body,
+                DescriptionFile = bodyFile,
+                Assignee = assignee
+            };
+
+            Environment.ExitCode = await issueCommand.CommentAsync(options, CancellationToken.None);
         });
 
         command.Add(commentCommand);
@@ -1710,31 +1733,49 @@ public class IssueCommand
         }
     }
 
-    public async Task<int> CommentAsync(int issueId, string? message, string? body, string? bodyFile, string? assignee, CancellationToken cancellationToken)
+    /// <summary>
+    /// コメントを追加し、同時にチケットの属性を更新する（新しいシグネチャ）
+    /// </summary>
+    public async Task<int> CommentAsync(IssueCommentOptions options, CancellationToken cancellationToken)
     {
         try
         {
-            _logger.LogDebug("Processing issue {IssueId} - Message: {HasMessage}, Body: {HasBody}, BodyFile: {BodyFile}, Assignee: {Assignee}",
-                issueId, !string.IsNullOrEmpty(message), !string.IsNullOrEmpty(body), bodyFile, assignee);
+            _logger.LogDebug("Processing issue {IssueId} - Message: {HasMessage}, Title: {HasTitle}, Status: {Status}, DoneRatio: {DoneRatio}, Body: {HasBody}, BodyFile: {BodyFile}, Assignee: {Assignee}",
+                options.IssueId, !string.IsNullOrEmpty(options.Message), !string.IsNullOrEmpty(options.Title), options.Status, options.DoneRatio, !string.IsNullOrEmpty(options.Description), options.DescriptionFile, options.Assignee);
 
             // Check if at least one action is provided
-            if (string.IsNullOrEmpty(message) && string.IsNullOrEmpty(body) && string.IsNullOrEmpty(bodyFile) && string.IsNullOrEmpty(assignee))
+            if (string.IsNullOrEmpty(options.Message) && string.IsNullOrEmpty(options.Title) && string.IsNullOrEmpty(options.Status) &&
+                !options.DoneRatio.HasValue && string.IsNullOrEmpty(options.Description) && string.IsNullOrEmpty(options.DescriptionFile) && string.IsNullOrEmpty(options.Assignee))
             {
-                AnsiConsole.MarkupLine("[red]Error:[/] At least one of --message, --description, --description-file, --add-assignee, or --remove-assignee must be provided");
+                AnsiConsole.MarkupLine("[red]Error:[/] At least one option must be provided");
+                return 1;
+            }
+
+            // Validate title
+            if (options.Title != null && string.IsNullOrWhiteSpace(options.Title))
+            {
+                AnsiConsole.MarkupLine("[red]Error:[/] Title cannot be empty");
+                return 1;
+            }
+
+            // Validate done ratio
+            if (options.DoneRatio.HasValue && (options.DoneRatio.Value < 0 || options.DoneRatio.Value > 100))
+            {
+                AnsiConsole.MarkupLine("[red]Error:[/] Done ratio must be between 0 and 100");
                 return 1;
             }
 
             // Handle description update
             string? description = null;
-            if (!string.IsNullOrEmpty(body))
+            if (!string.IsNullOrEmpty(options.Description))
             {
-                description = body;
+                description = options.Description;
             }
-            else if (!string.IsNullOrEmpty(bodyFile))
+            else if (!string.IsNullOrEmpty(options.DescriptionFile))
             {
                 try
                 {
-                    if (bodyFile == "-")
+                    if (options.DescriptionFile == "-")
                     {
                         // Read from stdin
                         description = await Console.In.ReadToEndAsync();
@@ -1742,12 +1783,12 @@ public class IssueCommand
                     else
                     {
                         // Read from file
-                        if (!File.Exists(bodyFile))
+                        if (!File.Exists(options.DescriptionFile))
                         {
-                            AnsiConsole.MarkupLine($"[red]Error:[/] File not found: {bodyFile}");
+                            AnsiConsole.MarkupLine($"[red]Error:[/] File not found: {options.DescriptionFile}");
                             return 1;
                         }
-                        description = await File.ReadAllTextAsync(bodyFile, cancellationToken);
+                        description = await File.ReadAllTextAsync(options.DescriptionFile, cancellationToken);
                     }
                 }
                 catch (Exception ex)
@@ -1760,67 +1801,99 @@ public class IssueCommand
             // Track what we're doing for success message
             var actions = new List<string>();
 
+            // Handle status
+            string? statusIdOrName = null;
+            if (!string.IsNullOrEmpty(options.Status))
+            {
+                try
+                {
+                    var (statusId, statusObj) = await ResolveStatusForEditAsync(options.Status, cancellationToken);
+                    if (statusObj != null)
+                    {
+                        statusIdOrName = options.Status; // Pass the original status string to RedmineService
+                        actions.Add($"Status changed to {statusObj.Name}");
+                    }
+                }
+                catch (ValidationException ex)
+                {
+                    AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+                    return 1;
+                }
+            }
+
             // Handle assignee change
             string? assigneeIdOrUsername = null;
-            if (!string.IsNullOrEmpty(assignee))
+            if (!string.IsNullOrEmpty(options.Assignee))
             {
-                assigneeIdOrUsername = assignee; // Let RedmineService handle the resolution
+                assigneeIdOrUsername = options.Assignee; // Let RedmineService handle the resolution
 
-                if (assignee == "__REMOVE__")
+                if (options.Assignee == "__REMOVE__")
                 {
                     actions.Add("Assignee removed");
                 }
                 else
                 {
-                    var resolvedAssignee = await ResolveAssigneeAsync(assignee, cancellationToken);
-                    actions.Add($"Assignee changed to {resolvedAssignee ?? assignee}");
+                    var resolvedAssignee = await ResolveAssigneeAsync(options.Assignee, cancellationToken);
+                    actions.Add($"Assignee changed to {resolvedAssignee ?? options.Assignee}");
                 }
             }
 
-            // Update description and/or assignee if provided
-            if (!string.IsNullOrEmpty(description) || !string.IsNullOrEmpty(assigneeIdOrUsername))
+            // Track additional field updates
+            if (!string.IsNullOrEmpty(options.Title))
+            {
+                actions.Add($"Title changed");
+            }
+
+            if (options.DoneRatio.HasValue)
+            {
+                actions.Add($"Progress set to {options.DoneRatio.Value}%");
+            }
+
+            if (!string.IsNullOrEmpty(description))
+            {
+                actions.Add("Description updated");
+            }
+
+            // Update issue attributes if any are provided
+            if (!string.IsNullOrEmpty(options.Title) || !string.IsNullOrEmpty(statusIdOrName) ||
+                options.DoneRatio.HasValue || !string.IsNullOrEmpty(description) || !string.IsNullOrEmpty(assigneeIdOrUsername))
             {
                 await _redmineService.UpdateIssueAsync(
-                    issueId,
-                    null, // title
-                    null, // status
-                    assigneeIdOrUsername, // assignee
+                    options.IssueId,
+                    options.Title,
+                    statusIdOrName,
+                    assigneeIdOrUsername,
                     description,
-                    null, // doneRatio
+                    options.DoneRatio,
                     cancellationToken);
-
-                if (!string.IsNullOrEmpty(description))
-                {
-                    actions.Add("Description updated");
-                }
             }
 
             // Add comment if provided
-            if (!string.IsNullOrEmpty(message))
+            if (!string.IsNullOrEmpty(options.Message))
             {
                 // Check if the provided message is empty or whitespace
-                if (string.IsNullOrWhiteSpace(message))
+                if (string.IsNullOrWhiteSpace(options.Message))
                 {
                     AnsiConsole.MarkupLine("[yellow]Comment cancelled: No text entered[/]");
                     return 1;
                 }
 
-                await _redmineService.AddCommentAsync(issueId, message.Trim(), cancellationToken);
+                await _redmineService.AddCommentAsync(options.IssueId, options.Message.Trim(), cancellationToken);
                 actions.Add("Comment added");
             }
 
             // Show success message with issue URL
-            await ShowSuccessMessageWithUrlAsync(issueId, string.Join(" and ", actions));
+            await ShowSuccessMessageWithUrlAsync(options.IssueId, string.Join(" and ", actions));
 
             return 0;
         }
         catch (RedmineApiException ex)
         {
-            _logger.LogError(ex, "API error while processing issue {IssueId}", issueId);
+            _logger.LogError(ex, "API error while processing issue {IssueId}", options.IssueId);
 
             if (ex.StatusCode == 404)
             {
-                AnsiConsole.MarkupLine($"[red]Error:[/] Issue #{issueId} not found.");
+                AnsiConsole.MarkupLine($"[red]Error:[/] Issue #{options.IssueId} not found.");
             }
             else
             {
@@ -1830,13 +1903,42 @@ public class IssueCommand
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while processing issue {IssueId}", issueId);
+            _logger.LogError(ex, "Unexpected error while processing issue {IssueId}", options.IssueId);
             AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
             return 1;
         }
     }
 
-    // Overload for backward compatibility (for existing tests)
+    /// <summary>
+    /// コメントを追加し、同時にチケットの属性を更新する（後方互換性のための古いシグネチャ）
+    /// </summary>
+    public async Task<int> CommentAsync(
+        int issueId,
+        string? message,
+        string? title,
+        string? status,
+        int? doneRatio,
+        string? body,
+        string? bodyFile,
+        string? assignee,
+        CancellationToken cancellationToken)
+    {
+        var options = new IssueCommentOptions
+        {
+            IssueId = issueId,
+            Message = message,
+            Title = title,
+            Status = status,
+            DoneRatio = doneRatio,
+            Description = body,
+            DescriptionFile = bodyFile,
+            Assignee = assignee
+        };
+
+        return await CommentAsync(options, cancellationToken);
+    }
+
+    // Overload for backward compatibility (for existing tests with minimum parameters)
     public async Task<int> CommentAsync(int issueId, string? message, CancellationToken cancellationToken)
     {
         // If message is null, this will handle the editor opening scenario
@@ -1851,7 +1953,13 @@ public class IssueCommand
             message = commentText;
         }
 
-        return await CommentAsync(issueId, message, null, null, null, cancellationToken);
+        var options = new IssueCommentOptions
+        {
+            IssueId = issueId,
+            Message = message
+        };
+
+        return await CommentAsync(options, cancellationToken);
     }
 
     private async Task<string> OpenEditorForCommentAsync()

@@ -187,7 +187,7 @@ public class IssueCommentCommandTests
         _configService.GetActiveProfileAsync().Returns(profile);
 
         // Act
-        var result = await _issueCommand.CommentAsync(issueId, null, body, null, null, CancellationToken.None);
+        var result = await _issueCommand.CommentAsync(issueId, null, null, null, null, body, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -219,7 +219,7 @@ public class IssueCommentCommandTests
         try
         {
             // Act
-            var result = await _issueCommand.CommentAsync(issueId, null, null, tempFile, null, CancellationToken.None);
+            var result = await _issueCommand.CommentAsync(issueId, null, null, null, null, null, tempFile, null, CancellationToken.None);
 
             // Assert
             result.Should().Be(0);
@@ -256,7 +256,7 @@ public class IssueCommentCommandTests
         _configService.GetActiveProfileAsync().Returns(profile);
 
         // Act
-        var result = await _issueCommand.CommentAsync(issueId, message, body, null, null, CancellationToken.None);
+        var result = await _issueCommand.CommentAsync(issueId, message, null, null, null, body, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -271,7 +271,7 @@ public class IssueCommentCommandTests
         const int issueId = 123;
 
         // Act
-        var result = await _issueCommand.CommentAsync(issueId, null, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.CommentAsync(issueId, null, null, null, null, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -287,7 +287,7 @@ public class IssueCommentCommandTests
         const string nonExistentFile = "/path/to/nonexistent/file.txt";
 
         // Act
-        var result = await _issueCommand.CommentAsync(issueId, null, null, nonExistentFile, null, CancellationToken.None);
+        var result = await _issueCommand.CommentAsync(issueId, null, null, null, null, null, nonExistentFile, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -321,7 +321,7 @@ public class IssueCommentCommandTests
         try
         {
             // Act
-            var result = await _issueCommand.CommentAsync(issueId, null, null, "-", null, CancellationToken.None);
+            var result = await _issueCommand.CommentAsync(issueId, null, null, null, null, null, "-", null, CancellationToken.None);
 
             // Assert
             result.Should().Be(0);
@@ -358,7 +358,7 @@ public class IssueCommentCommandTests
             .Returns(Task.FromResult(currentUser));
 
         // Act
-        var result = await _issueCommand.CommentAsync(issueId, message, null, null, assignee, CancellationToken.None);
+        var result = await _issueCommand.CommentAsync(issueId, message, null, null, null, null, null, assignee, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -382,7 +382,7 @@ public class IssueCommentCommandTests
         _configService.GetActiveProfileAsync().Returns(profile);
 
         // Act
-        var result = await _issueCommand.CommentAsync(issueId, message, null, null, assignee, CancellationToken.None);
+        var result = await _issueCommand.CommentAsync(issueId, message, null, null, null, null, null, assignee, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -412,7 +412,7 @@ public class IssueCommentCommandTests
             .Returns(Task.FromResult(users));
 
         // Act
-        var result = await _issueCommand.CommentAsync(issueId, null, null, null, assignee, CancellationToken.None);
+        var result = await _issueCommand.CommentAsync(issueId, null, null, null, null, null, null, assignee, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
