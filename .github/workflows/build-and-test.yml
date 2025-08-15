@@ -173,6 +173,89 @@ jobs:
         path: publish/${{ matrix.config.rid }}/${{ matrix.config.output }}
         retention-days: 30
 
+  build-extension:
+    name: Extension Build - ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      matrix:
+        config:
+          - name: "Windows x64"
+            os: windows-latest
+            rid: win-x64
+            output: redmine-example.exe
+          - name: "macOS x64"
+            os: macos-latest
+            rid: osx-x64
+            output: redmine-example
+          - name: "macOS ARM64"
+            os: macos-latest
+            rid: osx-arm64
+            output: redmine-example
+          - name: "Linux x64"
+            os: ubuntu-latest
+            rid: linux-x64
+            output: redmine-example
+          - name: "Linux ARM64"
+            os: ubuntu-24.04-arm
+            rid: linux-arm64
+            output: redmine-example
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Restore dependencies
+      run: dotnet restore RedmineCLI.Extension.Example/RedmineCLI.Extension.Example.csproj
+
+    - name: Publish Extension Native AOT
+      run: |
+        dotnet publish RedmineCLI.Extension.Example/RedmineCLI.Extension.Example.csproj -c Release -r ${{ matrix.config.rid }} -p:PublishAot=true -p:StripSymbols=true --self-contained -o publish/extension/${{ matrix.config.rid }}
+
+    - name: Check extension binary size (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        if [[ "$RUNNER_OS" == "macOS" ]]; then
+          BINARY_SIZE=$(stat -f%z "publish/extension/${{ matrix.config.rid }}/${{ matrix.config.output }}")
+        else
+          BINARY_SIZE=$(stat -c%s "publish/extension/${{ matrix.config.rid }}/${{ matrix.config.output }}")
+        fi
+        BINARY_SIZE_MB=$((BINARY_SIZE / 1024 / 1024))
+        echo "Extension binary size: ${BINARY_SIZE_MB}MB"
+
+    - name: Check extension binary size (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        $BinarySize = (Get-Item "publish/extension/${{ matrix.config.rid }}/${{ matrix.config.output }}").Length
+        $BinarySizeMB = [math]::Round($BinarySize / 1024 / 1024, 2)
+        Write-Output "Extension binary size: ${BinarySizeMB}MB"
+
+    - name: Test extension execution
+      # Skip execution test for cross-compiled architectures
+      if: |
+        !(matrix.config.os == 'ubuntu-latest' && matrix.config.rid == 'linux-arm64') &&
+        !(matrix.config.os == 'macos-latest' && matrix.config.rid == 'osx-arm64' && runner.arch != 'ARM64')
+      run: publish/extension/${{ matrix.config.rid }}/${{ matrix.config.output }} info
+
+    - name: Upload extension artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: redmine-example-${{ matrix.config.rid }}
+        path: publish/extension/${{ matrix.config.rid }}/${{ matrix.config.output }}
+        retention-days: 30
+
   benchmark:
     name: Performance Benchmark
     runs-on: ubuntu-latest
