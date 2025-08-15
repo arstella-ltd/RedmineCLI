@@ -27,7 +27,7 @@ public class ExtensionExecutorTests
     }
 
     [Fact]
-    public async Task Execute_Should_RunExtension_When_ExtensionExists()
+    public void Execute_Should_RunExtension_When_ExtensionExists()
     {
         // Arrange
         const string extensionName = "test";
@@ -66,7 +66,6 @@ public class ExtensionExecutorTests
     public async Task Execute_Should_PassEnvironmentVariables_When_ProfileActive()
     {
         // Arrange
-        const string extensionName = "test";
         string[] args = ["list"];
         var config = new RedmineCLI.Models.Config
         {
@@ -114,12 +113,11 @@ public class ExtensionExecutorTests
     }
 
     [Fact]
-    public async Task Execute_Should_PropagateExitCode_When_ExtensionFails()
+    public void Execute_Should_PropagateExitCode_When_ExtensionFails()
     {
         // Arrange
         const string extensionName = "failing";
         string[] args = ["error"];
-        const int expectedExitCode = 42;
 
         var config = new RedmineCLI.Models.Config
         {
