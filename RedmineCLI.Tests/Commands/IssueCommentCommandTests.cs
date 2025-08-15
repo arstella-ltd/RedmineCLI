@@ -187,7 +187,7 @@ public class IssueCommentCommandTests
         _configService.GetActiveProfileAsync().Returns(profile);
 
         // Act
-        var result = await _issueCommand.CommentAsync(issueId, null, body, null, CancellationToken.None);
+        var result = await _issueCommand.CommentAsync(issueId, null, body, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -219,7 +219,7 @@ public class IssueCommentCommandTests
         try
         {
             // Act
-            var result = await _issueCommand.CommentAsync(issueId, null, null, tempFile, CancellationToken.None);
+            var result = await _issueCommand.CommentAsync(issueId, null, null, tempFile, null, CancellationToken.None);
 
             // Assert
             result.Should().Be(0);
@@ -256,7 +256,7 @@ public class IssueCommentCommandTests
         _configService.GetActiveProfileAsync().Returns(profile);
 
         // Act
-        var result = await _issueCommand.CommentAsync(issueId, message, body, null, CancellationToken.None);
+        var result = await _issueCommand.CommentAsync(issueId, message, body, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(0);
@@ -271,7 +271,7 @@ public class IssueCommentCommandTests
         const int issueId = 123;
 
         // Act
-        var result = await _issueCommand.CommentAsync(issueId, null, null, null, CancellationToken.None);
+        var result = await _issueCommand.CommentAsync(issueId, null, null, null, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -287,7 +287,7 @@ public class IssueCommentCommandTests
         const string nonExistentFile = "/path/to/nonexistent/file.txt";
 
         // Act
-        var result = await _issueCommand.CommentAsync(issueId, null, null, nonExistentFile, CancellationToken.None);
+        var result = await _issueCommand.CommentAsync(issueId, null, null, nonExistentFile, null, CancellationToken.None);
 
         // Assert
         result.Should().Be(1);
@@ -321,7 +321,7 @@ public class IssueCommentCommandTests
         try
         {
             // Act
-            var result = await _issueCommand.CommentAsync(issueId, null, null, "-", CancellationToken.None);
+            var result = await _issueCommand.CommentAsync(issueId, null, null, "-", null, CancellationToken.None);
 
             // Assert
             result.Should().Be(0);
@@ -332,6 +332,92 @@ public class IssueCommentCommandTests
             // Restore original stdin
             Console.SetIn(originalInput);
         }
+    }
+
+    #endregion
+
+    #region Assignee Tests
+
+    [Fact]
+    public async Task Comment_Should_UpdateAssigneeAndAddComment_When_AddAssigneeProvided()
+    {
+        // Arrange
+        const int issueId = 123;
+        const string message = "Adding new assignee";
+        const string assignee = "@me";
+        var profile = new Profile
+        {
+            Name = "Test",
+            Url = "https://redmine.example.com",
+            ApiKey = "test-key"
+        };
+        _configService.GetActiveProfileAsync().Returns(profile);
+
+        var currentUser = new User { Id = 1, Login = "johndoe", FirstName = "John", LastName = "Doe" };
+        _redmineService.GetCurrentUserAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(currentUser));
+
+        // Act
+        var result = await _issueCommand.CommentAsync(issueId, message, null, null, assignee, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).UpdateIssueAsync(issueId, null, null, assignee, null, null, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).AddCommentAsync(issueId, message, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Comment_Should_RemoveAssignee_When_RemoveAssigneeProvided()
+    {
+        // Arrange
+        const int issueId = 123;
+        const string message = "Removing assignee";
+        const string assignee = "__REMOVE__";
+        var profile = new Profile
+        {
+            Name = "Test",
+            Url = "https://redmine.example.com",
+            ApiKey = "test-key"
+        };
+        _configService.GetActiveProfileAsync().Returns(profile);
+
+        // Act
+        var result = await _issueCommand.CommentAsync(issueId, message, null, null, assignee, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).UpdateIssueAsync(issueId, null, null, "__REMOVE__", null, null, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).AddCommentAsync(issueId, message, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Comment_Should_OnlyUpdateAssignee_When_NoCommentProvided()
+    {
+        // Arrange
+        const int issueId = 123;
+        const string assignee = "newuser";
+        var profile = new Profile
+        {
+            Name = "Test",
+            Url = "https://redmine.example.com",
+            ApiKey = "test-key"
+        };
+        _configService.GetActiveProfileAsync().Returns(profile);
+
+        var users = new List<User>
+        {
+            new User { Id = 2, Login = "newuser", Name = "New User" }
+        };
+        _redmineService.GetUsersAsync(null, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(users));
+
+        // Act
+        var result = await _issueCommand.CommentAsync(issueId, null, null, null, assignee, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).UpdateIssueAsync(issueId, null, null, assignee, null, null, Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().AddCommentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     #endregion

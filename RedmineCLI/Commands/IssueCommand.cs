@@ -254,11 +254,15 @@ public class IssueCommand
         commentBodyOption.Aliases.Add("-b");
         var commentBodyFileOption = new Option<string?>("--body-file") { Description = "Read description from file (use '-' for stdin)" };
         commentBodyFileOption.Aliases.Add("-F");
+        var commentAddAssigneeOption = new Option<string?>("--add-assignee") { Description = "New assignee (username, ID, or @me)" };
+        var commentRemoveAssigneeOption = new Option<bool>("--remove-assignee") { Description = "Remove assignee" };
 
         commentCommand.Add(commentIdArgument);
         commentCommand.Add(commentMessageOption);
         commentCommand.Add(commentBodyOption);
         commentCommand.Add(commentBodyFileOption);
+        commentCommand.Add(commentAddAssigneeOption);
+        commentCommand.Add(commentRemoveAssigneeOption);
 
         commentCommand.SetAction(async (parseResult) =>
         {
@@ -266,8 +270,25 @@ public class IssueCommand
             var message = parseResult.GetValue(commentMessageOption);
             var body = parseResult.GetValue(commentBodyOption);
             var bodyFile = parseResult.GetValue(commentBodyFileOption);
+            var addAssignee = parseResult.GetValue(commentAddAssigneeOption);
+            var removeAssignee = parseResult.GetValue(commentRemoveAssigneeOption);
 
-            Environment.ExitCode = await issueCommand.CommentAsync(id, message, body, bodyFile, CancellationToken.None);
+            // Validate that both assignee options are not set
+            if (!string.IsNullOrEmpty(addAssignee) && removeAssignee)
+            {
+                AnsiConsole.MarkupLine("[red]Error:[/] Cannot use both --add-assignee and --remove-assignee at the same time");
+                Environment.ExitCode = 1;
+                return;
+            }
+
+            // Handle assignee parameter
+            string? assignee = addAssignee;
+            if (removeAssignee)
+            {
+                assignee = "__REMOVE__";
+            }
+
+            Environment.ExitCode = await issueCommand.CommentAsync(id, message, body, bodyFile, assignee, CancellationToken.None);
         });
 
         command.Add(commentCommand);
@@ -1689,17 +1710,17 @@ public class IssueCommand
         }
     }
 
-    public async Task<int> CommentAsync(int issueId, string? message, string? body, string? bodyFile, CancellationToken cancellationToken)
+    public async Task<int> CommentAsync(int issueId, string? message, string? body, string? bodyFile, string? assignee, CancellationToken cancellationToken)
     {
         try
         {
-            _logger.LogDebug("Processing issue {IssueId} - Message: {HasMessage}, Body: {HasBody}, BodyFile: {BodyFile}",
-                issueId, !string.IsNullOrEmpty(message), !string.IsNullOrEmpty(body), bodyFile);
+            _logger.LogDebug("Processing issue {IssueId} - Message: {HasMessage}, Body: {HasBody}, BodyFile: {BodyFile}, Assignee: {Assignee}",
+                issueId, !string.IsNullOrEmpty(message), !string.IsNullOrEmpty(body), bodyFile, assignee);
 
             // Check if at least one action is provided
-            if (string.IsNullOrEmpty(message) && string.IsNullOrEmpty(body) && string.IsNullOrEmpty(bodyFile))
+            if (string.IsNullOrEmpty(message) && string.IsNullOrEmpty(body) && string.IsNullOrEmpty(bodyFile) && string.IsNullOrEmpty(assignee))
             {
-                AnsiConsole.MarkupLine("[red]Error:[/] At least one of --message, --body, or --body-file must be provided");
+                AnsiConsole.MarkupLine("[red]Error:[/] At least one of --message, --body, --body-file, --add-assignee, or --remove-assignee must be provided");
                 return 1;
             }
 
@@ -1739,18 +1760,39 @@ public class IssueCommand
             // Track what we're doing for success message
             var actions = new List<string>();
 
-            // Update description if provided
-            if (!string.IsNullOrEmpty(description))
+            // Handle assignee change
+            string? assigneeIdOrUsername = null;
+            if (!string.IsNullOrEmpty(assignee))
+            {
+                assigneeIdOrUsername = assignee; // Let RedmineService handle the resolution
+
+                if (assignee == "__REMOVE__")
+                {
+                    actions.Add("Assignee removed");
+                }
+                else
+                {
+                    var resolvedAssignee = await ResolveAssigneeAsync(assignee, cancellationToken);
+                    actions.Add($"Assignee changed to {resolvedAssignee ?? assignee}");
+                }
+            }
+
+            // Update description and/or assignee if provided
+            if (!string.IsNullOrEmpty(description) || !string.IsNullOrEmpty(assigneeIdOrUsername))
             {
                 await _redmineService.UpdateIssueAsync(
                     issueId,
                     null, // title
                     null, // status
-                    null, // assignee
+                    assigneeIdOrUsername, // assignee
                     description,
                     null, // doneRatio
                     cancellationToken);
-                actions.Add("Description updated");
+
+                if (!string.IsNullOrEmpty(description))
+                {
+                    actions.Add("Description updated");
+                }
             }
 
             // Add comment if provided
@@ -1809,7 +1851,7 @@ public class IssueCommand
             message = commentText;
         }
 
-        return await CommentAsync(issueId, message, null, null, cancellationToken);
+        return await CommentAsync(issueId, message, null, null, null, cancellationToken);
     }
 
     private async Task<string> OpenEditorForCommentAsync()
