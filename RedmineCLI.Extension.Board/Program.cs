@@ -206,126 +206,74 @@ public class Program
 
         try
         {
-            // Common board plugin URLs to try
-            var boardUrls = new[]
+            // Project filter is required
+            if (string.IsNullOrEmpty(projectFilter))
             {
-                $"{redmineUrl}/boards",
-                $"{redmineUrl}/agile/boards",
-                $"{redmineUrl}/rb/taskboards",
-                $"{redmineUrl}/projects/{projectFilter}/boards" // If project specified
-            };
-
-            List<Models.Board> allBoards = new List<Models.Board>();
-            bool foundBoards = false;
-
-            foreach (var boardUrl in boardUrls)
-            {
-                if (!string.IsNullOrEmpty(projectFilter) && !boardUrl.Contains(projectFilter))
-                    continue;
-
-                _logger?.LogDebug("Trying board URL: {Url}", boardUrl);
-
-                try
-                {
-                    var response = await httpClient.GetAsync(boardUrl);
-                    _logger?.LogDebug("Response status for {Url}: {Status}", boardUrl, response.StatusCode);
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        var content = await response.Content.ReadAsStringAsync();
-                        _logger?.LogDebug("Response content length: {Length} bytes", content.Length);
-
-                        // Parse boards from HTML
-                        var boards = ParseBoardsFromHtml(content, redmineUrl);
-                        if (boards.Any())
-                        {
-                            _logger?.LogInformation("Found {Count} boards at {Url}", boards.Count, boardUrl);
-                            allBoards.AddRange(boards);
-                            foundBoards = true;
-                        }
-                        else
-                        {
-                            _logger?.LogDebug("No boards found in response from {Url}", boardUrl);
-                        }
-                    }
-                    else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-                    {
-                        _logger?.LogError("Session expired or invalid");
-                        Console.Error.WriteLine("Error: Session expired. Please run 'redmine auth login' again.");
-                        Environment.Exit(1);
-                        return;
-                    }
-                }
-                catch (HttpRequestException ex)
-                {
-                    _logger?.LogDebug("Failed to fetch {Url}: {Message}", boardUrl, ex.Message);
-                }
+                _logger?.LogError("Project filter is required");
+                Console.Error.WriteLine("Error: Project identifier is required. Please specify --project option.");
+                Console.Error.WriteLine("Usage: redmine-board list --project <project-identifier>");
+                Environment.Exit(1);
+                return;
             }
 
-            // Also try to find boards in project pages
-            if (!foundBoards)
+            List<Models.Board> allBoards = new List<Models.Board>();
+
+            // Check board for the specified project
+            _logger?.LogDebug("Checking board for specific project: {Project}", projectFilter);
+
+            var boardUrl = $"{redmineUrl}/projects/{projectFilter}/boards";
+            _logger?.LogDebug("Checking board URL: {Url}", boardUrl);
+
+            try
             {
-                _logger?.LogDebug("No boards found at standard URLs, trying project listing");
+                var response = await httpClient.GetAsync(boardUrl);
+                _logger?.LogDebug("Response status for {Url}: {Status}", boardUrl, response.StatusCode);
 
-                var projectsUrl = $"{redmineUrl}/projects";
-                var projectsResponse = await httpClient.GetAsync(projectsUrl);
-
-                if (projectsResponse.IsSuccessStatusCode)
+                if (response.IsSuccessStatusCode)
                 {
-                    var projectsContent = await projectsResponse.Content.ReadAsStringAsync();
-                    var projects = ParseProjectsFromHtml(projectsContent);
+                    var content = await response.Content.ReadAsStringAsync();
+                    _logger?.LogDebug("Response content length: {Length} bytes", content.Length);
 
-                    _logger?.LogDebug("Found {Count} projects", projects.Count);
+                    // Parse boards from HTML
+                    var boards = ParseBoardsFromHtml(content, redmineUrl);
 
-                    foreach (var project in projects)
+                    foreach (var board in boards)
                     {
-                        if (!string.IsNullOrEmpty(projectFilter) &&
-                            !project.Item1.Contains(projectFilter, StringComparison.OrdinalIgnoreCase) &&
-                            !project.Item2.Contains(projectFilter, StringComparison.OrdinalIgnoreCase))
-                            continue;
+                        board.ProjectName = projectFilter;
+                        board.ProjectId = ParseProjectId(projectFilter);
+                    }
 
-                        // Try various board URLs for each project
-                        var projectBoardUrls = new[]
-                        {
-                            $"{redmineUrl}/projects/{project.Item2}/boards",
-                            $"{redmineUrl}/projects/{project.Item2}/agile/boards",
-                            $"{redmineUrl}/projects/{project.Item2}/rb/taskboards"
-                        };
-
-                        foreach (var url in projectBoardUrls)
-                        {
-                            _logger?.LogDebug("Trying project board URL: {Url}", url);
-
-                            try
-                            {
-                                var resp = await httpClient.GetAsync(url);
-                                if (resp.IsSuccessStatusCode)
-                                {
-                                    var cont = await resp.Content.ReadAsStringAsync();
-                                    var projectBoards = ParseBoardsFromHtml(cont, redmineUrl);
-
-                                    foreach (var board in projectBoards)
-                                    {
-                                        board.ProjectName = project.Item1;
-                                        board.ProjectId = ParseProjectId(project.Item2);
-                                    }
-
-                                    if (projectBoards.Any())
-                                    {
-                                        _logger?.LogInformation("Found {Count} boards in project {Project}",
-                                            projectBoards.Count, project.Item1);
-                                        allBoards.AddRange(projectBoards);
-                                        foundBoards = true;
-                                    }
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger?.LogDebug("Failed to fetch {Url}: {Message}", url, ex.Message);
-                            }
-                        }
+                    if (boards.Any())
+                    {
+                        _logger?.LogInformation("Found {Count} boards in project {Project}",
+                            boards.Count, projectFilter);
+                        allBoards.AddRange(boards);
+                    }
+                    else
+                    {
+                        _logger?.LogDebug("No boards found in project {Project}", projectFilter);
                     }
                 }
+                else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    _logger?.LogDebug("Boards not available for project {Project}", projectFilter);
+                    Console.Error.WriteLine($"Error: No boards found for project '{projectFilter}'.");
+                    Console.Error.WriteLine("Note: Board functionality requires a board plugin to be installed on the Redmine server.");
+                }
+                else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    _logger?.LogError("Session expired or invalid");
+                    Console.Error.WriteLine("Error: Session expired. Please run 'redmine auth login --save-password' again.");
+                    Environment.Exit(1);
+                    return;
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger?.LogError(ex, "Failed to fetch board URL");
+                Console.Error.WriteLine($"Error: Failed to connect to Redmine server: {ex.Message}");
+                Environment.Exit(1);
+                return;
             }
 
             // Display results
@@ -482,35 +430,6 @@ public class Program
         return boards;
     }
 
-    private static List<(string, string)> ParseProjectsFromHtml(string html)
-    {
-        var projects = new List<(string name, string identifier)>();
-
-        try
-        {
-            // Pattern to find project links
-            var projectPattern = @"<a[^>]+href=[""']/projects/([^/""']+)[""'][^>]*>([^<]+)</a>";
-            var matches = Regex.Matches(html, projectPattern, RegexOptions.IgnoreCase);
-
-            foreach (Match match in matches)
-            {
-                var identifier = match.Groups[1].Value;
-                var name = System.Net.WebUtility.HtmlDecode(match.Groups[2].Value.Trim());
-
-                if (!projects.Any(p => p.Item2 == identifier))
-                {
-                    projects.Add((name, identifier));
-                    _logger?.LogDebug("Found project: {Name} ({Id})", name, identifier);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogError(ex, "Error parsing projects from HTML");
-        }
-
-        return projects;
-    }
 
     private static int? ParseProjectId(string identifier)
     {

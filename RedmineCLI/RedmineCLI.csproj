@@ -52,6 +52,11 @@
     
   </ItemGroup>
 
+  <!-- Project References -->
+  <ItemGroup>
+    <ProjectReference Include="../RedmineCLI.Common/RedmineCLI.Common.csproj" />
+  </ItemGroup>
+
   <!-- AOT warning suppressions for known safe usages -->
   <ItemGroup>
     <TrimmerRootAssembly Include="redmine" />

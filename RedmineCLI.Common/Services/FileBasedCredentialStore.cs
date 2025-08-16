@@ -34,7 +34,7 @@ public class FileBasedCredentialStore : CredentialStore
         {
             var encryptedJson = await File.ReadAllTextAsync(filePath);
             var json = DecryptString(encryptedJson);
-            var credential = JsonSerializer.Deserialize<StoredCredential>(json);
+            var credential = JsonSerializer.Deserialize(json, CredentialJsonContext.Default.StoredCredential);
             return credential;
         }
         catch
@@ -48,7 +48,7 @@ public class FileBasedCredentialStore : CredentialStore
     public override async Task SaveCredentialAsync(string serverUrl, StoredCredential credential)
     {
         var filePath = GetCredentialFilePath(serverUrl);
-        var json = JsonSerializer.Serialize(credential);
+        var json = JsonSerializer.Serialize(credential, CredentialJsonContext.Default.StoredCredential);
         var encryptedJson = EncryptString(json);
 
         await File.WriteAllTextAsync(filePath, encryptedJson);

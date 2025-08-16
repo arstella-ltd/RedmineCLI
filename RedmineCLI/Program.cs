@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.Linq;
 
@@ -20,6 +21,7 @@ namespace RedmineCLI;
 
 public class Program
 {
+    [RequiresUnreferencedCode("Calls authentication methods that may use JSON serialization")]
     public static async Task<int> Main(string[] args)
     {
         // Create service collection and configure DI
