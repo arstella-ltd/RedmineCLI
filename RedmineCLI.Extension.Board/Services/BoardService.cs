@@ -31,7 +31,7 @@ public class BoardService : IBoardService
     public async Task ListBoardsAsync(string? projectFilter, string? urlOverride)
     {
         _logger.LogInformation("Starting board listing");
-        _logger.LogDebug("Project filter: {Filter}", projectFilter ?? "(none)");
+        // _logger.LogDebug("Project filter: {Filter}", projectFilter ?? "(none)");
 
         // Get authentication from OS keychain
         var (redmineUrl, sessionCookie) = await _authenticationService.GetAuthenticationAsync(urlOverride);
@@ -45,7 +45,7 @@ public class BoardService : IBoardService
             return;
         }
 
-        _logger.LogDebug("Using session cookie for {Url}", redmineUrl);
+        // _logger.LogDebug("Using session cookie for {Url}", redmineUrl);
 
         using var httpClient = new HttpClient();
         httpClient.DefaultRequestHeaders.Add("User-Agent", "RedmineCLI-Board/1.0");
@@ -66,28 +66,28 @@ public class BoardService : IBoardService
             List<Models.Board> allBoards = new List<Models.Board>();
 
             // Check board for the specified project
-            _logger.LogDebug("Checking board for specific project: {Project}", projectFilter);
+            // _logger.LogDebug("Checking board for specific project: {Project}", projectFilter);
 
             var boardUrl = $"{redmineUrl}/projects/{projectFilter}/boards";
-            _logger.LogDebug("Checking board URL: {Url}", boardUrl);
+            // _logger.LogDebug("Checking board URL: {Url}", boardUrl);
 
             try
             {
                 var response = await httpClient.GetAsync(boardUrl);
-                _logger.LogDebug("Response status for {Url}: {Status}", boardUrl, response.StatusCode);
+                // _logger.LogDebug("Response status for {Url}: {Status}", boardUrl, response.StatusCode);
 
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    _logger.LogDebug("Response content length: {Length} bytes", content.Length);
+                    // _logger.LogDebug("Response content length: {Length} bytes", content.Length);
 
-                    // デバッグ用：HTMLをファイルに保存
-                    if (_logger.IsEnabled(LogLevel.Debug))
-                    {
-                        var debugPath = Path.Combine(Path.GetTempPath(), "redmine_boards_debug.html");
-                        await File.WriteAllTextAsync(debugPath, content);
-                        _logger.LogDebug("HTML saved to: {Path}", debugPath);
-                    }
+                    // // デバッグ用：HTMLをファイルに保存
+                    // if (_logger.IsEnabled(LogLevel.Debug))
+                    // {
+                    //     var debugPath = Path.Combine(Path.GetTempPath(), "redmine_boards_debug.html");
+                    //     await File.WriteAllTextAsync(debugPath, content);
+                    //     _logger.LogDebug("HTML saved to: {Path}", debugPath);
+                    // }
 
                     // Parse boards from HTML
                     var boards = _htmlParsingService.ParseBoardsFromHtml(content, redmineUrl);
@@ -106,12 +106,12 @@ public class BoardService : IBoardService
                     }
                     else
                     {
-                        _logger.LogDebug("No boards found in project {Project}", projectFilter);
+                        // _logger.LogDebug("No boards found in project {Project}", projectFilter);
                     }
                 }
                 else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
-                    _logger.LogDebug("Boards not available for project {Project}", projectFilter);
+                    // _logger.LogDebug("Boards not available for project {Project}", projectFilter);
                     AnsiConsole.MarkupLine($"[yellow]No boards found for project '[cyan]{projectFilter}[/]'.[/]");
                     AnsiConsole.MarkupLine("[dim]Note: Board functionality requires a board plugin to be installed on the Redmine server.[/]");
                 }
@@ -162,13 +162,13 @@ public class BoardService : IBoardService
                 // Display table
                 AnsiConsole.Write(table);
 
-                // Save boards to JSON for debugging
-                if (_logger.IsEnabled(LogLevel.Debug))
-                {
-                    var context = new BoardJsonContext();
-                    var json = JsonSerializer.Serialize(allBoards, typeof(List<Models.Board>), context);
-                    _logger.LogDebug("Boards JSON: {Json}", json);
-                }
+                // // Save boards to JSON for debugging
+                // if (_logger.IsEnabled(LogLevel.Debug))
+                // {
+                //     var context = new BoardJsonContext();
+                //     var json = JsonSerializer.Serialize(allBoards, typeof(List<Models.Board>), context);
+                //     _logger.LogDebug("Boards JSON: {Json}", json);
+                // }
             }
             else
             {
@@ -263,11 +263,11 @@ public class BoardService : IBoardService
         // Build the URL for board topics (always use /boards/{boardId}/topics/{topicId} format)
         var topicUrl = $"{auth.BaseUrl}/boards/{boardId}/topics/{topicId}";
 
-        _logger.LogDebug("Fetching topic from URL: {Url}", topicUrl);
-        if (!string.IsNullOrEmpty(projectName))
-        {
-            _logger.LogDebug("Project name '{Project}' was provided but not used in URL", projectName);
-        }
+        // _logger.LogDebug("Fetching topic from URL: {Url}", topicUrl);
+        // if (!string.IsNullOrEmpty(projectName))
+        // {
+        //     _logger.LogDebug("Project name '{Project}' was provided but not used in URL", projectName);
+        // }
 
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Add("Cookie", auth.SessionCookie);

@@ -30,7 +30,7 @@ public class InfoCommand
 
     private void DisplayInfo()
     {
-        _logger.LogDebug("Displaying extension information");
+        // _logger.LogDebug("Displaying extension information");
 
         Console.WriteLine("RedmineCLI Board Extension v1.0.0");
         Console.WriteLine();
@@ -65,12 +65,12 @@ public class InfoCommand
                     value = value.Length > 4 ? value.Substring(0, 4) + "..." : "***";
                 }
                 Console.WriteLine($"  {envVar}: {value}");
-                _logger.LogDebug("Environment variable {Name}: {Value}", envVar, value);
+                // _logger.LogDebug("Environment variable {Name}: {Value}", envVar, value);
             }
             else
             {
                 Console.WriteLine($"  {envVar}: (not set)");
-                _logger.LogDebug("Environment variable {Name}: not set", envVar);
+                // _logger.LogDebug("Environment variable {Name}: not set", envVar);
             }
         }
     }

@@ -23,7 +23,7 @@ public class HtmlParsingService : IHtmlParsingService
     public List<Models.Board> ParseBoardsFromHtml(string html, string baseUrl)
     {
         var boards = new List<Models.Board>();
-        _logger.LogDebug("Parsing HTML for boards (content length: {Length})", html.Length);
+        // _logger.LogDebug("Parsing HTML for boards (content length: {Length})", html.Length);
 
         try
         {
@@ -34,11 +34,11 @@ public class HtmlParsingService : IHtmlParsingService
             var boardRows = doc.DocumentNode.SelectNodes("//tr[@class='board']");
             if (boardRows == null)
             {
-                _logger.LogDebug("No board rows found in HTML");
+                // _logger.LogDebug("No board rows found in HTML");
                 return boards;
             }
 
-            _logger.LogDebug("Found {Count} board table rows", boardRows.Count);
+            // _logger.LogDebug("Found {Count} board table rows", boardRows.Count);
 
             foreach (var row in boardRows)
             {
@@ -46,8 +46,8 @@ public class HtmlParsingService : IHtmlParsingService
                 if (board != null)
                 {
                     boards.Add(board);
-                    _logger.LogDebug("Found board: {Name} (ID: {Id}, Topics: {Topics}, Messages: {Messages})",
-                        board.Name, board.Id, board.ColumnCount, board.CardCount);
+                    // _logger.LogDebug("Found board: {Name} (ID: {Id}, Topics: {Topics}, Messages: {Messages})",
+                    //     board.Name, board.Id, board.ColumnCount, board.CardCount);
                 }
             }
         }
@@ -56,7 +56,7 @@ public class HtmlParsingService : IHtmlParsingService
             _logger.LogError(ex, "Error parsing boards from HTML");
         }
 
-        _logger.LogDebug("Parsed {Count} boards from HTML", boards.Count);
+        // _logger.LogDebug("Parsed {Count} boards from HTML", boards.Count);
         return boards;
     }
 
@@ -66,19 +66,19 @@ public class HtmlParsingService : IHtmlParsingService
         var doc = new HtmlDocument();
         doc.LoadHtml(html);
 
-        // デバッグ用：HTMLをファイルに保存
-        if (_logger.IsEnabled(LogLevel.Debug))
-        {
-            var debugPath = Path.Combine(Path.GetTempPath(), "redmine_topics_debug.html");
-            File.WriteAllText(debugPath, html);
-            _logger.LogDebug("Topics HTML saved to: {Path}", debugPath);
-        }
+        // // デバッグ用：HTMLをファイルに保存
+        // if (_logger.IsEnabled(LogLevel.Debug))
+        // {
+        //     var debugPath = Path.Combine(Path.GetTempPath(), "redmine_topics_debug.html");
+        //     File.WriteAllText(debugPath, html);
+        //     _logger.LogDebug("Topics HTML saved to: {Path}", debugPath);
+        // }
 
         // フォーラムのトピックテーブルを探す
         var topicTable = doc.DocumentNode.SelectSingleNode("//table[@class='list messages']");
         if (topicTable == null)
         {
-            _logger.LogDebug("No topic table found with class 'list messages', trying alternative selectors");
+            // _logger.LogDebug("No topic table found with class 'list messages', trying alternative selectors");
 
             // Alternative selectors for different Redmine themes
             topicTable = doc.DocumentNode.SelectSingleNode("//table[contains(@class,'messages')]") ??
@@ -87,18 +87,18 @@ public class HtmlParsingService : IHtmlParsingService
 
         if (topicTable == null)
         {
-            _logger.LogDebug("No topic table found in HTML");
+            // _logger.LogDebug("No topic table found in HTML");
             return topics;
         }
 
         var rows = topicTable.SelectNodes(".//tbody/tr") ?? topicTable.SelectNodes(".//tr[position()>1]");
         if (rows == null)
         {
-            _logger.LogDebug("No topic rows found in table");
+            // _logger.LogDebug("No topic rows found in table");
             return topics;
         }
 
-        _logger.LogDebug("Found {Count} topic rows", rows.Count);
+        // _logger.LogDebug("Found {Count} topic rows", rows.Count);
 
         foreach (var row in rows)
         {
@@ -106,8 +106,8 @@ public class HtmlParsingService : IHtmlParsingService
             if (topic != null)
             {
                 topics.Add(topic);
-                _logger.LogDebug("Parsed topic: ID={Id}, Title={Title}, Author={Author}, Replies={Replies}",
-                    topic.Id, topic.Title, topic.Author, topic.Replies);
+                // _logger.LogDebug("Parsed topic: ID={Id}, Title={Title}, Author={Author}, Replies={Replies}",
+                //     topic.Id, topic.Title, topic.Author, topic.Replies);
             }
         }
 
@@ -131,7 +131,7 @@ public class HtmlParsingService : IHtmlParsingService
             if (idMatch.Success)
             {
                 topicDetail.Id = int.Parse(idMatch.Groups[1].Value);
-                _logger.LogDebug("Topic ID extracted from message div: {Id}", topicDetail.Id);
+                // _logger.LogDebug("Topic ID extracted from message div: {Id}", topicDetail.Id);
             }
         }
 
@@ -145,7 +145,7 @@ public class HtmlParsingService : IHtmlParsingService
                 if (idMatch.Success)
                 {
                     topicDetail.Id = int.Parse(idMatch.Groups[1].Success ? idMatch.Groups[1].Value : idMatch.Groups[2].Value);
-                    _logger.LogDebug("Topic ID extracted from URL: {Id}", topicDetail.Id);
+                    // _logger.LogDebug("Topic ID extracted from URL: {Id}", topicDetail.Id);
                 }
             }
         }
@@ -172,12 +172,12 @@ public class HtmlParsingService : IHtmlParsingService
                 if (userLink != null)
                 {
                     topicDetail.Author = userLink.InnerText.Trim();
-                    _logger.LogDebug("Topic author extracted from header: {Author}", topicDetail.Author);
+                    // _logger.LogDebug("Topic author extracted from header: {Author}", topicDetail.Author);
                 }
 
                 // 日付を取得 - ヘッダーテキストから抽出
                 var headerText = headerNode.InnerText;
-                _logger.LogDebug("Header text for date extraction: {Text}", headerText);
+                // _logger.LogDebug("Header text for date extraction: {Text}", headerText);
 
                 // 相対時間のパターンを先に試す（より具体的なため）
                 var relativePatterns = new[]
@@ -201,7 +201,7 @@ public class HtmlParsingService : IHtmlParsingService
                                                    unit.Contains("日") || unit.Contains("day") ? DateTime.Now.AddDays(-amount) :
                                                    unit.Contains("時") || unit.Contains("hour") ? DateTime.Now.AddHours(-amount) :
                                                    DateTime.Now.AddMinutes(-amount);
-                            _logger.LogDebug("Relative date extracted: {Amount} {Unit} -> {Date}", amount, unit, topicDetail.CreatedAt);
+                            // _logger.LogDebug("Relative date extracted: {Amount} {Unit} -> {Date}", amount, unit, topicDetail.CreatedAt);
                             dateFound = true;
                             break;
                         }
@@ -224,7 +224,7 @@ public class HtmlParsingService : IHtmlParsingService
                         if (match.Success && DateTime.TryParse(match.Groups[1].Value, out var createdAt))
                         {
                             topicDetail.CreatedAt = createdAt;
-                            _logger.LogDebug("Absolute date extracted: {Date}", createdAt);
+                            // _logger.LogDebug("Absolute date extracted: {Date}", createdAt);
                             dateFound = true;
                             break;
                         }
@@ -241,14 +241,14 @@ public class HtmlParsingService : IHtmlParsingService
                 if (authorNode != null)
                 {
                     var authorText = authorNode.InnerText.Trim();
-                    _logger.LogDebug("Author node text (fallback): {Text}", authorText);
+                    // _logger.LogDebug("Author node text (fallback): {Text}", authorText);
 
                     // Try to find a link with the author name
                     var authorLink = authorNode.SelectSingleNode(".//a[contains(@href,'/users/')]");
                     if (authorLink != null)
                     {
                         topicDetail.Author = authorLink.InnerText.Trim();
-                        _logger.LogDebug("Author extracted from link: {Author}", topicDetail.Author);
+                        // _logger.LogDebug("Author extracted from link: {Author}", topicDetail.Author);
                     }
                     else
                     {
@@ -266,7 +266,7 @@ public class HtmlParsingService : IHtmlParsingService
                             if (match.Success && !match.Groups[1].Value.Contains("2025"))
                             {
                                 topicDetail.Author = match.Groups[1].Value.Trim();
-                                _logger.LogDebug("Author extracted with pattern '{Pattern}': {Author}", pattern, topicDetail.Author);
+                                // _logger.LogDebug("Author extracted with pattern '{Pattern}': {Author}", pattern, topicDetail.Author);
                                 break;
                             }
                         }
@@ -326,7 +326,7 @@ public class HtmlParsingService : IHtmlParsingService
                 if (replyIdMatch.Success)
                 {
                     reply.Id = int.Parse(replyIdMatch.Groups[1].Value);
-                    _logger.LogDebug("Reply ID extracted: {Id}", reply.Id);
+                    // _logger.LogDebug("Reply ID extracted: {Id}", reply.Id);
                 }
 
                 // 返信の作成者を取得（h4.reply-header内のa.userから、または従来の方法）
@@ -337,12 +337,12 @@ public class HtmlParsingService : IHtmlParsingService
                     if (userLink != null)
                     {
                         reply.Author = userLink.InnerText.Trim();
-                        _logger.LogDebug("Reply author extracted from header: {Author}", reply.Author);
+                        // _logger.LogDebug("Reply author extracted from header: {Author}", reply.Author);
                     }
 
                     // 日付を取得（相対時間を優先）
                     var headerText = replyHeaderNode.InnerText;
-                    
+
                     // 相対時間のパターン
                     var dateMatch = Regex.Match(headerText, @"(\d+)\s*(日|時間|分)前");
                     if (dateMatch.Success)
@@ -374,7 +374,7 @@ public class HtmlParsingService : IHtmlParsingService
                     if (replyAuthorNode != null)
                     {
                         var authorText = replyAuthorNode.InnerText.Trim();
-                        
+
                         // Try to extract author name
                         var authorLink = replyAuthorNode.SelectSingleNode(".//a[contains(@href,'/users/')]");
                         if (authorLink != null)
@@ -436,7 +436,7 @@ public class HtmlParsingService : IHtmlParsingService
         var linkNode = row.SelectSingleNode(".//a[contains(@href, '/boards/')]");
         if (linkNode == null)
         {
-            _logger.LogDebug("No board link found in row");
+            // _logger.LogDebug("No board link found in row");
             return null;
         }
 
@@ -444,7 +444,7 @@ public class HtmlParsingService : IHtmlParsingService
         var boardId = ExtractBoardId(href);
         if (boardId == null)
         {
-            _logger.LogDebug("Could not extract board ID from href: {Href}", href);
+            // _logger.LogDebug("Could not extract board ID from href: {Href}", href);
             return null;
         }
 
@@ -505,7 +505,7 @@ public class HtmlParsingService : IHtmlParsingService
             var topic = new Topic();
 
             // デバッグ用：行のHTMLを出力
-            _logger.LogDebug("Parsing row HTML: {Html}", row.OuterHtml.Substring(0, Math.Min(row.OuterHtml.Length, 500)));
+            // _logger.LogDebug("Parsing row HTML: {Html}", row.OuterHtml.Substring(0, Math.Min(row.OuterHtml.Length, 500)));
 
             // タイトルとURL（複数のパターンに対応）
             var subjectCell = row.SelectSingleNode(".//td[@class='subject']") ??
@@ -513,20 +513,20 @@ public class HtmlParsingService : IHtmlParsingService
 
             if (subjectCell == null)
             {
-                _logger.LogDebug("No subject cell found in row");
+                // _logger.LogDebug("No subject cell found in row");
                 return null;
             }
 
             var linkNode = subjectCell.SelectSingleNode(".//a[contains(@href,'/boards/') or contains(@href,'/messages/')]");
             if (linkNode == null)
             {
-                _logger.LogDebug("No link found in subject cell");
+                // _logger.LogDebug("No link found in subject cell");
                 return null;
             }
 
             topic.Title = linkNode.InnerText.Trim();
             var href = linkNode.GetAttributeValue("href", "");
-            _logger.LogDebug("Found link with href: {Href}", href);
+            // _logger.LogDebug("Found link with href: {Href}", href);
 
             // IDを抽出（複数パターンに対応）
             var match = Regex.Match(href, @"/messages/(\d+)");
@@ -634,8 +634,8 @@ public class HtmlParsingService : IHtmlParsingService
                 }
             }
 
-            _logger.LogDebug("Successfully parsed topic: ID={Id}, Title={Title}, Author={Author}, Replies={Replies}",
-                topic.Id, topic.Title, topic.Author, topic.Replies);
+            // _logger.LogDebug("Successfully parsed topic: ID={Id}, Title={Title}, Author={Author}, Replies={Replies}",
+            //     topic.Id, topic.Title, topic.Author, topic.Replies);
 
             return topic;
         }

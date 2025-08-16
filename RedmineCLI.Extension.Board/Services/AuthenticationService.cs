@@ -25,7 +25,7 @@ public class AuthenticationService : IAuthenticationService
 
     public async Task<(string url, string? sessionCookie)> GetAuthenticationAsync(string? urlOverride)
     {
-        _logger.LogDebug("Getting authentication information");
+        // _logger.LogDebug("Getting authentication information");
 
         // Determine Redmine URL
         string? redmineUrl = urlOverride;
@@ -54,7 +54,7 @@ public class AuthenticationService : IAuthenticationService
                         redmineUrl = urlMatch.Groups[1].Value.Trim();
                         // Remove quotes if present (YAML string values)
                         redmineUrl = redmineUrl.Trim('"', '\'');
-                        _logger.LogDebug("Found URL in config file: {Url}", redmineUrl);
+                        // _logger.LogDebug("Found URL in config file: {Url}", redmineUrl);
                     }
                 }
                 catch (Exception ex)
@@ -78,10 +78,10 @@ public class AuthenticationService : IAuthenticationService
         {
             // Default to https if no scheme is provided
             redmineUrl = $"https://{redmineUrl}";
-            _logger.LogDebug("Added https:// scheme to URL");
+            // _logger.LogDebug("Added https:// scheme to URL");
         }
 
-        _logger.LogDebug("Using Redmine URL: {Url}", redmineUrl);
+        // _logger.LogDebug("Using Redmine URL: {Url}", redmineUrl);
 
         // Get credentials from OS keychain
         try
@@ -95,7 +95,7 @@ public class AuthenticationService : IAuthenticationService
                 Environment.Exit(1);
             }
 
-            _logger.LogDebug("Found credentials for {Url}", redmineUrl);
+            // _logger.LogDebug("Found credentials for {Url}", redmineUrl);
 
             // Try to get or create session
             var sessionCookie = await AuthenticationHelper.CreateSessionFromCredentialsAsync(
@@ -113,7 +113,7 @@ public class AuthenticationService : IAuthenticationService
                     credential.SessionCookie = sessionCookie;
                     credential.SessionExpiry = DateTime.UtcNow.AddHours(24);
                     await _credentialStore.SaveCredentialAsync(redmineUrl, credential);
-                    _logger.LogDebug("Updated session cookie in keychain");
+                    // _logger.LogDebug("Updated session cookie in keychain");
                 }
 
                 return (redmineUrl, sessionCookie);
