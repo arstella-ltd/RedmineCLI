@@ -21,6 +21,9 @@
     <AssemblyTitle>RedmineCLI Board Extension</AssemblyTitle>
     <AssemblyDescription>Board extension for RedmineCLI with form login</AssemblyDescription>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    
+    <!-- CS0618: Obsolete members warning (for backward compatibility during migration) -->
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

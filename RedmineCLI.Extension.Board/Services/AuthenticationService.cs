@@ -98,7 +98,7 @@ public class AuthenticationService : IAuthenticationService
             // _logger.LogDebug("Found credentials for {Url}", redmineUrl);
 
             // Try to get or create session
-            var sessionCookie = await AuthenticationHelper.CreateSessionFromCredentialsAsync(
+            var sessionCookie = await Common.Authentication.AuthenticationHelper.CreateSessionFromCredentialsAsync(
                 redmineUrl,
                 credential,
                 _logger);

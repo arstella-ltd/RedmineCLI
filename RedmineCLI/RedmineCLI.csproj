@@ -19,7 +19,8 @@
     <!-- IL2104,IL3053: General trimming warnings -->
     <!-- IL2055,IL2057,IL2067,IL2070,IL2072,IL2090: VYaml trimming warnings -->
     <!-- IL3050: VYaml and Spectre.Console AOT warnings -->
-    <NoWarn>$(NoWarn);IL2104;IL3053;IL2055;IL2057;IL2067;IL2070;IL2072;IL2090;IL3050</NoWarn>
+    <!-- CS0618: Obsolete members warning (for backward compatibility during migration) -->
+    <NoWarn>$(NoWarn);IL2104;IL3053;IL2055;IL2057;IL2067;IL2070;IL2072;IL2090;IL3050;CS0618</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     
     <!-- Versioning -->
