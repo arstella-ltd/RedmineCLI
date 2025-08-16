@@ -409,50 +409,6 @@ public class Program
                     }
                 }
             }
-            else
-            {
-                _logger?.LogDebug("No boards found in table format, trying simple link format");
-
-                // シンプルなリンクリストを試す
-                var boardLinks = doc.DocumentNode.SelectNodes("//a[contains(@href, '/boards/')]");
-                
-                if (boardLinks != null)
-                {
-                    _logger?.LogDebug("Found {Count} board links", boardLinks.Count);
-
-                    var addedBoards = new HashSet<int>();
-                    foreach (var linkNode in boardLinks)
-                    {
-                        var href = linkNode.GetAttributeValue("href", "");
-                        var boardIdMatch = Regex.Match(href, @"/boards/(\d+)");
-                        if (!boardIdMatch.Success) continue;
-
-                        if (int.TryParse(boardIdMatch.Groups[1].Value, out var boardId) && !addedBoards.Contains(boardId))
-                        {
-                            // ボード名を取得
-                            var nameNode = linkNode.SelectSingleNode(".//span[@class='icon-label']");
-                            string boardName = nameNode?.InnerText.Trim() ?? linkNode.InnerText.Trim();
-                            if (string.IsNullOrWhiteSpace(boardName))
-                            {
-                                boardName = $"Board {boardId}";
-                            }
-
-                            var board = new Models.Board
-                            {
-                                Id = boardId,
-                                Name = System.Net.WebUtility.HtmlDecode(boardName),
-                                Url = $"{baseUrl}{href}",
-                                ColumnCount = 0,
-                                CardCount = 0
-                            };
-
-                            boards.Add(board);
-                            addedBoards.Add(boardId);
-                            _logger?.LogDebug("Found board: {Name} (ID: {Id}, URL: {Url})", board.Name, board.Id, board.Url);
-                        }
-                    }
-                }
-            }
         }
         catch (Exception ex)
         {
