@@ -23,10 +23,10 @@ public abstract class CredentialStore : ICredentialStore
         {
             return new MacOSCredentialStore();
         }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-        {
-            return new LinuxCredentialStore();
-        }
+        // else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        // {
+        //     return new LinuxCredentialStore();
+        // }
         else
         {
             // フォールバック: ファイルベースの実装
