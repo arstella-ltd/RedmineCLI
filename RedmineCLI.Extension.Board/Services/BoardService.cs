@@ -288,23 +288,30 @@ public class BoardService : IBoardService
             return;
         }
 
-        // トピックの詳細を表示
-        var panel = new Panel($"[bold]{Markup.Escape(topicDetail.Title)}[/]\n\n" +
-                              $"Author: {Markup.Escape(topicDetail.Author)}\n" +
-                              $"Replies: {topicDetail.Replies.Count}\n\n" +
-                              $"{Markup.Escape(topicDetail.Content)}");
-        panel.Header = new PanelHeader($"Topic #{topicDetail.Id}");
-        AnsiConsole.Write(panel);
+        // トピックのタイトルを表示
+        AnsiConsole.MarkupLine($"[bold]{Markup.Escape(topicDetail.Title)}[/]");
+        AnsiConsole.WriteLine();
+
+        // 最初の投稿を表示
+        var createdAt = topicDetail.CreatedAt != default ? FormatRelativeTime(topicDetail.CreatedAt) : "unknown";
+        AnsiConsole.MarkupLine($"[dim]#{topicDetail.Id} - {Markup.Escape(topicDetail.Author)} - {createdAt}[/]");
+        AnsiConsole.MarkupLine($"  {Markup.Escape(topicDetail.Content)}");
+        AnsiConsole.WriteLine();
 
         // 返信を表示
         if (topicDetail.Replies.Count > 0)
         {
-            AnsiConsole.MarkupLine("\n[bold]Replies:[/]");
-            foreach (var reply in topicDetail.Replies)
+            // 返信を時系列順にソート
+            var sortedReplies = topicDetail.Replies.OrderBy(r => r.CreatedAt).ToList();
+            var newestReply = topicDetail.Replies.OrderByDescending(r => r.CreatedAt).FirstOrDefault();
+
+            foreach (var reply in sortedReplies)
             {
-                var replyPanel = new Panel($"{Markup.Escape(reply.Content)}");
-                replyPanel.Header = new PanelHeader($"{reply.Author} - {reply.CreatedAt:yyyy-MM-dd HH:mm}");
-                AnsiConsole.Write(replyPanel);
+                var replyTime = FormatRelativeTime(reply.CreatedAt);
+                var newestLabel = reply == newestReply ? " - Newest post" : "";
+                AnsiConsole.MarkupLine($"[dim]#{reply.Id} - {Markup.Escape(reply.Author)} - {replyTime}{newestLabel}[/]");
+                AnsiConsole.MarkupLine($"  {Markup.Escape(reply.Content)}");
+                AnsiConsole.WriteLine();
             }
         }
     }
@@ -314,5 +321,38 @@ public class BoardService : IBoardService
         if (int.TryParse(identifier, out var id))
             return id;
         return null;
+    }
+
+    private string FormatRelativeTime(DateTime dateTime)
+    {
+        var timeSpan = DateTime.Now - dateTime;
+
+        if (timeSpan.TotalDays >= 365)
+        {
+            var years = (int)(timeSpan.TotalDays / 365);
+            return $"about {years} year{(years == 1 ? "" : "s")} ago";
+        }
+        if (timeSpan.TotalDays >= 30)
+        {
+            var months = (int)(timeSpan.TotalDays / 30);
+            return $"about {months} month{(months == 1 ? "" : "s")} ago";
+        }
+        if (timeSpan.TotalDays >= 1)
+        {
+            var days = (int)timeSpan.TotalDays;
+            return $"about {days} day{(days == 1 ? "" : "s")} ago";
+        }
+        if (timeSpan.TotalHours >= 1)
+        {
+            var hours = (int)timeSpan.TotalHours;
+            return $"about {hours} hour{(hours == 1 ? "" : "s")} ago";
+        }
+        if (timeSpan.TotalMinutes >= 1)
+        {
+            var minutes = (int)timeSpan.TotalMinutes;
+            return $"about {minutes} minute{(minutes == 1 ? "" : "s")} ago";
+        }
+
+        return "just now";
     }
 }

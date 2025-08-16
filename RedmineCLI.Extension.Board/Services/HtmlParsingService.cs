@@ -121,6 +121,35 @@ public class HtmlParsingService : IHtmlParsingService
 
         var topicDetail = new TopicDetail();
 
+        // 最初のメッセージのIDを取得（トピック自体のID）
+        // 最初のメッセージは通常 div[@class='message'] の最初の要素
+        var firstMessage = doc.DocumentNode.SelectSingleNode("//div[@class='message'][1]");
+        if (firstMessage != null)
+        {
+            var idAttr = firstMessage.GetAttributeValue("id", "");
+            var idMatch = Regex.Match(idAttr, @"message-(\d+)");
+            if (idMatch.Success)
+            {
+                topicDetail.Id = int.Parse(idMatch.Groups[1].Value);
+                _logger.LogDebug("Topic ID extracted from message div: {Id}", topicDetail.Id);
+            }
+        }
+
+        // フォールバック: URLからIDを抽出
+        if (topicDetail.Id == 0)
+        {
+            var currentUrl = doc.DocumentNode.SelectSingleNode("//meta[@property='og:url']")?.GetAttributeValue("content", "");
+            if (!string.IsNullOrEmpty(currentUrl))
+            {
+                var idMatch = Regex.Match(currentUrl, @"/topics/(\d+)|/messages/(\d+)");
+                if (idMatch.Success)
+                {
+                    topicDetail.Id = int.Parse(idMatch.Groups[1].Success ? idMatch.Groups[1].Value : idMatch.Groups[2].Value);
+                    _logger.LogDebug("Topic ID extracted from URL: {Id}", topicDetail.Id);
+                }
+            }
+        }
+
         // タイトル
         var titleNode = doc.DocumentNode.SelectSingleNode("//h2") ??
                        doc.DocumentNode.SelectSingleNode("//div[@class='subject']/h3");
@@ -130,16 +159,151 @@ public class HtmlParsingService : IHtmlParsingService
         }
 
         // 作成者と内容
-        var messageNode = doc.DocumentNode.SelectSingleNode("//div[@id='content']//div[@class='message']");
+        // 最初のメッセージを探す（ただし返信ではないもの）
+        var messageNode = doc.DocumentNode.SelectSingleNode("//div[@id='content']//div[@class='message' and not(contains(@class,'reply'))]") ??
+                         doc.DocumentNode.SelectSingleNode("//div[@class='message' and not(contains(@class,'reply'))][1]");
         if (messageNode != null)
         {
-            var authorNode = messageNode.SelectSingleNode(".//p[@class='author']") ??
-                           messageNode.SelectSingleNode(".//span[@class='author']");
-            if (authorNode != null)
+            // h4.reply-header形式で作成者を探す（Board拡張の場合）
+            var headerNode = messageNode.SelectSingleNode(".//h4[contains(@class,'header')]");
+            if (headerNode != null)
             {
-                topicDetail.Author = authorNode.InnerText.Trim();
+                var userLink = headerNode.SelectSingleNode(".//a[@class='user' or contains(@class,'user ')]");
+                if (userLink != null)
+                {
+                    topicDetail.Author = userLink.InnerText.Trim();
+                    _logger.LogDebug("Topic author extracted from header: {Author}", topicDetail.Author);
+                }
+
+                // 日付を取得 - ヘッダーテキストから抽出
+                var headerText = headerNode.InnerText;
+                _logger.LogDebug("Header text for date extraction: {Text}", headerText);
+
+                // 相対時間のパターンを先に試す（より具体的なため）
+                var relativePatterns = new[]
+                {
+                    @"(\d+)\s*(日|時間|分)前",                               // X日前
+                    @"about\s+(\d+)\s+(days?|months?|years?|hours?|minutes?)\s+ago" // about X days ago
+                };
+
+                bool dateFound = false;
+                foreach (var pattern in relativePatterns)
+                {
+                    var match = Regex.Match(headerText, pattern);
+                    if (match.Success)
+                    {
+                        var amount = int.Parse(match.Groups[1].Value);
+                        if (amount < 100) // Sanity check to avoid unrealistic values
+                        {
+                            var unit = match.Groups[2].Value;
+                            topicDetail.CreatedAt = unit.Contains("年") || unit.Contains("year") ? DateTime.Now.AddYears(-amount) :
+                                                   unit.Contains("月") || unit.Contains("month") ? DateTime.Now.AddMonths(-amount) :
+                                                   unit.Contains("日") || unit.Contains("day") ? DateTime.Now.AddDays(-amount) :
+                                                   unit.Contains("時") || unit.Contains("hour") ? DateTime.Now.AddHours(-amount) :
+                                                   DateTime.Now.AddMinutes(-amount);
+                            _logger.LogDebug("Relative date extracted: {Amount} {Unit} -> {Date}", amount, unit, topicDetail.CreatedAt);
+                            dateFound = true;
+                            break;
+                        }
+                    }
+                }
+
+                // 相対時間が見つからない場合のみ、絶対日付を探す
+                if (!dateFound)
+                {
+                    // より厳密な日付パターン（時刻付き日付のみ）
+                    var absoluteDatePatterns = new[]
+                    {
+                        @"(\d{4}[-/]\d{1,2}[-/]\d{1,2}\s+\d{1,2}:\d{2})",  // 2024-01-01 12:00
+                        @"(\d{1,2}[-/]\d{1,2}[-/]\d{4}\s+\d{1,2}:\d{2})"   // 01-01-2024 12:00
+                    };
+
+                    foreach (var pattern in absoluteDatePatterns)
+                    {
+                        var match = Regex.Match(headerText, pattern);
+                        if (match.Success && DateTime.TryParse(match.Groups[1].Value, out var createdAt))
+                        {
+                            topicDetail.CreatedAt = createdAt;
+                            _logger.LogDebug("Absolute date extracted: {Date}", createdAt);
+                            dateFound = true;
+                            break;
+                        }
+                    }
+                }
             }
 
+            // フォールバック: 従来の方法でauthorを探す
+            if (string.IsNullOrEmpty(topicDetail.Author))
+            {
+                var authorNode = messageNode.SelectSingleNode(".//p[@class='author']") ??
+                               messageNode.SelectSingleNode(".//span[@class='author']") ??
+                               messageNode.SelectSingleNode(".//div[@class='author']");
+                if (authorNode != null)
+                {
+                    var authorText = authorNode.InnerText.Trim();
+                    _logger.LogDebug("Author node text (fallback): {Text}", authorText);
+
+                    // Try to find a link with the author name
+                    var authorLink = authorNode.SelectSingleNode(".//a[contains(@href,'/users/')]");
+                    if (authorLink != null)
+                    {
+                        topicDetail.Author = authorLink.InnerText.Trim();
+                        _logger.LogDebug("Author extracted from link: {Author}", topicDetail.Author);
+                    }
+                    else
+                    {
+                        // Try various patterns
+                        var patterns = new[]
+                        {
+                            @"Added by (.+?) (?:about|over|\d)",  // "Added by Name about..."
+                            @"^(.+?),\s*\d",                       // "Name, 2024-01-01..."
+                            @"^(.+?)$"                              // Just the name (fallback)
+                        };
+
+                        foreach (var pattern in patterns)
+                        {
+                            var match = Regex.Match(authorText, pattern);
+                            if (match.Success && !match.Groups[1].Value.Contains("2025"))
+                            {
+                                topicDetail.Author = match.Groups[1].Value.Trim();
+                                _logger.LogDebug("Author extracted with pattern '{Pattern}': {Author}", pattern, topicDetail.Author);
+                                break;
+                            }
+                        }
+                    }
+
+                    // Extract creation date only if not already set
+                    if (topicDetail.CreatedAt == default)
+                    {
+                        // Try relative date patterns first
+                        var agoMatch = Regex.Match(authorText, @"(\d+)\s+(days?|months?|years?|hours?|minutes?)\s+ago");
+                        if (agoMatch.Success)
+                        {
+                            var amount = int.Parse(agoMatch.Groups[1].Value);
+                            if (amount < 100) // Sanity check
+                            {
+                                var unit = agoMatch.Groups[2].Value;
+                                topicDetail.CreatedAt = unit.StartsWith("year") ? DateTime.Now.AddYears(-amount) :
+                                                      unit.StartsWith("month") ? DateTime.Now.AddMonths(-amount) :
+                                                      unit.StartsWith("day") ? DateTime.Now.AddDays(-amount) :
+                                                      unit.StartsWith("hour") ? DateTime.Now.AddHours(-amount) :
+                                                      DateTime.Now.AddMinutes(-amount);
+                            }
+                        }
+                        else
+                        {
+                            // Try absolute date with time only
+                            var dateMatch = Regex.Match(authorText, @"(\d{4}[-/]\d{2}[-/]\d{2}\s+\d{2}:\d{2})|(\d{2}[-/]\d{2}[-/]\d{4}\s+\d{2}:\d{2})");
+                            if (dateMatch.Success && DateTime.TryParse(dateMatch.Value, out var createdAt))
+                            {
+                                topicDetail.CreatedAt = createdAt;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // コンテンツを取得
             var contentNode = messageNode.SelectSingleNode(".//div[@class='wiki']");
             if (contentNode != null)
             {
@@ -148,20 +312,112 @@ public class HtmlParsingService : IHtmlParsingService
         }
 
         // 返信を取得
-        var replyNodes = doc.DocumentNode.SelectNodes("//div[@id='replies']//div[@class='message reply']");
+        var replyNodes = doc.DocumentNode.SelectNodes("//div[@id='replies']//div[@class='message reply']") ??
+                        doc.DocumentNode.SelectNodes("//div[@class='message reply']");
         if (replyNodes != null)
         {
             foreach (var replyNode in replyNodes)
             {
                 var reply = new TopicReply();
 
-                var replyAuthorNode = replyNode.SelectSingleNode(".//p[@class='author']") ??
-                                     replyNode.SelectSingleNode(".//span[@class='author']");
-                if (replyAuthorNode != null)
+                // 返信のIDを取得（id="message-19466" から 19466 を抽出）
+                var replyId = replyNode.GetAttributeValue("id", "");
+                var replyIdMatch = Regex.Match(replyId, @"message-(\d+)");
+                if (replyIdMatch.Success)
                 {
-                    reply.Author = replyAuthorNode.InnerText.Trim();
+                    reply.Id = int.Parse(replyIdMatch.Groups[1].Value);
+                    _logger.LogDebug("Reply ID extracted: {Id}", reply.Id);
                 }
 
+                // 返信の作成者を取得（h4.reply-header内のa.userから、または従来の方法）
+                var replyHeaderNode = replyNode.SelectSingleNode(".//h4[@class='reply-header']");
+                if (replyHeaderNode != null)
+                {
+                    var userLink = replyHeaderNode.SelectSingleNode(".//a[@class='user' or contains(@class,'user ')]");
+                    if (userLink != null)
+                    {
+                        reply.Author = userLink.InnerText.Trim();
+                        _logger.LogDebug("Reply author extracted from header: {Author}", reply.Author);
+                    }
+
+                    // 日付を取得（相対時間を優先）
+                    var headerText = replyHeaderNode.InnerText;
+                    
+                    // 相対時間のパターン
+                    var dateMatch = Regex.Match(headerText, @"(\d+)\s*(日|時間|分)前");
+                    if (dateMatch.Success)
+                    {
+                        var amount = int.Parse(dateMatch.Groups[1].Value);
+                        if (amount < 100) // Sanity check
+                        {
+                            var unit = dateMatch.Groups[2].Value;
+                            reply.CreatedAt = unit == "日" ? DateTime.Now.AddDays(-amount) :
+                                            unit == "時間" ? DateTime.Now.AddHours(-amount) :
+                                            DateTime.Now.AddMinutes(-amount);
+                        }
+                    }
+                    else
+                    {
+                        // 絶対日付（時刻付きのみ）
+                        var absoluteDateMatch = Regex.Match(headerText, @"(\d{4}[-/]\d{2}[-/]\d{2}\s+\d{2}:\d{2})|(\d{2}[-/]\d{2}[-/]\d{4}\s+\d{2}:\d{2})");
+                        if (absoluteDateMatch.Success && DateTime.TryParse(absoluteDateMatch.Value, out var createdAt))
+                        {
+                            reply.CreatedAt = createdAt;
+                        }
+                    }
+                }
+                else
+                {
+                    // フォールバック: 従来の方法
+                    var replyAuthorNode = replyNode.SelectSingleNode(".//p[@class='author']") ??
+                                         replyNode.SelectSingleNode(".//span[@class='author']");
+                    if (replyAuthorNode != null)
+                    {
+                        var authorText = replyAuthorNode.InnerText.Trim();
+                        
+                        // Try to extract author name
+                        var authorLink = replyAuthorNode.SelectSingleNode(".//a[contains(@href,'/users/')]");
+                        if (authorLink != null)
+                        {
+                            reply.Author = authorLink.InnerText.Trim();
+                        }
+                        else
+                        {
+                            // Extract author without including dates that look like content
+                            var authorMatch = Regex.Match(authorText, @"^([^,\d]+)");
+                            if (authorMatch.Success)
+                            {
+                                reply.Author = authorMatch.Groups[1].Value.Trim();
+                            }
+                        }
+
+                        // Extract date (relative first, then absolute with time)
+                        var agoMatch = Regex.Match(authorText, @"(\d+)\s+(days?|months?|years?|hours?|minutes?)\s+ago");
+                        if (agoMatch.Success)
+                        {
+                            var amount = int.Parse(agoMatch.Groups[1].Value);
+                            if (amount < 100) // Sanity check
+                            {
+                                var unit = agoMatch.Groups[2].Value;
+                                reply.CreatedAt = unit.StartsWith("year") ? DateTime.Now.AddYears(-amount) :
+                                                unit.StartsWith("month") ? DateTime.Now.AddMonths(-amount) :
+                                                unit.StartsWith("day") ? DateTime.Now.AddDays(-amount) :
+                                                unit.StartsWith("hour") ? DateTime.Now.AddHours(-amount) :
+                                                DateTime.Now.AddMinutes(-amount);
+                            }
+                        }
+                        else
+                        {
+                            var dateMatch = Regex.Match(authorText, @"(\d{4}[-/]\d{2}[-/]\d{2}\s+\d{2}:\d{2})|(\d{2}[-/]\d{2}[-/]\d{4}\s+\d{2}:\d{2})");
+                            if (dateMatch.Success && DateTime.TryParse(dateMatch.Value, out var createdAt))
+                            {
+                                reply.CreatedAt = createdAt;
+                            }
+                        }
+                    }
+                }
+
+                // 返信の内容を取得
                 var replyContentNode = replyNode.SelectSingleNode(".//div[@class='wiki']");
                 if (replyContentNode != null)
                 {
@@ -174,7 +430,6 @@ public class HtmlParsingService : IHtmlParsingService
 
         return topicDetail;
     }
-
     private Models.Board? ParseBoardFromRow(HtmlNode row, string baseUrl)
     {
         // ボードへのリンクを取得

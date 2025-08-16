@@ -22,6 +22,7 @@ public class Topic
     public int Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Author { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
     public int Replies { get; set; }
     public DateTime? LastReply { get; set; }
     public string Url { get; set; } = string.Empty;
