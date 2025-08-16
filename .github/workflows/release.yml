@@ -43,13 +43,19 @@ jobs:
         echo "- Cross-platform support (Windows, macOS, Linux)" >> $GITHUB_OUTPUT
         echo "- Interactive and non-interactive command modes" >> $GITHUB_OUTPUT
         echo "- Web browser integration with --web option" >> $GITHUB_OUTPUT
+        echo "- **redmine-board**: Board extension with form-based authentication" >> $GITHUB_OUTPUT
         echo "" >> $GITHUB_OUTPUT
         echo "## 📥 Installation" >> $GITHUB_OUTPUT
         echo "" >> $GITHUB_OUTPUT
         echo "Download the appropriate binary for your platform from the assets below." >> $GITHUB_OUTPUT
         echo "" >> $GITHUB_OUTPUT
+        echo "### Available Binaries" >> $GITHUB_OUTPUT
+        echo "- **redmine-cli**: Main RedmineCLI application" >> $GITHUB_OUTPUT
+        echo "- **redmine-board**: Board extension for project management" >> $GITHUB_OUTPUT
+        echo "" >> $GITHUB_OUTPUT
         echo "## 🛠️ Usage" >> $GITHUB_OUTPUT
         echo "" >> $GITHUB_OUTPUT
+        echo "### RedmineCLI" >> $GITHUB_OUTPUT
         echo "\`\`\`bash" >> $GITHUB_OUTPUT
         echo "# Setup authentication" >> $GITHUB_OUTPUT
         echo "redmine auth login" >> $GITHUB_OUTPUT
@@ -63,6 +69,13 @@ jobs:
         echo "redmine issue view 123" >> $GITHUB_OUTPUT
         echo "redmine issue edit 123" >> $GITHUB_OUTPUT
         echo "redmine issue comment 123" >> $GITHUB_OUTPUT
+        echo "\`\`\`" >> $GITHUB_OUTPUT
+        echo "" >> $GITHUB_OUTPUT
+        echo "### Redmine Board" >> $GITHUB_OUTPUT
+        echo "\`\`\`bash" >> $GITHUB_OUTPUT
+        echo "# List boards" >> $GITHUB_OUTPUT
+        echo "redmine-board list" >> $GITHUB_OUTPUT
+        echo "redmine-board list --project <project-id>" >> $GITHUB_OUTPUT
         echo "\`\`\`" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
 
@@ -139,30 +152,52 @@ jobs:
         VERSION=${GITHUB_REF#refs/tags/v}
         echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-    - name: Publish Native AOT
+    - name: Publish Native AOT - RedmineCLI
       run: |
-        dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r ${{ matrix.config.rid }} -p:PublishAot=true -p:StripSymbols=true -p:Version=${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }} -p:IncludeSourceRevisionInInformationalVersion=false --self-contained -o publish/${{ matrix.config.rid }}
+        dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r ${{ matrix.config.rid }} -p:PublishAot=true -p:StripSymbols=true -p:Version=${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }} -p:IncludeSourceRevisionInInformationalVersion=false --self-contained -o publish/${{ matrix.config.rid }}/redmine-cli
 
-    - name: Compress binary to zip (Windows)
+    - name: Publish Native AOT - Redmine Board
+      run: |
+        dotnet publish RedmineCLI.Extension.Board/RedmineCLI.Extension.Board.csproj -c Release -r ${{ matrix.config.rid }} -p:PublishAot=true -p:StripSymbols=true -p:Version=${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }} -p:IncludeSourceRevisionInInformationalVersion=false --self-contained -o publish/${{ matrix.config.rid }}/redmine-board
+
+    - name: Compress binaries to zip (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        cd publish/${{ matrix.config.rid }}
-        Compress-Archive -Path ${{ matrix.config.output }} -DestinationPath ../../${{ env.ASSET_NAME_PREFIX }}-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip
-        cd ../..
+        # Compress redmine-cli
+        cd publish/${{ matrix.config.rid }}/redmine-cli
+        Compress-Archive -Path ${{ matrix.config.output }} -DestinationPath ../../../${{ env.ASSET_NAME_PREFIX }}-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip
+        cd ../../..
+        
+        # Compress redmine-board
+        cd publish/${{ matrix.config.rid }}/redmine-board
+        $boardOutput = if ('${{ matrix.config.rid }}' -like 'win-*') { 'redmine-board.exe' } else { 'redmine-board' }
+        Compress-Archive -Path $boardOutput -DestinationPath ../../../redmine-board-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip
+        cd ../../..
 
-    - name: Compress binary to zip (Unix)
+    - name: Compress binaries to zip (Unix)
       if: runner.os != 'Windows'
       run: |
-        cd publish/${{ matrix.config.rid }}
-        zip -j ../../${{ env.ASSET_NAME_PREFIX }}-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip ${{ matrix.config.output }}
-        cd ../..
+        # Compress redmine-cli
+        cd publish/${{ matrix.config.rid }}/redmine-cli
+        zip -j ../../../${{ env.ASSET_NAME_PREFIX }}-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip ${{ matrix.config.output }}
+        cd ../../..
+        
+        # Compress redmine-board
+        cd publish/${{ matrix.config.rid }}/redmine-board
+        BOARD_OUTPUT="redmine-board"
+        if [[ "${{ matrix.config.rid }}" == win-* ]]; then
+          BOARD_OUTPUT="redmine-board.exe"
+        fi
+        zip -j ../../../redmine-board-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip $BOARD_OUTPUT
+        cd ../../..
 
     - name: Upload Release Assets
       uses: softprops/action-gh-release@v2
       with:
         files: |
           ${{ env.ASSET_NAME_PREFIX }}-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip
+          redmine-board-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip
 
   generate-checksums:
     name: Generate Checksums
@@ -189,13 +224,14 @@ jobs:
     - name: Generate checksums
       run: |
         cd downloads
-        sha256sum *.zip > ../redmine-cli-${{ steps.extract_version.outputs.version }}-checksums.txt
+        # Generate checksums for all binaries
+        sha256sum *.zip > ../checksums-${{ steps.extract_version.outputs.version }}.txt
         cd ..
-        cat redmine-cli-${{ steps.extract_version.outputs.version }}-checksums.txt
+        cat checksums-${{ steps.extract_version.outputs.version }}.txt
     
     - name: Upload checksums
       uses: softprops/action-gh-release@v2
       with:
-        files: redmine-cli-${{ steps.extract_version.outputs.version }}-checksums.txt
+        files: checksums-${{ steps.extract_version.outputs.version }}.txt
 
 
