@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
 
@@ -21,8 +20,6 @@ public class FileBasedCredentialStore : CredentialStore
         Directory.CreateDirectory(_credentialsDirectory);
     }
 
-    [RequiresDynamicCode("JSON serialization may require dynamic code generation")]
-    [RequiresUnreferencedCode("JSON serialization may require unreferenced code")]
     public override async Task<StoredCredential?> GetCredentialAsync(string serverUrl)
     {
         var filePath = GetCredentialFilePath(serverUrl);
@@ -43,8 +40,6 @@ public class FileBasedCredentialStore : CredentialStore
         }
     }
 
-    [RequiresDynamicCode("JSON serialization may require dynamic code generation")]
-    [RequiresUnreferencedCode("JSON serialization may require unreferenced code")]
     public override async Task SaveCredentialAsync(string serverUrl, StoredCredential credential)
     {
         var filePath = GetCredentialFilePath(serverUrl);

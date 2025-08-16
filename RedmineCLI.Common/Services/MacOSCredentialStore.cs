@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using System.Text;
 using System.Text.Json;
@@ -14,8 +13,6 @@ namespace RedmineCLI.Common.Services;
 [SupportedOSPlatform("macos")]
 public class MacOSCredentialStore : CredentialStore
 {
-    [RequiresDynamicCode("JSON serialization may require dynamic code generation")]
-    [RequiresUnreferencedCode("JSON serialization may require unreferenced code")]
     public override async Task<StoredCredential?> GetCredentialAsync(string serverUrl)
     {
         var keyName = GetKeyName(serverUrl);
@@ -30,7 +27,7 @@ public class MacOSCredentialStore : CredentialStore
                 return null;
 
             // JSON形式で保存されているデータをデシリアライズ
-            var credential = JsonSerializer.Deserialize<StoredCredential>(passwordResult);
+            var credential = JsonSerializer.Deserialize(passwordResult, CredentialJsonContext.Default.StoredCredential);
             return credential;
         }
         catch
@@ -39,12 +36,10 @@ public class MacOSCredentialStore : CredentialStore
         }
     }
 
-    [RequiresDynamicCode("JSON serialization may require dynamic code generation")]
-    [RequiresUnreferencedCode("JSON serialization may require unreferenced code")]
     public override async Task SaveCredentialAsync(string serverUrl, StoredCredential credential)
     {
         var keyName = GetKeyName(serverUrl);
-        var json = JsonSerializer.Serialize(credential);
+        var json = JsonSerializer.Serialize(credential, CredentialJsonContext.Default.StoredCredential);
 
         // 既存のエントリを削除
         await ExecuteSecurityCommand(

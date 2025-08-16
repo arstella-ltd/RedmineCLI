@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 using RedmineCLI.Common.Models;
@@ -53,18 +52,12 @@ public abstract class CredentialStore : ICredentialStore
     }
 
     // ICredentialStoreの実装
-    [RequiresDynamicCode("JSON serialization may require dynamic code generation")]
-    [RequiresUnreferencedCode("JSON serialization may require unreferenced code")]
     public abstract Task<StoredCredential?> GetCredentialAsync(string serverUrl);
 
-    [RequiresDynamicCode("JSON serialization may require dynamic code generation")]
-    [RequiresUnreferencedCode("JSON serialization may require unreferenced code")]
     public abstract Task SaveCredentialAsync(string serverUrl, StoredCredential credential);
 
     public abstract Task DeleteCredentialAsync(string serverUrl);
 
-    [RequiresUnreferencedCode("JSON serialization may require unreferenced code")]
-    [RequiresDynamicCode("JSON serialization may require dynamic code generation")]
     public virtual async Task<bool> HasStoredPasswordAsync(string serverUrl)
     {
         var credential = await GetCredentialAsync(serverUrl);

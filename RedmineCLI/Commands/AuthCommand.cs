@@ -1,5 +1,4 @@
 using System.CommandLine;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 using Microsoft.Extensions.Logging;
@@ -27,8 +26,6 @@ public class AuthCommand
         _logger = logger;
     }
 
-    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(AuthCommand))]
-    [RequiresUnreferencedCode("Calls methods that may use JSON serialization")]
     public static Command Create(IConfigService configService, IRedmineService redmineService, ILogger<AuthCommand> logger)
     {
         var authCommand = new AuthCommand(configService, redmineService, logger);
@@ -51,7 +48,7 @@ public class AuthCommand
         loginCommand.Add(usernameOption);
         loginCommand.Add(passwordOption);
 
-        loginCommand.SetAction([RequiresUnreferencedCode("Calls LoginAsync/LoginInteractiveAsync which may use JSON serialization")] async (parseResult) =>
+        loginCommand.SetAction(async (parseResult) =>
         {
             var url = parseResult.GetValue(urlOption);
             var apiKey = parseResult.GetValue(apiKeyOption);
@@ -91,7 +88,6 @@ public class AuthCommand
         return command;
     }
 
-    [RequiresUnreferencedCode("Calls CredentialStore.SaveCredentialAsync which may use JSON serialization")]
     public async Task<int> LoginAsync(string url, string apiKey, string profileName,
         bool savePassword = false, string? username = null, string? password = null)
     {
@@ -166,7 +162,6 @@ public class AuthCommand
         }
     }
 
-    [RequiresUnreferencedCode("Calls LoginAsync which may use JSON serialization")]
     public async Task<int> LoginInteractiveAsync(bool savePassword = false)
     {
         try

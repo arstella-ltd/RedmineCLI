@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
 using RedmineCLI.Common.Models;
 
 namespace RedmineCLI.Common.Services;
@@ -14,8 +12,6 @@ public interface ICredentialStore : IDisposable
     /// </summary>
     /// <param name="serverUrl">RedmineサーバーのURL</param>
     /// <returns>保存された認証情報、存在しない場合はnull</returns>
-    [RequiresDynamicCode("JSON serialization may require dynamic code generation")]
-    [RequiresUnreferencedCode("JSON serialization may require unreferenced code")]
     Task<StoredCredential?> GetCredentialAsync(string serverUrl);
 
     /// <summary>
@@ -23,8 +19,6 @@ public interface ICredentialStore : IDisposable
     /// </summary>
     /// <param name="serverUrl">RedmineサーバーのURL</param>
     /// <param name="credential">保存する認証情報</param>
-    [RequiresDynamicCode("JSON serialization may require dynamic code generation")]
-    [RequiresUnreferencedCode("JSON serialization may require unreferenced code")]
     Task SaveCredentialAsync(string serverUrl, StoredCredential credential);
 
     /// <summary>
@@ -38,7 +32,5 @@ public interface ICredentialStore : IDisposable
     /// </summary>
     /// <param name="serverUrl">RedmineサーバーのURL</param>
     /// <returns>パスワードが保存されている場合はtrue</returns>
-    [RequiresDynamicCode("JSON serialization may require dynamic code generation")]
-    [RequiresUnreferencedCode("JSON serialization may require unreferenced code")]
     Task<bool> HasStoredPasswordAsync(string serverUrl);
 }

@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using System.Text;
 using System.Text.Json;
@@ -52,8 +51,7 @@ public class LinuxCredentialStore : CredentialStore
         _isSecretToolAvailable = false;
         return false;
     }
-    [RequiresUnreferencedCode("JSON serialization may require unreferenced code")]
-    [RequiresDynamicCode("JSON serialization may require dynamic code generation")]
+
     public override async Task<StoredCredential?> GetCredentialAsync(string serverUrl)
     {
         var keyName = GetKeyName(serverUrl);
@@ -69,7 +67,7 @@ public class LinuxCredentialStore : CredentialStore
                 return null;
 
             // JSON形式で保存されているデータをデシリアライズ
-            var credential = JsonSerializer.Deserialize<StoredCredential>(result);
+            var credential = JsonSerializer.Deserialize(result, CredentialJsonContext.Default.StoredCredential);
             return credential;
         }
         catch
@@ -78,12 +76,10 @@ public class LinuxCredentialStore : CredentialStore
         }
     }
 
-    [RequiresUnreferencedCode("JSON serialization may require unreferenced code")]
-    [RequiresDynamicCode("JSON serialization may require dynamic code generation")]
     public override async Task SaveCredentialAsync(string serverUrl, StoredCredential credential)
     {
         var keyName = GetKeyName(serverUrl);
-        var json = JsonSerializer.Serialize(credential);
+        var json = JsonSerializer.Serialize(credential, CredentialJsonContext.Default.StoredCredential);
 
         try
         {
