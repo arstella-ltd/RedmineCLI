@@ -14,6 +14,44 @@ namespace RedmineCLI.Common.Services;
 [SupportedOSPlatform("linux")]
 public class LinuxCredentialStore : CredentialStore
 {
+    private static bool? _isSecretToolAvailable;
+
+    /// <summary>
+    /// secret-toolが利用可能かチェック（同期版）
+    /// </summary>
+    public static bool IsSecretToolAvailable()
+    {
+        if (_isSecretToolAvailable.HasValue)
+            return _isSecretToolAvailable.Value;
+
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "secret-tool",
+                Arguments = "--version",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(psi);
+            if (process != null)
+            {
+                process.WaitForExit();
+                _isSecretToolAvailable = process.ExitCode == 0;
+                return _isSecretToolAvailable.Value;
+            }
+        }
+        catch
+        {
+            // secret-toolが見つからない場合
+        }
+
+        _isSecretToolAvailable = false;
+        return false;
+    }
     [RequiresUnreferencedCode("JSON serialization may require unreferenced code")]
     [RequiresDynamicCode("JSON serialization may require dynamic code generation")]
     public override async Task<StoredCredential?> GetCredentialAsync(string serverUrl)
@@ -47,25 +85,42 @@ public class LinuxCredentialStore : CredentialStore
         var keyName = GetKeyName(serverUrl);
         var json = JsonSerializer.Serialize(credential);
 
-        // secret-tool store コマンドを実行
-        var psi = new ProcessStartInfo
+        try
         {
-            FileName = "secret-tool",
-            Arguments = $"store --label=\"RedmineCLI:{keyName}\" service RedmineCLI server \"{keyName}\"",
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
+            // secret-tool store コマンドを実行
+            var psi = new ProcessStartInfo
+            {
+                FileName = "secret-tool",
+                Arguments = $"store --label=\"RedmineCLI:{keyName}\" service RedmineCLI server \"{keyName}\"",
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
 
-        using var process = Process.Start(psi);
-        if (process != null)
+            using var process = Process.Start(psi);
+            if (process != null)
+            {
+                await process.StandardInput.WriteLineAsync(json);
+                await process.StandardInput.FlushAsync();
+                process.StandardInput.Close();
+                await process.WaitForExitAsync();
+
+                if (process.ExitCode != 0)
+                {
+                    throw new InvalidOperationException($"secret-tool failed with exit code {process.ExitCode}");
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException("Failed to start secret-tool process");
+            }
+        }
+        catch (Exception ex)
         {
-            await process.StandardInput.WriteLineAsync(json);
-            await process.StandardInput.FlushAsync();
-            process.StandardInput.Close();
-            await process.WaitForExitAsync();
+            throw new InvalidOperationException(
+                "Failed to save credentials. Ensure 'secret-tool' (libsecret) is installed on your system.", ex);
         }
     }
 
@@ -73,10 +128,18 @@ public class LinuxCredentialStore : CredentialStore
     {
         var keyName = GetKeyName(serverUrl);
 
-        // secret-tool clear コマンドを実行
-        await ExecuteCommand(
-            "secret-tool",
-            $"clear service RedmineCLI server \"{keyName}\"");
+        try
+        {
+            // secret-tool clear コマンドを実行
+            await ExecuteCommand(
+                "secret-tool",
+                $"clear service RedmineCLI server \"{keyName}\"");
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                "Failed to delete credentials. Ensure 'secret-tool' (libsecret) is installed on your system.", ex);
+        }
     }
 
     private async Task<string?> ExecuteCommand(string command, string args)

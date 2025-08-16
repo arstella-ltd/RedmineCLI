@@ -27,7 +27,16 @@ public class CredentialStoreFactoryTests
         }
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
-            store.Should().BeOfType<LinuxCredentialStore>();
+            // Linux環境では、secret-toolが利用可能な場合はLinuxCredentialStore、
+            // そうでない場合はFileBasedCredentialStoreが返される
+            if (LinuxCredentialStore.IsSecretToolAvailable())
+            {
+                store.Should().BeOfType<LinuxCredentialStore>();
+            }
+            else
+            {
+                store.Should().BeOfType<FileBasedCredentialStore>();
+            }
         }
         else
         {
