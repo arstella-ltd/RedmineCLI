@@ -11,9 +11,12 @@
    - Windows x64 (zip形式)
    - macOS x64/ARM64 (zip形式)
    - Linux x64/ARM64 (zip形式)
-3. **リリース作成**: GitHubリリースが自動作成（softprops/action-gh-release@v2使用）
-4. **checksums.txt生成**: 全アセットのSHA256ハッシュを自動生成
-5. **Scoop更新**: scoop-bucketリポジトリで6時間ごとに自動チェック
+3. **複数バイナリのビルド**: 
+   - **redmine-cli**: メインのRedmineCLIアプリケーション
+   - **redmine-board**: Board拡張機能（フォームベース認証対応）
+4. **リリース作成**: GitHubリリースが自動作成（softprops/action-gh-release@v2使用）
+5. **checksums.txt生成**: 全アセット（redmine-cli、redmine-board両方）のSHA256ハッシュを自動生成
+6. **Scoop更新**: scoop-bucketリポジトリで6時間ごとに自動チェック
 
 ### バージョン表示ルール
 
@@ -35,8 +38,11 @@ VERSION=v0.9.0
 # テストの実行
 dotnet test
 
-# Native AOTビルドの確認
-dotnet publish -c Release -r win-x64 -p:PublishAot=true
+# Native AOTビルドの確認（メインアプリケーション）
+dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r win-x64 -p:PublishAot=true
+
+# Native AOTビルドの確認（Board拡張）
+dotnet publish RedmineCLI.Extension.Board/RedmineCLI.Extension.Board.csproj -c Release -r win-x64 -p:PublishAot=true
 ```
 
 ### 2. タグの作成とプッシュ
@@ -54,8 +60,10 @@ git push origin $VERSION
 GitHub Actionsによって以下が自動的に実行されます：
 
 1. 全プラットフォーム向けのバイナリビルド（zip形式）
+   - `redmine-cli-{version}-{platform}.zip`: メインアプリケーション
+   - `redmine-board-{version}-{platform}.zip`: Board拡張機能
 2. リリースの作成（現在は即座に公開）
-3. checksums.txtの生成とアップロード（Scoop自動更新に必要）
+3. checksums-{version}.txtの生成とアップロード（全バイナリのSHA256ハッシュを含む）
 
 ### 4. リリースノートの確認と編集
 
@@ -86,8 +94,9 @@ GitHub Actionsによって以下が自動的に実行されます：
    ```yaml
    uses: robinraju/release-downloader@v1.11
    ```
-   - 全アセットのSHA256ハッシュを含む
+   - 全アセット（redmine-cli、redmine-board）のSHA256ハッシュを含む
    - Scoop等のパッケージマネージャーで利用
+   - ファイル名: `checksums-{version}.txt`
 
 4. **バージョンの動的設定**
    ```yaml
