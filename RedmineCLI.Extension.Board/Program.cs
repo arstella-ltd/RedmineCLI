@@ -43,7 +43,7 @@ public class Program
 
         var rootCommand = new RootCommand("RedmineCLI Board Extension - Manage Redmine boards");
 
-        // List command (with ls alias)
+        // List command (with ls alias) - for listing all boards
         var listCommand = new Command("list", "List all boards (requires 'redmine auth login' first)");
         listCommand.AddAlias("ls");
         var projectOption = new Option<string>("--project", "Filter by project name or ID");
@@ -55,38 +55,67 @@ public class Program
             await ListBoardsAsync(project, url);
         }, projectOption, urlOption);
 
-        // Board-specific commands (e.g., board 21 topic list)
-        var boardCommand = new Command("board", "Board-specific operations");
-        var boardIdArgument = new Argument<string>("id", "Board ID");
-        boardCommand.Add(boardIdArgument);
+        rootCommand.AddCommand(listCommand);
 
-        // Topic subcommand
+        // Board ID as first positional argument
+        var boardIdArgument = new Argument<string>("board-id", "Board ID");
+        
+        // Create a dynamic command for board ID (e.g., "21")
+        // This allows: redmine-board 21 topic list
         var topicCommand = new Command("topic", "Topic operations");
-
-        // Topic list subcommand (with ls alias)
+        
+        // Topic list subcommand
         var topicListCommand = new Command("list", "List topics in the board");
         topicListCommand.AddAlias("ls");
-        var topicProjectOption = new Option<string>("--project", "Project name or ID");
-        topicListCommand.Add(topicProjectOption);
-        topicListCommand.SetHandler(async (string boardId, string? project) =>
-        {
-            var (url, sessionCookie) = await GetAuthenticationAsync(null);
-            if (string.IsNullOrEmpty(sessionCookie)) return;
-            await ListTopicsAsync(boardId, project, (sessionCookie, url));
-        }, boardIdArgument, topicProjectOption);
-
-        // Topic view subcommand
+        var topicListProjectOption = new Option<string>("--project", "Project name or ID");
+        topicListCommand.Add(topicListProjectOption);
+        
+        // Topic view with topic ID
         var topicIdArgument = new Argument<string>("topic-id", "Topic ID");
-        topicCommand.Add(topicIdArgument);
-        topicCommand.SetHandler(async (string boardId, string topicId, string? project) =>
+        var topicViewProjectOption = new Option<string>("--project", "Project name or ID");
+        
+        // We need to handle numbered commands dynamically
+        // Check if first arg is a number (board ID)
+        if (args.Length > 0 && int.TryParse(args[0], out _))
         {
-            var (url, sessionCookie) = await GetAuthenticationAsync(null);
-            if (string.IsNullOrEmpty(sessionCookie)) return;
-            await ViewTopicAsync(boardId, topicId, project, (sessionCookie, url));
-        }, boardIdArgument, topicIdArgument, topicProjectOption);
-
-        topicCommand.AddCommand(topicListCommand);
-        boardCommand.AddCommand(topicCommand);
+            // Create a command for this specific board ID
+            var boardCommand = new Command(args[0], $"Operations for board {args[0]}");
+            boardCommand.IsHidden = true; // Hide from help
+            
+            // Re-create topic command structure under this board command
+            var boardTopicCommand = new Command("topic", "Topic operations");
+            
+            var boardTopicListCommand = new Command("list", "List topics in the board");
+            boardTopicListCommand.AddAlias("ls");
+            var boardTopicListProjectOption = new Option<string>("--project", "Project name or ID");
+            boardTopicListCommand.Add(boardTopicListProjectOption);
+            boardTopicListCommand.SetHandler(async (string? project) =>
+            {
+                var (url, sessionCookie) = await GetAuthenticationAsync(null);
+                if (!string.IsNullOrEmpty(sessionCookie))
+                {
+                    await ListTopicsAsync(args[0], project, (sessionCookie, url));
+                }
+            }, boardTopicListProjectOption);
+            
+            // Topic view command (when topic ID is provided)
+            var boardTopicIdArgument = new Argument<string>("topic-id", "Topic ID");
+            boardTopicCommand.Add(boardTopicIdArgument);
+            var boardTopicViewProjectOption = new Option<string>("--project", "Project name or ID");
+            boardTopicCommand.Add(boardTopicViewProjectOption);
+            boardTopicCommand.SetHandler(async (string topicId, string? project) =>
+            {
+                var (url, sessionCookie) = await GetAuthenticationAsync(null);
+                if (!string.IsNullOrEmpty(sessionCookie))
+                {
+                    await ViewTopicAsync(args[0], topicId, project, (sessionCookie, url));
+                }
+            }, boardTopicIdArgument, boardTopicViewProjectOption);
+            
+            boardTopicCommand.AddCommand(boardTopicListCommand);
+            boardCommand.AddCommand(boardTopicCommand);
+            rootCommand.AddCommand(boardCommand);
+        }
 
         // Info command
         var infoCommand = new Command("info", "Display extension and environment information");
@@ -95,8 +124,6 @@ public class Program
             DisplayInfo();
         });
 
-        rootCommand.AddCommand(listCommand);
-        rootCommand.AddCommand(boardCommand);
         rootCommand.AddCommand(infoCommand);
 
         var result = await rootCommand.InvokeAsync(args);
