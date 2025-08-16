@@ -1,43 +1,11 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
+// This file has been moved to RedmineCLI.Common.Json.DateTimeConverter
+// Keeping this for backward compatibility
+using RedmineCLI.Common.Json;
 
-namespace RedmineCLI.ApiClient;
-
-public class DateTimeConverter : JsonConverter<DateTime>
+namespace RedmineCLI.ApiClient
 {
-    private readonly string[] _formats = new[]
+    [Obsolete("Use RedmineCLI.Common.Json.DateTimeConverter instead")]
+    public class DateTimeConverter : Common.Json.DateTimeConverter
     {
-        "yyyy-MM-dd'T'HH:mm:ss'Z'",
-        "yyyy-MM-dd'T'HH:mm:sszzz",
-        "yyyy-MM-dd HH:mm:ss",
-        "yyyy-MM-dd"
-    };
-
-    public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-    {
-        var dateString = reader.GetString();
-
-        if (string.IsNullOrEmpty(dateString))
-        {
-            return DateTime.MinValue;
-        }
-
-        foreach (var format in _formats)
-        {
-            if (DateTime.TryParseExact(dateString, format,
-                System.Globalization.CultureInfo.InvariantCulture,
-                System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
-                out var result))
-            {
-                return result;
-            }
-        }
-
-        return DateTime.Parse(dateString);
-    }
-
-    public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
-    {
-        writer.WriteStringValue(value.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'"));
     }
 }

@@ -7,6 +7,9 @@
     <IsPackable>false</IsPackable>
     <PublishAot>false</PublishAot>
     <IsTestProject>true</IsTestProject>
+    
+    <!-- CS0618: Obsolete members warning (for backward compatibility during migration) -->
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

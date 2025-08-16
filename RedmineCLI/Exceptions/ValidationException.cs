@@ -1,13 +1,19 @@
-namespace RedmineCLI.Exceptions;
+// This file has been moved to RedmineCLI.Common.Exceptions.ValidationException
+// Keeping this for backward compatibility
+using RedmineCLI.Common.Exceptions;
 
-public class ValidationException : Exception
+namespace RedmineCLI.Exceptions
 {
-    public ValidationException(string message) : base(message)
+    [Obsolete("Use RedmineCLI.Common.Exceptions.ValidationException instead")]
+    public class ValidationException : Common.Exceptions.ValidationException
     {
-    }
+        public ValidationException(string message) : base(message)
+        {
+        }
 
-    public ValidationException(string message, Exception innerException)
-        : base(message, innerException)
-    {
+        public ValidationException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
     }
 }
