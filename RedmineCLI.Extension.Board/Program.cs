@@ -344,107 +344,111 @@ public class Program
 
         try
         {
-            // Look for common board patterns in HTML
-            // Pattern 1: Links with "board" in href
-            var boardLinkPattern = @"<a[^>]+href=[""']([^""']*board[^""']*)[""'][^>]*>([^<]+)</a>";
+            // Redmineのボード一覧ページからボードリンクを抽出
+            // Pattern: /projects/{project_id}/boards/{board_id} 形式のリンク
+            var boardLinkPattern = @"<a[^>]+href=[""'](/projects/[^/]+/boards/(\d+))[""'][^>]*>([^<]+)</a>";
             var boardMatches = Regex.Matches(html, boardLinkPattern, RegexOptions.IgnoreCase);
+
+            _logger?.LogDebug("Found {Count} board link matches", boardMatches.Count);
 
             foreach (Match match in boardMatches)
             {
-                var url = match.Groups[1].Value;
-                var name = match.Groups[2].Value.Trim();
+                var relativeUrl = match.Groups[1].Value;
+                var boardIdStr = match.Groups[2].Value;
+                var name = match.Groups[3].Value.Trim();
 
-                // Skip navigation links
-                if (name.ToLower().Contains("back") || name.ToLower().Contains("new") ||
-                    name.ToLower().Contains("create") || string.IsNullOrWhiteSpace(name))
+                // Skip if name is empty or looks like a navigation link
+                if (string.IsNullOrWhiteSpace(name) ||
+                    name.ToLower().Contains("new") ||
+                    name.ToLower().Contains("back"))
+                {
                     continue;
-
-                // Extract board ID from URL if possible
-                var idMatch = Regex.Match(url, @"/boards?/(\d+)");
-                var boardId = idMatch.Success ? int.Parse(idMatch.Groups[1].Value) : boards.Count + 1;
-
-                // Make URL absolute
-                if (!url.StartsWith("http"))
-                {
-                    url = url.StartsWith("/") ? $"{baseUrl}{url}" : $"{baseUrl}/{url}";
                 }
 
-                var board = new Models.Board
+                if (int.TryParse(boardIdStr, out var boardId))
                 {
-                    Id = boardId,
-                    Name = System.Net.WebUtility.HtmlDecode(name),
-                    Url = url,
-                    ColumnCount = 0,
-                    CardCount = 0
-                };
-
-                boards.Add(board);
-                _logger?.LogDebug("Found board: {Name} (ID: {Id}, URL: {Url})", board.Name, board.Id, board.Url);
-            }
-
-            // Pattern 2: Divs or sections with class containing "board"
-            var boardDivPattern = @"<div[^>]+class=[""'][^""']*board[^""']*[""'][^>]*>.*?<h\d[^>]*>([^<]+)</h\d>";
-            var divMatches = Regex.Matches(html, boardDivPattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-            foreach (Match match in divMatches)
-            {
-                var name = match.Groups[1].Value.Trim();
-                if (!boards.Any(b => b.Name == name))
-                {
-                    var board = new Models.Board
+                    // 重複チェック
+                    if (!boards.Any(b => b.Id == boardId))
                     {
-                        Id = boards.Count + 1,
-                        Name = System.Net.WebUtility.HtmlDecode(name),
-                        Url = baseUrl,
-                        ColumnCount = 0,
-                        CardCount = 0
-                    };
-                    boards.Add(board);
-                    _logger?.LogDebug("Found board from div: {Name}", board.Name);
+                        var board = new Models.Board
+                        {
+                            Id = boardId,
+                            Name = System.Net.WebUtility.HtmlDecode(name),
+                            Url = $"{baseUrl}{relativeUrl}",
+                            ColumnCount = 0,
+                            CardCount = 0
+                        };
+
+                        boards.Add(board);
+                        _logger?.LogDebug("Found board: {Name} (ID: {Id}, URL: {Url})", board.Name, board.Id, board.Url);
+                    }
                 }
             }
 
-            // Pattern 3: Table rows with board information
-            var tablePattern = @"<tr[^>]*>.*?boards?/(\d+).*?<td[^>]*>([^<]+)</td>";
-            var tableMatches = Regex.Matches(html, tablePattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-            foreach (Match match in tableMatches)
+            // ボード一覧がテーブル形式の場合（Redmine標準のフォーラム/ボード表示）
+            // <tr>タグ内でボード情報を探す
+            if (boards.Count == 0)
             {
-                var boardId = int.Parse(match.Groups[1].Value);
-                var name = match.Groups[2].Value.Trim();
+                _logger?.LogDebug("No boards found with direct links, trying table format");
 
-                if (!boards.Any(b => b.Id == boardId))
+                // テーブル内のボードリンクを探す
+                var tableRowPattern = @"<tr[^>]*>.*?<a[^>]+href=[""'](/projects/[^/]+/boards/(\d+))[""'][^>]*>([^<]+)</a>.*?</tr>";
+                var tableMatches = Regex.Matches(html, tableRowPattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+                foreach (Match match in tableMatches)
                 {
-                    var board = new Models.Board
+                    var relativeUrl = match.Groups[1].Value;
+                    var boardIdStr = match.Groups[2].Value;
+                    var name = match.Groups[3].Value.Trim();
+
+                    if (int.TryParse(boardIdStr, out var boardId) && !boards.Any(b => b.Id == boardId))
                     {
-                        Id = boardId,
-                        Name = System.Net.WebUtility.HtmlDecode(name),
-                        Url = $"{baseUrl}/boards/{boardId}",
-                        ColumnCount = 0,
-                        CardCount = 0
-                    };
-                    boards.Add(board);
-                    _logger?.LogDebug("Found board from table: {Name} (ID: {Id})", board.Name, board.Id);
+                        var board = new Models.Board
+                        {
+                            Id = boardId,
+                            Name = System.Net.WebUtility.HtmlDecode(name),
+                            Url = $"{baseUrl}{relativeUrl}",
+                            ColumnCount = 0,
+                            CardCount = 0
+                        };
+
+                        // テーブル行から追加情報を抽出（トピック数、メッセージ数など）
+                        var rowContent = match.Value;
+
+                        // トピック数を探す（これをColumnCountとして使用）
+                        var topicsPattern = @"(\d+)\s*topics?";
+                        var topicsMatch = Regex.Match(rowContent, topicsPattern, RegexOptions.IgnoreCase);
+                        if (topicsMatch.Success)
+                        {
+                            board.ColumnCount = int.Parse(topicsMatch.Groups[1].Value);
+                        }
+
+                        // メッセージ数を探す（これをCardCountとして使用）
+                        var messagesPattern = @"(\d+)\s*messages?";
+                        var messagesMatch = Regex.Match(rowContent, messagesPattern, RegexOptions.IgnoreCase);
+                        if (messagesMatch.Success)
+                        {
+                            board.CardCount = int.Parse(messagesMatch.Groups[1].Value);
+                        }
+
+                        boards.Add(board);
+                        _logger?.LogDebug("Found board from table: {Name} (ID: {Id}, Topics: {Topics}, Messages: {Messages})",
+                            board.Name, board.Id, board.ColumnCount, board.CardCount);
+                    }
                 }
             }
 
-            // Try to extract column and card counts if visible
+            // ボード説明も抽出する場合
             foreach (var board in boards)
             {
-                // Look for column count near board name
-                var columnPattern = $@"{Regex.Escape(board.Name)}.*?(\d+)\s*columns?";
-                var columnMatch = Regex.Match(html, columnPattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-                if (columnMatch.Success)
+                // ボード説明を探す（通常はリンクの後の<td>内にある）
+                var descPattern = $@"boards/{board.Id}[^>]*>.*?</a>.*?<td[^>]*>([^<]+)</td>";
+                var descMatch = Regex.Match(html, descPattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+                if (descMatch.Success)
                 {
-                    board.ColumnCount = int.Parse(columnMatch.Groups[1].Value);
-                }
-
-                // Look for card/issue count
-                var cardPattern = $@"{Regex.Escape(board.Name)}.*?(\d+)\s*(cards?|issues?)";
-                var cardMatch = Regex.Match(html, cardPattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-                if (cardMatch.Success)
-                {
-                    board.CardCount = int.Parse(cardMatch.Groups[1].Value);
+                    var description = System.Net.WebUtility.HtmlDecode(descMatch.Groups[1].Value.Trim());
+                    _logger?.LogDebug("Board {Id} description: {Desc}", board.Id, description);
+                    // 必要であればBoardモデルにDescriptionプロパティを追加して格納
                 }
             }
         }
