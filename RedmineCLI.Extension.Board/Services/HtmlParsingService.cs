@@ -66,18 +66,39 @@ public class HtmlParsingService : IHtmlParsingService
         var doc = new HtmlDocument();
         doc.LoadHtml(html);
 
+        // デバッグ用：HTMLをファイルに保存
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            var debugPath = Path.Combine(Path.GetTempPath(), "redmine_topics_debug.html");
+            File.WriteAllText(debugPath, html);
+            _logger.LogDebug("Topics HTML saved to: {Path}", debugPath);
+        }
+
         // フォーラムのトピックテーブルを探す
         var topicTable = doc.DocumentNode.SelectSingleNode("//table[@class='list messages']");
         if (topicTable == null)
         {
+            _logger.LogDebug("No topic table found with class 'list messages', trying alternative selectors");
+
+            // Alternative selectors for different Redmine themes
+            topicTable = doc.DocumentNode.SelectSingleNode("//table[contains(@class,'messages')]") ??
+                        doc.DocumentNode.SelectSingleNode("//table[contains(@class,'list')]//tr[contains(@class,'message')]/..");
+        }
+
+        if (topicTable == null)
+        {
+            _logger.LogDebug("No topic table found in HTML");
             return topics;
         }
 
-        var rows = topicTable.SelectNodes(".//tbody/tr");
+        var rows = topicTable.SelectNodes(".//tbody/tr") ?? topicTable.SelectNodes(".//tr[position()>1]");
         if (rows == null)
         {
+            _logger.LogDebug("No topic rows found in table");
             return topics;
         }
+
+        _logger.LogDebug("Found {Count} topic rows", rows.Count);
 
         foreach (var row in rows)
         {
@@ -85,6 +106,8 @@ public class HtmlParsingService : IHtmlParsingService
             if (topic != null)
             {
                 topics.Add(topic);
+                _logger.LogDebug("Parsed topic: ID={Id}, Title={Title}, Author={Author}, Replies={Replies}",
+                    topic.Id, topic.Title, topic.Author, topic.Replies);
             }
         }
 
@@ -226,74 +249,144 @@ public class HtmlParsingService : IHtmlParsingService
         {
             var topic = new Topic();
 
-            // タイトルとURL
-            var subjectCell = row.SelectSingleNode(".//td[@class='subject']");
-            if (subjectCell == null) return null;
+            // デバッグ用：行のHTMLを出力
+            _logger.LogDebug("Parsing row HTML: {Html}", row.OuterHtml.Substring(0, Math.Min(row.OuterHtml.Length, 500)));
 
-            var linkNode = subjectCell.SelectSingleNode(".//a");
-            if (linkNode == null) return null;
+            // タイトルとURL（複数のパターンに対応）
+            var subjectCell = row.SelectSingleNode(".//td[@class='subject']") ??
+                             row.SelectSingleNode(".//td[contains(@class,'subject')]");
+
+            if (subjectCell == null)
+            {
+                _logger.LogDebug("No subject cell found in row");
+                return null;
+            }
+
+            var linkNode = subjectCell.SelectSingleNode(".//a[contains(@href,'/boards/') or contains(@href,'/messages/')]");
+            if (linkNode == null)
+            {
+                _logger.LogDebug("No link found in subject cell");
+                return null;
+            }
 
             topic.Title = linkNode.InnerText.Trim();
             var href = linkNode.GetAttributeValue("href", "");
+            _logger.LogDebug("Found link with href: {Href}", href);
 
-            // IDを抽出
+            // IDを抽出（複数パターンに対応）
             var match = Regex.Match(href, @"/messages/(\d+)");
-            if (match.Success)
+            if (!match.Success)
+            {
+                // Alternative pattern for boards/XX/topics/YY
+                match = Regex.Match(href, @"/topics/(\d+)");
+            }
+            if (!match.Success)
+            {
+                // Try to extract from data attributes or other sources
+                var dataId = row.GetAttributeValue("data-message-id", "") ??
+                            row.GetAttributeValue("data-id", "");
+                if (!string.IsNullOrEmpty(dataId) && int.TryParse(dataId, out var idFromData))
+                {
+                    topic.Id = idFromData;
+                }
+                else
+                {
+                    // Use board-specific ID extraction
+                    match = Regex.Match(href, @"/(\d+)(?:[?#]|$)");
+                    if (match.Success)
+                    {
+                        topic.Id = int.Parse(match.Groups[1].Value);
+                    }
+                }
+            }
+            else
             {
                 topic.Id = int.Parse(match.Groups[1].Value);
             }
 
             // 完全なURLを構築（相対URLの場合）
-            if (!href.StartsWith("http"))
-            {
-                // BaseUrlは既にauth内にあるので、それを使う必要がある
-                // ここでは相対URLをそのまま保存
-                topic.Url = href;
-            }
-            else
-            {
-                topic.Url = href;
-            }
+            topic.Url = href;
 
             // スティッキーとロックの状態
-            if (subjectCell.InnerHtml.Contains("sticky"))
+            if (subjectCell.InnerHtml.Contains("sticky") || row.GetAttributeValue("class", "").Contains("sticky"))
             {
                 topic.IsSticky = true;
             }
-            if (subjectCell.InnerHtml.Contains("locked"))
+            if (subjectCell.InnerHtml.Contains("locked") || row.GetAttributeValue("class", "").Contains("locked"))
             {
                 topic.IsLocked = true;
             }
 
-            // 作成者
-            var authorCell = row.SelectSingleNode(".//td[@class='author']");
+            // 作成者（複数パターンに対応）
+            var authorCell = row.SelectSingleNode(".//td[@class='author']") ??
+                            row.SelectSingleNode(".//td[contains(@class,'author')]") ??
+                            row.SelectSingleNode(".//td[@class='created_by']");
             if (authorCell != null)
             {
-                topic.Author = authorCell.InnerText.Trim();
+                // リンク内のテキストまたはセル直下のテキスト
+                var authorLink = authorCell.SelectSingleNode(".//a");
+                topic.Author = authorLink != null ? authorLink.InnerText.Trim() : authorCell.InnerText.Trim();
             }
 
-            // 返信数
-            var repliesCell = row.SelectSingleNode(".//td[@class='replies']");
-            if (repliesCell != null && int.TryParse(repliesCell.InnerText.Trim(), out var replies))
-            {
-                topic.Replies = replies;
-            }
+            // 返信数（複数パターンに対応）
+            var repliesCell = row.SelectSingleNode(".//td[@class='replies']") ??
+                             row.SelectSingleNode(".//td[contains(@class,'replies')]") ??
+                             row.SelectSingleNode(".//td[@class='reply-count']") ??
+                             row.SelectSingleNode(".//td[@class='comments']");
 
-            // 最終返信日時
-            var lastReplyCell = row.SelectSingleNode(".//td[@class='last-reply']");
-            if (lastReplyCell != null)
+            if (repliesCell != null)
             {
-                var dateText = lastReplyCell.InnerText.Trim();
-                if (DateTime.TryParse(dateText, out var lastReply))
+                var repliesText = repliesCell.InnerText.Trim();
+                // 数字のみを抽出
+                var numberMatch = Regex.Match(repliesText, @"\d+");
+                if (numberMatch.Success && int.TryParse(numberMatch.Value, out var replies))
                 {
-                    topic.LastReply = lastReply;
+                    topic.Replies = replies;
                 }
             }
 
+            // 最終返信日時（複数パターンに対応）
+            var lastReplyCell = row.SelectSingleNode(".//td[@class='last-reply']") ??
+                               row.SelectSingleNode(".//td[contains(@class,'last-reply')]") ??
+                               row.SelectSingleNode(".//td[@class='last_message']") ??
+                               row.SelectSingleNode(".//td[@class='updated_on']");
+
+            if (lastReplyCell != null)
+            {
+                var dateText = lastReplyCell.InnerText.Trim();
+                // 日付部分のみを抽出（「by User」などを除外）
+                var dateMatch = Regex.Match(dateText, @"(\d{4}[-/]\d{2}[-/]\d{2}(?:\s+\d{2}:\d{2})?)|(\d{2}[-/]\d{2}[-/]\d{4}(?:\s+\d{2}:\d{2})?)|(\d+\s+(?:days?|hours?|minutes?)\s+ago)");
+                if (dateMatch.Success)
+                {
+                    dateText = dateMatch.Value;
+                    if (dateText.Contains("ago"))
+                    {
+                        // "X days ago" format handling
+                        var agoMatch = Regex.Match(dateText, @"(\d+)\s+(days?|hours?|minutes?)");
+                        if (agoMatch.Success)
+                        {
+                            var amount = int.Parse(agoMatch.Groups[1].Value);
+                            var unit = agoMatch.Groups[2].Value;
+                            topic.LastReply = unit.StartsWith("day") ? DateTime.Now.AddDays(-amount) :
+                                            unit.StartsWith("hour") ? DateTime.Now.AddHours(-amount) :
+                                            DateTime.Now.AddMinutes(-amount);
+                        }
+                    }
+                    else if (DateTime.TryParse(dateText, out var lastReply))
+                    {
+                        topic.LastReply = lastReply;
+                    }
+                }
+            }
+
+            _logger.LogDebug("Successfully parsed topic: ID={Id}, Title={Title}, Author={Author}, Replies={Replies}",
+                topic.Id, topic.Title, topic.Author, topic.Replies);
+
             return topic;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Error parsing topic from row");
             return null;
         }
     }
