@@ -154,43 +154,46 @@ jobs:
 
     - name: Publish Native AOT - RedmineCLI
       run: |
-        dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r ${{ matrix.config.rid }} -p:PublishAot=true -p:StripSymbols=true -p:Version=${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }} -p:IncludeSourceRevisionInInformationalVersion=false --self-contained -o publish/${{ matrix.config.rid }}/redmine-cli
+        dotnet publish RedmineCLI/RedmineCLI.csproj -c Release -r ${{ matrix.config.rid }} -p:PublishAot=true -p:StripSymbols=true -p:Version=${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }} -p:IncludeSourceRevisionInInformationalVersion=false --self-contained -o publish/${{ matrix.config.rid }}
 
     - name: Publish Native AOT - Redmine Board
       run: |
-        dotnet publish RedmineCLI.Extension.Board/RedmineCLI.Extension.Board.csproj -c Release -r ${{ matrix.config.rid }} -p:PublishAot=true -p:StripSymbols=true -p:Version=${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }} -p:IncludeSourceRevisionInInformationalVersion=false --self-contained -o publish/${{ matrix.config.rid }}/redmine-board
+        dotnet publish RedmineCLI.Extension.Board/RedmineCLI.Extension.Board.csproj -c Release -r ${{ matrix.config.rid }} -p:PublishAot=true -p:StripSymbols=true -p:Version=${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }} -p:IncludeSourceRevisionInInformationalVersion=false --self-contained -o publish-board/${{ matrix.config.rid }}
 
-    - name: Compress binaries to zip (Windows)
+    - name: Compress binary to zip (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        # Compress redmine-cli
-        cd publish/${{ matrix.config.rid }}/redmine-cli
-        Compress-Archive -Path ${{ matrix.config.output }} -DestinationPath ../../../${{ env.ASSET_NAME_PREFIX }}-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip
-        cd ../../..
-        
-        # Compress redmine-board
-        cd publish/${{ matrix.config.rid }}/redmine-board
-        $boardOutput = if ('${{ matrix.config.rid }}' -like 'win-*') { 'redmine-board.exe' } else { 'redmine-board' }
-        Compress-Archive -Path $boardOutput -DestinationPath ../../../redmine-board-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip
-        cd ../../..
+        cd publish/${{ matrix.config.rid }}
+        Compress-Archive -Path ${{ matrix.config.output }} -DestinationPath ../../${{ env.ASSET_NAME_PREFIX }}-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip
+        cd ../..
 
-    - name: Compress binaries to zip (Unix)
+    - name: Compress redmine-board to zip (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        cd publish-board/${{ matrix.config.rid }}
+        $boardOutput = if ('${{ matrix.config.rid }}' -like 'win-*') { 'redmine-board.exe' } else { 'redmine-board' }
+        Compress-Archive -Path $boardOutput -DestinationPath ../../redmine-board-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip
+        cd ../..
+
+    - name: Compress binary to zip (Unix)
       if: runner.os != 'Windows'
       run: |
-        # Compress redmine-cli
-        cd publish/${{ matrix.config.rid }}/redmine-cli
-        zip -j ../../../${{ env.ASSET_NAME_PREFIX }}-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip ${{ matrix.config.output }}
-        cd ../../..
-        
-        # Compress redmine-board
-        cd publish/${{ matrix.config.rid }}/redmine-board
+        cd publish/${{ matrix.config.rid }}
+        zip -j ../../${{ env.ASSET_NAME_PREFIX }}-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip ${{ matrix.config.output }}
+        cd ../..
+
+    - name: Compress redmine-board to zip (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        cd publish-board/${{ matrix.config.rid }}
         BOARD_OUTPUT="redmine-board"
         if [[ "${{ matrix.config.rid }}" == win-* ]]; then
           BOARD_OUTPUT="redmine-board.exe"
         fi
-        zip -j ../../../redmine-board-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip $BOARD_OUTPUT
-        cd ../../..
+        zip -j ../../redmine-board-${{ steps.extract_version_windows.outputs.version || steps.extract_version_unix.outputs.version }}-${{ matrix.config.rid }}.zip $BOARD_OUTPUT
+        cd ../..
 
     - name: Upload Release Assets
       uses: softprops/action-gh-release@v2
