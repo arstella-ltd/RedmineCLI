@@ -730,3 +730,78 @@
   ./bin/Release/net9.0/linux-x64/publish/redmine auth status
   ./bin/Release/net9.0/linux-x64/publish/redmine auth logout
   ```
+
+- [ ] 18. OSキーチェーン統合の実装（TDD）
+  - **Red**: キーチェーン統合のテストを先に作成
+    - WindowsCredentialStoreTests
+      - SaveCredential_Should_StoreInCredentialManager_When_ValidData
+      - GetCredential_Should_ReturnStoredData_When_Exists
+      - DeleteCredential_Should_RemoveFromManager_When_Called
+    - MacOSCredentialStoreTests
+      - SaveCredential_Should_StoreInKeychain_When_ValidData
+      - GetCredential_Should_ReturnStoredData_When_Exists
+      - DeleteCredential_Should_RemoveFromKeychain_When_Called
+    - LinuxCredentialStoreTests
+      - SaveCredential_Should_StoreInLibsecret_When_ValidData
+      - GetCredential_Should_ReturnStoredData_When_Exists
+      - DeleteCredential_Should_RemoveFromLibsecret_When_Called
+  - **Green**: テストを通すための実装
+    - RedmineCLI.Commonプロジェクトの作成（AOT互換設定）
+    - ICredentialStoreインターフェースの定義
+    - WindowsCredentialStore実装（P/Invoke使用）
+    - MacOSCredentialStore実装（security コマンド使用）
+    - LinuxCredentialStore実装（secret-tool使用）
+    - CredentialStore.Create()ファクトリメソッド
+    - StoredCredentialモデルの作成
+  - **Refactor**: プラットフォーム固有コードの最適化
+    - 条件付きコンパイルディレクティブの適切な使用
+    - エラーハンドリングの統一
+    - セキュリティ考慮事項の実装
+  - _要求: 15_
+
+- [ ] 19. auth loginコマンドの拡張（TDD）
+  - **Red**: 拡張された認証のテストを作成
+    - Login_Should_SaveToKeychain_When_SavePasswordOption
+    - Login_Should_PromptForMethod_When_Interactive
+    - Login_Should_TestBasicAuth_When_UsernamePassword
+    - Login_Should_PrioritizeApiKey_When_Both
+  - **Green**: テストを通すための実装
+    - --save-passwordオプションの追加
+    - 認証方式選択の対話的プロンプト
+    - ユーザー名/パスワード認証のサポート
+    - OSキーチェーンへの保存機能
+    - Basic認証でのテスト接続
+  - **Refactor**: 認証フローの最適化
+    - 認証ストラテジーパターンの適用
+    - 設定とキーチェーンの統合
+  - _要求: 15_
+
+- [ ] 20. auth statusコマンドの拡張（TDD）
+  - **Red**: ステータス表示のテストを作成
+    - Status_Should_ShowKeychainState_When_PasswordStored
+    - Status_Should_ShowAuthMethod_When_Connected
+    - Status_Should_ShowLastUpdated_When_Available
+  - **Green**: テストを通すための実装
+    - キーチェーン保存状態の確認機能
+    - 認証方式の表示（APIキー/パスワード）
+    - 最終更新日時の表示
+    - 接続テストの実行
+  - **Refactor**: 表示フォーマットの改善
+    - テーブル形式での整形
+    - 色分けによる視認性向上
+  - _要求: 15_
+
+- [ ] 21. 拡張機能での認証情報取得実装（TDD）
+  - **Red**: 拡張機能の認証テストを作成
+    - Extension_Should_GetCredentialFromKeychain_When_NoApiKey
+    - Extension_Should_UseApiKey_When_EnvironmentVariable
+    - Extension_Should_ThrowError_When_NoCredentials
+  - **Green**: テストを通すための実装
+    - RedmineCLI.Extension.ExampleでのRedmineCLI.Common使用
+    - キーチェーンからの認証情報取得
+    - Basic認証ヘッダーの設定
+    - エラーハンドリング
+  - **Refactor**: 認証ヘルパークラスの作成
+    - 共通認証ロジックの抽出
+    - 拡張機能用のベースクラス
+  - _要求: 10, 15_
