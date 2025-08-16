@@ -357,56 +357,22 @@ public class Program
 
             // テーブル形式のボード一覧を探す（<tr class="board">タグを利用）
             var boardRows = doc.DocumentNode.SelectNodes("//tr[@class='board']");
-
-            if (boardRows != null)
+            if (boardRows == null)
             {
-                _logger?.LogDebug("Found {Count} board table rows", boardRows.Count);
+                _logger?.LogDebug("No board rows found in HTML");
+                return boards;
+            }
 
-                foreach (var row in boardRows)
+            _logger?.LogDebug("Found {Count} board table rows", boardRows.Count);
+
+            foreach (var row in boardRows)
+            {
+                var board = ParseBoardFromRow(row, baseUrl);
+                if (board != null)
                 {
-                    // ボードへのリンクを取得
-                    var linkNode = row.SelectSingleNode(".//a[contains(@href, '/boards/')]");
-                    if (linkNode == null) continue;
-
-                    var href = linkNode.GetAttributeValue("href", "");
-                    var boardIdMatch = Regex.Match(href, @"/boards/(\d+)");
-                    if (!boardIdMatch.Success) continue;
-
-                    if (int.TryParse(boardIdMatch.Groups[1].Value, out var boardId))
-                    {
-                        // ボード名を取得（<span class="icon-label">内のテキスト）
-                        var nameNode = linkNode.SelectSingleNode(".//span[@class='icon-label']");
-                        string boardName = nameNode?.InnerText.Trim() ?? $"Board {boardId}";
-
-                        // トピック数を取得
-                        var topicNode = row.SelectSingleNode(".//td[@class='topic-count']");
-                        int topicCount = 0;
-                        if (topicNode != null && int.TryParse(topicNode.InnerText.Trim(), out var topics))
-                        {
-                            topicCount = topics;
-                        }
-
-                        // メッセージ数を取得
-                        var messageNode = row.SelectSingleNode(".//td[@class='message-count']");
-                        int messageCount = 0;
-                        if (messageNode != null && int.TryParse(messageNode.InnerText.Trim(), out var messages))
-                        {
-                            messageCount = messages;
-                        }
-
-                        var board = new Models.Board
-                        {
-                            Id = boardId,
-                            Name = System.Net.WebUtility.HtmlDecode(boardName),
-                            Url = $"{baseUrl}{href}",
-                            ColumnCount = topicCount,
-                            CardCount = messageCount
-                        };
-
-                        boards.Add(board);
-                        _logger?.LogDebug("Found board: {Name} (ID: {Id}, Topics: {Topics}, Messages: {Messages})",
-                            board.Name, board.Id, board.ColumnCount, board.CardCount);
-                    }
+                    boards.Add(board);
+                    _logger?.LogDebug("Found board: {Name} (ID: {Id}, Topics: {Topics}, Messages: {Messages})",
+                        board.Name, board.Id, board.ColumnCount, board.CardCount);
                 }
             }
         }
@@ -417,6 +383,74 @@ public class Program
 
         _logger?.LogDebug("Parsed {Count} boards from HTML", boards.Count);
         return boards;
+    }
+
+    private static Models.Board? ParseBoardFromRow(HtmlAgilityPack.HtmlNode row, string baseUrl)
+    {
+        // ボードへのリンクを取得
+        var linkNode = row.SelectSingleNode(".//a[contains(@href, '/boards/')]");
+        if (linkNode == null)
+        {
+            _logger?.LogDebug("No board link found in row");
+            return null;
+        }
+
+        var href = linkNode.GetAttributeValue("href", "");
+        var boardId = ExtractBoardId(href);
+        if (boardId == null)
+        {
+            _logger?.LogDebug("Could not extract board ID from href: {Href}", href);
+            return null;
+        }
+
+        // ボード名を取得
+        var boardName = ExtractBoardName(linkNode, boardId.Value);
+
+        // トピック数とメッセージ数を取得
+        var topicCount = ExtractCount(row, "topic-count");
+        var messageCount = ExtractCount(row, "message-count");
+
+        return new Models.Board
+        {
+            Id = boardId.Value,
+            Name = System.Net.WebUtility.HtmlDecode(boardName),
+            Url = $"{baseUrl}{href}",
+            ColumnCount = topicCount,
+            CardCount = messageCount
+        };
+    }
+
+    private static int? ExtractBoardId(string href)
+    {
+        var boardIdMatch = Regex.Match(href, @"/boards/(\d+)");
+        if (!boardIdMatch.Success)
+            return null;
+
+        if (int.TryParse(boardIdMatch.Groups[1].Value, out var boardId))
+            return boardId;
+
+        return null;
+    }
+
+    private static string ExtractBoardName(HtmlAgilityPack.HtmlNode linkNode, int boardId)
+    {
+        var nameNode = linkNode.SelectSingleNode(".//span[@class='icon-label']");
+        if (nameNode != null)
+            return nameNode.InnerText.Trim();
+
+        return $"Board {boardId}";
+    }
+
+    private static int ExtractCount(HtmlAgilityPack.HtmlNode row, string className)
+    {
+        var node = row.SelectSingleNode($".//td[@class='{className}']");
+        if (node == null)
+            return 0;
+
+        if (int.TryParse(node.InnerText.Trim(), out var count))
+            return count;
+
+        return 0;
     }
 
 
