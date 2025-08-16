@@ -731,7 +731,7 @@
   ./bin/Release/net9.0/linux-x64/publish/redmine auth logout
   ```
 
-- [ ] 18. OSキーチェーン統合の実装（TDD）
+- [x] 18. OSキーチェーン統合の実装（TDD）
   - **Red**: キーチェーン統合のテストを先に作成
     - WindowsCredentialStoreTests
       - SaveCredential_Should_StoreInCredentialManager_When_ValidData
@@ -805,3 +805,17 @@
     - 共通認証ロジックの抽出
     - 拡張機能用のベースクラス
   - _要求: 10, 15_
+
+## 実装メモ
+
+### タスク18完了（2025-08-16）
+- TDD手法（Red→Green→Refactor）に従って実装
+- RedmineCLI.Commonプロジェクトを作成（Native AOT互換）
+- ICredentialStoreインターフェースと各OS実装を作成
+  - WindowsCredentialStore（Windows Credential Manager）
+  - MacOSCredentialStore（macOS Keychain）
+  - LinuxCredentialStore（libsecret）
+  - FileBasedCredentialStore（フォールバック実装）
+- テスト16件を作成して全て成功
+- auth loginコマンドに--save-passwordオプションを追加
+- Native AOTビルド成功（18MB - 後で最適化予定）

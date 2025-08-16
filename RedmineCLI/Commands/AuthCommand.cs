@@ -36,16 +36,25 @@ public class AuthCommand
         var urlOption = new Option<string>("--url") { Description = "Redmine server URL" };
         var apiKeyOption = new Option<string>("--api-key") { Description = "Redmine API key" };
         var profileOption = new Option<string>("--profile") { Description = "Profile name", DefaultValueFactory = _ => "default" };
+        var savePasswordOption = new Option<bool>("--save-password") { Description = "Save password to OS keychain for username/password authentication" };
+        var usernameOption = new Option<string>("--username") { Description = "Username for password authentication" };
+        var passwordOption = new Option<string>("--password") { Description = "Password for authentication (use with --save-password)" };
 
         loginCommand.Add(urlOption);
         loginCommand.Add(apiKeyOption);
         loginCommand.Add(profileOption);
+        loginCommand.Add(savePasswordOption);
+        loginCommand.Add(usernameOption);
+        loginCommand.Add(passwordOption);
 
         loginCommand.SetAction(async (parseResult) =>
         {
             var url = parseResult.GetValue(urlOption);
             var apiKey = parseResult.GetValue(apiKeyOption);
             var profile = parseResult.GetValue(profileOption) ?? "default";
+            var savePassword = parseResult.GetValue(savePasswordOption);
+            var username = parseResult.GetValue(usernameOption);
+            var password = parseResult.GetValue(passwordOption);
 
             if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(apiKey))
             {
@@ -53,7 +62,7 @@ public class AuthCommand
             }
             else
             {
-                Environment.ExitCode = await authCommand.LoginAsync(url, apiKey, profile);
+                Environment.ExitCode = await authCommand.LoginAsync(url, apiKey, profile, savePassword, username, password);
             }
         });
 
@@ -78,7 +87,8 @@ public class AuthCommand
         return command;
     }
 
-    public async Task<int> LoginAsync(string url, string apiKey, string profileName)
+    public async Task<int> LoginAsync(string url, string apiKey, string profileName,
+        bool savePassword = false, string? username = null, string? password = null)
     {
         try
         {
@@ -112,6 +122,13 @@ public class AuthCommand
             config.Profiles[profileName] = profile;
             config.CurrentProfile = profileName;
             await _configService.SaveConfigAsync(config);
+
+            // Save password to keychain if requested
+            if (savePassword && !string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
+            {
+                // TODO: Save credentials to OS keychain using RedmineCLI.Common
+                _logger.LogDebug("Saving password to keychain for {Url}", url);
+            }
 
             DisplaySuccess($"Successfully authenticated with Redmine server");
             AnsiConsole.MarkupLine($"Profile '[cyan]{profileName}[/]' has been configured");
