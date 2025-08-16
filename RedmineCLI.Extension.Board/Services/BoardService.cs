@@ -3,6 +3,7 @@ using System.Text.Json;
 
 using Microsoft.Extensions.Logging;
 
+using RedmineCLI.Common.Http;
 using RedmineCLI.Extension.Board.Models;
 
 using Spectre.Console;
@@ -47,9 +48,9 @@ public class BoardService : IBoardService
 
         // _logger.LogDebug("Using session cookie for {Url}", redmineUrl);
 
-        using var httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.Add("User-Agent", "RedmineCLI-Board/1.0");
-        httpClient.DefaultRequestHeaders.Add("Cookie", sessionCookie);
+        // Use the factory to create HttpClient with session
+        var factory = new RedmineHttpClientFactory(null);
+        using var httpClient = factory.CreateClientWithSession(redmineUrl, sessionCookie, "RedmineCLI-Board/1.0");
 
         try
         {
@@ -200,8 +201,9 @@ public class BoardService : IBoardService
             boardUrl = $"{auth.BaseUrl}/projects/{projectName}/boards/{boardId}";
         }
 
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Add("Cookie", auth.SessionCookie);
+        // Use the factory to create HttpClient with session
+        var factory = new RedmineHttpClientFactory(null);
+        using var client = factory.CreateClientWithSession(auth.BaseUrl, auth.SessionCookie);
 
         var response = await client.GetAsync(boardUrl);
         if (!response.IsSuccessStatusCode)
@@ -269,8 +271,9 @@ public class BoardService : IBoardService
         //     _logger.LogDebug("Project name '{Project}' was provided but not used in URL", projectName);
         // }
 
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Add("Cookie", auth.SessionCookie);
+        // Use the factory to create HttpClient with session
+        var factory = new RedmineHttpClientFactory(null);
+        using var client = factory.CreateClientWithSession(auth.BaseUrl, auth.SessionCookie);
 
         var response = await client.GetAsync(topicUrl);
         if (!response.IsSuccessStatusCode)

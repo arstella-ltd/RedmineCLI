@@ -1,14 +1,15 @@
-namespace RedmineCLI.Exceptions;
+// This file has been moved to RedmineCLI.Common.Exceptions.RedmineApiException
+// Keeping this for backward compatibility
+using RedmineCLI.Common.Exceptions;
 
-public class RedmineApiException : Exception
+namespace RedmineCLI.Exceptions
 {
-    public int StatusCode { get; }
-    public string? ApiError { get; }
-
-    public RedmineApiException(int statusCode, string message, string? apiError = null)
-        : base(message)
+    [Obsolete("Use RedmineCLI.Common.Exceptions.RedmineApiException instead")]
+    public class RedmineApiException : Common.Exceptions.RedmineApiException
     {
-        StatusCode = statusCode;
-        ApiError = apiError;
+        public RedmineApiException(int statusCode, string message, string? apiError = null)
+            : base(statusCode, message, apiError)
+        {
+        }
     }
 }
