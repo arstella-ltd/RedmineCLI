@@ -12,6 +12,8 @@ using RedmineCLI.Common.Models;
 using RedmineCLI.Common.Services;
 using RedmineCLI.Extension.Board.Models;
 
+using Spectre.Console;
+
 namespace RedmineCLI.Extension.Board;
 
 /// <summary>
@@ -110,7 +112,8 @@ public class Program
         if (string.IsNullOrEmpty(redmineUrl))
         {
             _logger?.LogError("No Redmine URL configured");
-            Console.Error.WriteLine("Error: No Redmine URL found. Please specify --url or run 'redmine auth login' first.");
+            AnsiConsole.MarkupLine("[red]Error: No Redmine URL found.[/]");
+            AnsiConsole.MarkupLine("Please specify [cyan]--url[/] or run [cyan]redmine auth login[/] first.");
             Environment.Exit(1);
         }
 
@@ -132,7 +135,8 @@ public class Program
             if (credential == null)
             {
                 _logger?.LogError("No credentials found in keychain for {Url}", redmineUrl);
-                Console.Error.WriteLine($"Error: No credentials found for {redmineUrl}. Please run 'redmine auth login' first.");
+                AnsiConsole.MarkupLine($"[red]Error: No credentials found for {redmineUrl}.[/]");
+                AnsiConsole.MarkupLine("Please run [cyan]redmine auth login --save-password[/] first.");
                 Environment.Exit(1);
             }
 
@@ -168,15 +172,16 @@ public class Program
             }
 
             _logger?.LogError("Failed to create session from stored credentials");
-            Console.Error.WriteLine("Error: Failed to authenticate. Please run 'redmine auth login' again.");
+            AnsiConsole.MarkupLine("[red]Error: Failed to authenticate.[/]");
+            AnsiConsole.MarkupLine("Please run [cyan]redmine auth login --save-password[/] again.");
             Environment.Exit(1);
             return (redmineUrl, null);
         }
         catch (Exception ex)
         {
             _logger?.LogError(ex, "Error accessing keychain");
-            Console.Error.WriteLine($"Error accessing keychain: {ex.Message}");
-            Console.Error.WriteLine("Please run 'redmine auth login' first.");
+            AnsiConsole.MarkupLine($"[red]Error accessing keychain: {ex.Message}[/]");
+            AnsiConsole.MarkupLine("Please run [cyan]redmine auth login --save-password[/] first.");
             Environment.Exit(1);
             return (redmineUrl, null);
         }
@@ -193,7 +198,8 @@ public class Program
         if (string.IsNullOrEmpty(sessionCookie))
         {
             _logger?.LogError("No session cookie available");
-            Console.Error.WriteLine("Error: Could not create session. Please ensure you have saved password credentials with 'redmine auth login --save-password'.");
+            AnsiConsole.MarkupLine("[red]Error: Could not create session.[/]");
+            AnsiConsole.MarkupLine("Please ensure you have saved password credentials with [cyan]redmine auth login --save-password[/].");
             Environment.Exit(1);
             return;
         }
@@ -210,8 +216,8 @@ public class Program
             if (string.IsNullOrEmpty(projectFilter))
             {
                 _logger?.LogError("Project filter is required");
-                Console.Error.WriteLine("Error: Project identifier is required. Please specify --project option.");
-                Console.Error.WriteLine("Usage: redmine-board list --project <project-identifier>");
+                AnsiConsole.MarkupLine("[red]Error: Project identifier is required.[/]");
+                AnsiConsole.MarkupLine("Usage: [cyan]redmine-board list --project <project-identifier>[/]");
                 Environment.Exit(1);
                 return;
             }
@@ -257,13 +263,14 @@ public class Program
                 else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
                     _logger?.LogDebug("Boards not available for project {Project}", projectFilter);
-                    Console.Error.WriteLine($"Error: No boards found for project '{projectFilter}'.");
-                    Console.Error.WriteLine("Note: Board functionality requires a board plugin to be installed on the Redmine server.");
+                    AnsiConsole.MarkupLine($"[yellow]No boards found for project '[cyan]{projectFilter}[/]'.[/]");
+                    AnsiConsole.MarkupLine("[dim]Note: Board functionality requires a board plugin to be installed on the Redmine server.[/]");
                 }
                 else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
                     _logger?.LogError("Session expired or invalid");
-                    Console.Error.WriteLine("Error: Session expired. Please run 'redmine auth login --save-password' again.");
+                    AnsiConsole.MarkupLine("[red]Error: Session expired.[/]");
+                    AnsiConsole.MarkupLine("Please run [cyan]redmine auth login --save-password[/] again.");
                     Environment.Exit(1);
                     return;
                 }
@@ -271,7 +278,8 @@ public class Program
             catch (HttpRequestException ex)
             {
                 _logger?.LogError(ex, "Failed to fetch board URL");
-                Console.Error.WriteLine($"Error: Failed to connect to Redmine server: {ex.Message}");
+                AnsiConsole.MarkupLine($"[red]Error: Failed to connect to Redmine server[/]");
+                AnsiConsole.MarkupLine($"[dim]{ex.Message}[/]");
                 Environment.Exit(1);
                 return;
             }
@@ -279,14 +287,31 @@ public class Program
             // Display results
             if (allBoards.Any())
             {
-                Console.WriteLine($"\nFound {allBoards.Count} board(s):\n");
-                Console.WriteLine($"{"ID",-6} {"Name",-30} {"Project",-20} {"Columns",-8} {"Cards",-8}");
-                Console.WriteLine(new string('-', 75));
+                AnsiConsole.MarkupLine($"[bold]Found {allBoards.Count} board(s) for project '[cyan]{projectFilter}[/]'[/]");
+                AnsiConsole.WriteLine();
 
+                // Create table
+                var table = new Table();
+                table.AddColumn(new TableColumn("[yellow]ID[/]").Centered());
+                table.AddColumn(new TableColumn("[yellow]Name[/]"));
+                table.AddColumn(new TableColumn("[yellow]Project[/]"));
+                table.AddColumn(new TableColumn("[yellow]Columns[/]").Centered());
+                table.AddColumn(new TableColumn("[yellow]Cards[/]").Centered());
+
+                // Add rows
                 foreach (var board in allBoards.DistinctBy(b => b.Id))
                 {
-                    Console.WriteLine($"{board.Id,-6} {board.Name,-30} {board.ProjectName ?? "N/A",-20} {board.ColumnCount,-8} {board.CardCount,-8}");
+                    table.AddRow(
+                        board.Id.ToString(),
+                        Markup.Escape(board.Name),
+                        Markup.Escape(board.ProjectName ?? "N/A"),
+                        board.ColumnCount.ToString(),
+                        board.CardCount.ToString()
+                    );
                 }
+
+                // Display table
+                AnsiConsole.Write(table);
 
                 // Save boards to JSON for debugging
                 if (_logger?.IsEnabled(LogLevel.Debug) == true)
@@ -298,9 +323,10 @@ public class Program
             }
             else
             {
-                Console.WriteLine("No boards found.");
-                Console.WriteLine("\nNote: Board functionality usually requires a plugin to be installed on the Redmine server.");
-                Console.WriteLine("Common plugins: Redmine Agile, Backlogs, or custom board plugins.");
+                AnsiConsole.MarkupLine("[yellow]No boards found.[/]");
+                AnsiConsole.WriteLine();
+                AnsiConsole.MarkupLine("[dim]Note: Board functionality usually requires a plugin to be installed on the Redmine server.[/]");
+                AnsiConsole.MarkupLine("[dim]Common plugins: Redmine Agile, Backlogs, or custom board plugins.[/]");
             }
         }
         catch (Exception ex)
