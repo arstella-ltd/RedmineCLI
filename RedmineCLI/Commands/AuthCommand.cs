@@ -58,7 +58,7 @@ public class AuthCommand
 
             if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(apiKey))
             {
-                Environment.ExitCode = await authCommand.LoginInteractiveAsync();
+                Environment.ExitCode = await authCommand.LoginInteractiveAsync(savePassword);
             }
             else
             {
@@ -144,7 +144,7 @@ public class AuthCommand
         }
     }
 
-    public async Task<int> LoginInteractiveAsync()
+    public async Task<int> LoginInteractiveAsync(bool savePassword = false)
     {
         try
         {
@@ -163,17 +163,67 @@ public class AuthCommand
                         return ValidationResult.Success();
                     }));
 
-            // Prompt for API key
-            var apiKey = AnsiConsole.Prompt(
-                new TextPrompt<string>("Enter your Redmine API key:")
-                    .Secret()
-                    .ValidationErrorMessage("[red]API key cannot be empty[/]")
-                    .Validate(input =>
-                    {
-                        if (string.IsNullOrWhiteSpace(input))
-                            return ValidationResult.Error("API key cannot be empty");
-                        return ValidationResult.Success();
-                    }));
+            string apiKey = string.Empty;
+            string? username = null;
+            string? password = null;
+
+            // If save-password is specified, ask for username and password
+            if (savePassword)
+            {
+                AnsiConsole.MarkupLine("[yellow]Password authentication mode[/]");
+                AnsiConsole.WriteLine();
+
+                // Prompt for username
+                username = AnsiConsole.Prompt(
+                    new TextPrompt<string>("Enter your Redmine username:")
+                        .ValidationErrorMessage("[red]Username cannot be empty[/]")
+                        .Validate(input =>
+                        {
+                            if (string.IsNullOrWhiteSpace(input))
+                                return ValidationResult.Error("Username cannot be empty");
+                            return ValidationResult.Success();
+                        }));
+
+                // Prompt for password
+                password = AnsiConsole.Prompt(
+                    new TextPrompt<string>("Enter your Redmine password:")
+                        .Secret()
+                        .ValidationErrorMessage("[red]Password cannot be empty[/]")
+                        .Validate(input =>
+                        {
+                            if (string.IsNullOrWhiteSpace(input))
+                                return ValidationResult.Error("Password cannot be empty");
+                            return ValidationResult.Success();
+                        }));
+
+                // TODO: Generate API key from username/password
+                // For now, still ask for API key
+                AnsiConsole.MarkupLine("[yellow]Note: API key is still required for authentication[/]");
+                apiKey = AnsiConsole.Prompt(
+                    new TextPrompt<string>("Enter your Redmine API key:")
+                        .Secret()
+                        .ValidationErrorMessage("[red]API key cannot be empty[/]")
+                        .Validate(input =>
+                        {
+                            if (string.IsNullOrWhiteSpace(input))
+                                return ValidationResult.Error("API key cannot be empty");
+                            return ValidationResult.Success();
+                        }));
+            }
+            else
+            {
+                // Prompt for API key
+                apiKey = AnsiConsole.Prompt(
+                    new TextPrompt<string>("Enter your Redmine API key:")
+                        .Secret()
+                        .ValidationErrorMessage("[red]API key cannot be empty[/]")
+                        .Validate(input =>
+                        {
+                            if (string.IsNullOrWhiteSpace(input))
+                                return ValidationResult.Error("API key cannot be empty");
+                            return ValidationResult.Success();
+                        }));
+            }
 
             // Prompt for profile name
             var profileName = AnsiConsole.Prompt(
@@ -187,7 +237,7 @@ public class AuthCommand
                         return ValidationResult.Success();
                     }));
 
-            return await LoginAsync(url, apiKey, profileName);
+            return await LoginAsync(url, apiKey, profileName, savePassword, username, password);
         }
         catch (Exception ex)
         {
