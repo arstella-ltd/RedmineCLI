@@ -203,3 +203,20 @@ RedmineCLIは、Redmineのチケット管理をコマンドラインから効率
 10. WHEN クローズが成功 THEN 確認メッセージが表示される SHALL
 11. WHEN 複数のチケットIDを指定 THEN 各チケットが順番にクローズされる SHALL
 12. WHEN `--json` オプションを指定 THEN 結果がJSON形式で出力される SHALL
+
+### 要求 15
+**ユーザーストーリー:** 拡張機能の開発者として、APIキーが使用できない環境でもユーザー名/パスワード認証を使いたいので、OSのキーチェーンを使用して安全に認証情報を管理できる
+
+#### 受け入れ基準
+1. WHEN `redmine auth login --save-password` を実行 THEN ユーザー名とパスワードがOSのキーチェーンに安全に保存される SHALL
+2. WHEN Windows環境で実行 THEN Windows Credential Managerに認証情報が保存される SHALL
+3. WHEN macOS環境で実行 THEN macOS Keychainに認証情報が保存される SHALL
+4. WHEN Linux環境で実行 THEN libsecret（Secret Service API）に認証情報が保存される SHALL
+5. WHEN `redmine auth status` を実行 THEN OSキーチェーンにパスワードが保存されているかどうかが表示される SHALL
+6. WHEN 拡張機能が実行される THEN RedmineCLI.Commonライブラリを使用してOSキーチェーンから認証情報を取得できる SHALL
+7. WHEN 拡張機能がキーチェーンから認証情報を取得 THEN 環境変数経由ではなく直接アクセスすることでセキュリティが確保される SHALL
+8. WHEN `redmine auth logout --clear-keychain` を実行 THEN OSキーチェーンから認証情報が削除される SHALL
+9. WHEN APIキーが設定されている場合 THEN APIキー認証が優先され、キーチェーンの認証情報は使用されない SHALL
+10. WHEN キーチェーンアクセスでエラーが発生 THEN 適切なエラーメッセージが表示される SHALL
+11. WHEN RedmineCLI.Commonライブラリをビルド THEN Native AOT互換（IsAotCompatible: true）として設定される SHALL
+12. WHEN 複数のRedmineサーバーを使用 THEN サーバーURLごとに異なる認証情報をキーチェーンに保存できる SHALL

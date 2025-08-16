@@ -61,24 +61,42 @@ APIキーベースの認証により安全な通信を実現し、設定はYAML�
 ### Authentication Command Design
 - **責任**: ユーザー認証とプロファイル管理
 - **主要コマンド**
-  - `auth login`: 認証情報の登録
-  - `auth status`: 現在の認証状態確認
+  - `auth login`: 認証情報の登録（APIキー/ユーザー名・パスワード）
+  - `auth login --save-password`: ユーザー名・パスワードをOSキーチェーンに保存
+  - `auth status`: 現在の認証状態確認（キーチェーン保存状態を含む）
   - `auth logout`: 認証情報のクリア
+  - `auth logout --clear-keychain`: OSキーチェーンから認証情報を削除
 - **認証フロー**
   ```
-  1. URLとAPIキーの入力（対話的/パラメータ指定）
+  1. 認証方式の選択（APIキー / ユーザー名・パスワード）
      ↓
-  2. URL形式バリデーション
+  2. URLとAPIキー/認証情報の入力（対話的/パラメータ指定）
      ↓
-  3. Redmine APIへの接続テスト
+  3. URL形式バリデーション
      ↓
-  4. 成功時：プロファイルの保存
+  4. Redmine APIへの接続テスト
+     ↓
+  5. 成功時：
+     - APIキー：config.ymlに保存
+     - パスワード（--save-password）：OSキーチェーンに保存
      失敗時：エラーメッセージ表示
   ```
+- **OSキーチェーン統合**
+  - Windows: Credential Manager API
+  - macOS: Keychain Services
+  - Linux: libsecret (Secret Service API)
+  - 保存形式: `RedmineCLI:{serverUrl}` というキー名で保存
+- **認証優先順位**
+  1. APIキー（config.yml）
+  2. セッションクッキー（キーチェーン）
+  3. ユーザー名・パスワード（キーチェーン）
+  4. 対話的入力
 - **セキュリティ考慮事項**
   - APIキーは暗号化して保存（Windows: DPAPI、その他: Base64）
-  - 接続テスト時のみAPIキーを使用
+  - パスワードはOSキーチェーンで暗号化（環境変数経由では渡さない）
+  - 接続テスト時のみ認証情報を使用
   - ログアウト時はAPIキーのみクリア（他の設定は保持）
+  - --clear-keychainオプションでキーチェーンからも削除可能
 
 ### Issue Command Design
 - **責任**: チケットの一覧表示、詳細表示、作成、編集

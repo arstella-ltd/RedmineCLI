@@ -14,6 +14,7 @@ RedmineCLI/
 ├── Directory.Build.props             # 共通ビルド設定（未作成）
 ├── CLAUDE.md                         # Claude Code向けガイドライン
 ├── RedmineCLI/                       # メインプロジェクト
+├── RedmineCLI.Common/                # 共通ライブラリ（拡張機能用）
 ├── RedmineCLI.Tests/                 # 単体テストプロジェクト
 ├── RedmineCLI.IntegrationTests/      # 統合テストプロジェクト
 ├── RedmineCLI.Extension.Example/      # サンプル拡張機能
@@ -33,6 +34,19 @@ RedmineCLI/
 ## プロジェクト構成
 
 ```
+RedmineCLI.Common/                    # 共通ライブラリ（拡張機能用）
+├── RedmineCLI.Common.csproj          # プロジェクトファイル（AOT互換）
+├── Services/                         # 共通サービス
+│   ├── ICredentialStore.cs           # 認証情報ストアインターフェース
+│   ├── CredentialStore.cs            # 認証情報ストア基底クラス
+│   ├── WindowsCredentialStore.cs     # Windows Credential Manager実装
+│   ├── MacOSCredentialStore.cs       # macOS Keychain実装
+│   └── LinuxCredentialStore.cs       # Linux libsecret実装
+├── Models/                           # 共通モデル
+│   └── StoredCredential.cs           # 保存される認証情報モデル
+└── Utils/                            # ユーティリティ
+    └── PlatformDetector.cs           # プラットフォーム判定
+
 RedmineCLI/                           # メインプロジェクトディレクトリ
 ├── RedmineCLI.csproj                 # プロジェクトファイル
 ├── Program.cs                        # エントリーポイント

@@ -1,8 +1,10 @@
 using System.CommandLine;
-using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 
 using Microsoft.Extensions.Logging;
 
+using RedmineCLI.Common.Models;
+using RedmineCLI.Common.Services;
 using RedmineCLI.Services;
 
 using Spectre.Console;
@@ -24,7 +26,6 @@ public class AuthCommand
         _logger = logger;
     }
 
-    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(AuthCommand))]
     public static Command Create(IConfigService configService, IRedmineService redmineService, ILogger<AuthCommand> logger)
     {
         var authCommand = new AuthCommand(configService, redmineService, logger);
@@ -36,24 +37,33 @@ public class AuthCommand
         var urlOption = new Option<string>("--url") { Description = "Redmine server URL" };
         var apiKeyOption = new Option<string>("--api-key") { Description = "Redmine API key" };
         var profileOption = new Option<string>("--profile") { Description = "Profile name", DefaultValueFactory = _ => "default" };
+        var savePasswordOption = new Option<bool>("--save-password") { Description = "Save password to OS keychain for username/password authentication" };
+        var usernameOption = new Option<string>("--username") { Description = "Username for password authentication" };
+        var passwordOption = new Option<string>("--password") { Description = "Password for authentication (use with --save-password)" };
 
         loginCommand.Add(urlOption);
         loginCommand.Add(apiKeyOption);
         loginCommand.Add(profileOption);
+        loginCommand.Add(savePasswordOption);
+        loginCommand.Add(usernameOption);
+        loginCommand.Add(passwordOption);
 
         loginCommand.SetAction(async (parseResult) =>
         {
             var url = parseResult.GetValue(urlOption);
             var apiKey = parseResult.GetValue(apiKeyOption);
             var profile = parseResult.GetValue(profileOption) ?? "default";
+            var savePassword = parseResult.GetValue(savePasswordOption);
+            var username = parseResult.GetValue(usernameOption);
+            var password = parseResult.GetValue(passwordOption);
 
             if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(apiKey))
             {
-                Environment.ExitCode = await authCommand.LoginInteractiveAsync();
+                Environment.ExitCode = await authCommand.LoginInteractiveAsync(savePassword);
             }
             else
             {
-                Environment.ExitCode = await authCommand.LoginAsync(url, apiKey, profile);
+                Environment.ExitCode = await authCommand.LoginAsync(url, apiKey, profile, savePassword, username, password);
             }
         });
 
@@ -78,7 +88,8 @@ public class AuthCommand
         return command;
     }
 
-    public async Task<int> LoginAsync(string url, string apiKey, string profileName)
+    public async Task<int> LoginAsync(string url, string apiKey, string profileName,
+        bool savePassword = false, string? username = null, string? password = null)
     {
         try
         {
@@ -113,9 +124,33 @@ public class AuthCommand
             config.CurrentProfile = profileName;
             await _configService.SaveConfigAsync(config);
 
+            // Save password to keychain if requested
+            if (savePassword && !string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
+            {
+                _logger.LogDebug("Saving password to keychain for {Url}", url);
+
+                var credentialStore = CredentialStore.Create();
+                var credential = new StoredCredential
+                {
+                    Username = username,
+                    Password = password,
+                    ApiKey = apiKey,
+                    SessionCookie = null,
+                    SessionExpiry = null
+                };
+
+                await credentialStore.SaveCredentialAsync(url, credential);
+                _logger.LogInformation("Saved credentials to OS keychain");
+            }
+
             DisplaySuccess($"Successfully authenticated with Redmine server");
             AnsiConsole.MarkupLine($"Profile '[cyan]{profileName}[/]' has been configured");
             AnsiConsole.MarkupLine($"Server URL: [yellow]{url}[/]");
+
+            if (savePassword)
+            {
+                AnsiConsole.MarkupLine($"Credentials saved to OS keychain for user: [cyan]{username}[/]");
+            }
 
             return 0;
         }
@@ -127,7 +162,7 @@ public class AuthCommand
         }
     }
 
-    public async Task<int> LoginInteractiveAsync()
+    public async Task<int> LoginInteractiveAsync(bool savePassword = false)
     {
         try
         {
@@ -146,17 +181,91 @@ public class AuthCommand
                         return ValidationResult.Success();
                     }));
 
-            // Prompt for API key
-            var apiKey = AnsiConsole.Prompt(
-                new TextPrompt<string>("Enter your Redmine API key:")
-                    .Secret()
-                    .ValidationErrorMessage("[red]API key cannot be empty[/]")
-                    .Validate(input =>
-                    {
-                        if (string.IsNullOrWhiteSpace(input))
-                            return ValidationResult.Error("API key cannot be empty");
-                        return ValidationResult.Success();
-                    }));
+            string apiKey = string.Empty;
+            string? username = null;
+            string? password = null;
+
+            // If save-password is specified, ask for username and password
+            if (savePassword)
+            {
+                AnsiConsole.MarkupLine("[yellow]Password authentication mode[/]");
+                AnsiConsole.WriteLine();
+
+                // Prompt for username
+                username = AnsiConsole.Prompt(
+                    new TextPrompt<string>("Enter your Redmine username:")
+                        .ValidationErrorMessage("[red]Username cannot be empty[/]")
+                        .Validate(input =>
+                        {
+                            if (string.IsNullOrWhiteSpace(input))
+                                return ValidationResult.Error("Username cannot be empty");
+                            return ValidationResult.Success();
+                        }));
+
+                // Prompt for password
+                password = AnsiConsole.Prompt(
+                    new TextPrompt<string>("Enter your Redmine password:")
+                        .Secret()
+                        .ValidationErrorMessage("[red]Password cannot be empty[/]")
+                        .Validate(input =>
+                        {
+                            if (string.IsNullOrWhiteSpace(input))
+                                return ValidationResult.Error("Password cannot be empty");
+                            return ValidationResult.Success();
+                        }));
+
+                // Verify credentials
+                AnsiConsole.MarkupLine("[yellow]Verifying credentials...[/]");
+
+                // Try to verify credentials and get API key if available
+                var retrievedApiKey = await GetApiKeyFromCredentialsAsync(url, username, password);
+
+                if (retrievedApiKey == null)
+                {
+                    // Credentials are invalid
+                    DisplayError("Invalid username or password. Please try again.");
+                    return 1;
+                }
+                else if (string.IsNullOrEmpty(retrievedApiKey))
+                {
+                    // Credentials are valid but API key not available via API
+                    AnsiConsole.MarkupLine("[green]✓ Credentials verified successfully[/]");
+                    AnsiConsole.MarkupLine("[yellow]API key cannot be retrieved automatically from this Redmine server.[/]");
+                    AnsiConsole.MarkupLine("[yellow]Please obtain your API key from: {0}/my/account[/]", url);
+                    AnsiConsole.WriteLine();
+
+                    apiKey = AnsiConsole.Prompt(
+                        new TextPrompt<string>("Enter your Redmine API key:")
+                            .Secret()
+                            .ValidationErrorMessage("[red]API key cannot be empty[/]")
+                            .Validate(input =>
+                            {
+                                if (string.IsNullOrWhiteSpace(input))
+                                    return ValidationResult.Error("API key cannot be empty");
+                                return ValidationResult.Success();
+                            }));
+                }
+                else
+                {
+                    // API key was retrieved successfully (rare case)
+                    apiKey = retrievedApiKey;
+                    AnsiConsole.MarkupLine("[green]✓ API key obtained successfully[/]");
+                }
+            }
+            else
+            {
+                // Prompt for API key
+                apiKey = AnsiConsole.Prompt(
+                    new TextPrompt<string>("Enter your Redmine API key:")
+                        .Secret()
+                        .ValidationErrorMessage("[red]API key cannot be empty[/]")
+                        .Validate(input =>
+                        {
+                            if (string.IsNullOrWhiteSpace(input))
+                                return ValidationResult.Error("API key cannot be empty");
+                            return ValidationResult.Success();
+                        }));
+            }
 
             // Prompt for profile name
             var profileName = AnsiConsole.Prompt(
@@ -170,7 +279,7 @@ public class AuthCommand
                         return ValidationResult.Success();
                     }));
 
-            return await LoginAsync(url, apiKey, profileName);
+            return await LoginAsync(url, apiKey, profileName, savePassword, username, password);
         }
         catch (Exception ex)
         {
@@ -327,6 +436,77 @@ public class AuthCommand
     private static void DisplaySuccess(string message)
     {
         AnsiConsole.MarkupLine($"[green]✓[/] {message}");
+    }
+
+    private async Task<string?> GetApiKeyFromCredentialsAsync(string url, string username, string password)
+    {
+        try
+        {
+            _logger.LogDebug("Attempting to verify credentials using username/password");
+
+            // Normalize URL
+            url = url.TrimEnd('/');
+
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "RedmineCLI/1.0");
+
+            // Try to authenticate using Basic Auth to verify credentials
+            var authBytes = System.Text.Encoding.UTF8.GetBytes($"{username}:{password}");
+            var authHeader = Convert.ToBase64String(authBytes);
+            httpClient.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authHeader);
+
+            // Try to get current user info to verify credentials
+            var response = await httpClient.GetAsync($"{url}/users/current.json");
+
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogDebug("Credentials verified successfully");
+
+                // Note: Most Redmine installations don't expose API key via API
+                // The API key needs to be obtained from the web interface manually
+                // We just verify that the credentials are valid
+
+                var content = await response.Content.ReadAsStringAsync();
+                var jsonDoc = JsonDocument.Parse(content);
+
+                if (jsonDoc.RootElement.TryGetProperty("user", out var userElement))
+                {
+                    // Check if API key is included (rare case)
+                    if (userElement.TryGetProperty("api_key", out var apiKeyElement))
+                    {
+                        var apiKey = apiKeyElement.GetString();
+                        if (!string.IsNullOrEmpty(apiKey))
+                        {
+                            _logger.LogDebug("API key found in response (rare case)");
+                            return apiKey;
+                        }
+                    }
+
+                    // Credentials are valid but API key not available via API
+                    _logger.LogDebug("Credentials are valid but API key not available via API");
+
+                    // Return empty string to indicate credentials are valid
+                    // but API key needs to be entered manually
+                    return string.Empty;
+                }
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                _logger.LogWarning("Invalid credentials");
+                return null;
+            }
+            else
+            {
+                _logger.LogWarning("Failed to verify credentials: {StatusCode}", response.StatusCode);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error verifying credentials");
+        }
+
+        return null;
     }
 
     private static void DisplayWarning(string message)

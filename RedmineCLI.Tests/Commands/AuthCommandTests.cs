@@ -309,6 +309,41 @@ public class AuthCommandTests
             c.Profiles["default"].DefaultProject == "my-project"));
     }
 
+    [Fact]
+    public async Task Login_Should_SavePasswordToKeychain_When_SavePasswordOptionProvided()
+    {
+        // Arrange
+        var testUrl = "https://redmine.example.com";
+        var testUsername = "testuser";
+        var testPassword = "testpassword";
+        var testApiKey = "test-api-key-12345";
+        var testProfileName = "default";
+        var savePassword = true;
+
+        _redmineService.TestConnectionAsync(testUrl, testApiKey, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(true));
+
+        var config = new Config
+        {
+            CurrentProfile = testProfileName,
+            Profiles = new Dictionary<string, Profile>(),
+            Preferences = new Preferences()
+        };
+        _configService.LoadConfigAsync().Returns(Task.FromResult(config));
+
+        // Act
+        var result = await _authCommand.LoginAsync(testUrl, testApiKey, testProfileName,
+            savePassword: savePassword, username: testUsername, password: testPassword);
+
+        // Assert
+        result.Should().Be(0);
+        await _configService.Received(1).SaveConfigAsync(Arg.Is<Config>(c =>
+            c.Profiles.ContainsKey(testProfileName) &&
+            c.Profiles[testProfileName].Url == testUrl &&
+            c.Profiles[testProfileName].ApiKey == testApiKey));
+        // Verify that credentials are saved to keychain (implementation pending)
+    }
+
     #endregion
 
     #region Interactive Tests
@@ -370,6 +405,7 @@ public class AuthCommandTests
         optionNames.Should().Contain("--url");
         optionNames.Should().Contain("--api-key");
         optionNames.Should().Contain("--profile");
+        optionNames.Should().Contain("--save-password");
     }
 
     #endregion

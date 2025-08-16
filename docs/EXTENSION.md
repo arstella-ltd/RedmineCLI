@@ -64,6 +64,8 @@ RedmineCLI.Extension.Forum/
     <!-- AOT互換のパッケージのみを使用 -->
     <PackageReference Include="System.Text.Json" Version="9.0.0" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+    <!-- OSキーチェーン認証用の共通ライブラリ -->
+    <ProjectReference Include="../RedmineCLI.Common/RedmineCLI.Common.csproj" />
   </ItemGroup>
 </Project>
 ```
@@ -110,15 +112,17 @@ public class Program
 public class ForumExtension
 {
     private readonly string _redmineUrl;
-    private readonly string _apiKey;
+    private readonly HttpClient _httpClient;
     private readonly JsonSerializerOptions _jsonOptions;
     
     public ForumExtension()
     {
         _redmineUrl = Environment.GetEnvironmentVariable("REDMINE_URL") 
             ?? throw new InvalidOperationException("REDMINE_URL not set");
-        _apiKey = Environment.GetEnvironmentVariable("REDMINE_API_KEY") 
-            ?? throw new InvalidOperationException("REDMINE_API_KEY not set");
+        
+        // 認証情報の取得
+        _httpClient = new HttpClient();
+        ConfigureAuthenticationAsync().Wait();
         
         // AOT対応のJsonSerializerOptions
         _jsonOptions = new JsonSerializerOptions
@@ -128,19 +132,56 @@ public class ForumExtension
         };
     }
     
+    private async Task ConfigureAuthenticationAsync()
+    {
+        // 1. 環境変数のAPIキーを確認（後方互換性）
+        var apiKey = Environment.GetEnvironmentVariable("REDMINE_API_KEY");
+        if (!string.IsNullOrEmpty(apiKey))
+        {
+            _httpClient.DefaultRequestHeaders.Add("X-Redmine-API-Key", apiKey);
+            return;
+        }
+        
+        // 2. OSキーチェーンから認証情報を取得
+        using var credentialStore = RedmineCLI.Common.Services.CredentialStore.Create();
+        var credential = await credentialStore.GetCredentialAsync(_redmineUrl);
+        
+        if (credential == null)
+        {
+            throw new InvalidOperationException(
+                "No credentials found. Please run 'redmine auth login --save-password' first.");
+        }
+        
+        // 3. ユーザー名/パスワード認証
+        if (!string.IsNullOrEmpty(credential.Username) && !string.IsNullOrEmpty(credential.Password))
+        {
+            var basicAuth = Convert.ToBase64String(
+                System.Text.Encoding.UTF8.GetBytes($"{credential.Username}:{credential.Password}")
+            );
+            _httpClient.DefaultRequestHeaders.Authorization = 
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", basicAuth);
+        }
+        else
+        {
+            throw new InvalidOperationException("Incomplete credentials in keychain.");
+        }
+    }
+    
     public async Task ListForumsAsync()
     {
-        // フォーラム一覧の取得（実装例）
-        Console.WriteLine("Forum Topics:");
-        Console.WriteLine("1. General Discussion");
-        Console.WriteLine("2. Development");
-        Console.WriteLine("3. Support");
+        // 認証付きでフォーラム一覧を取得
+        var response = await _httpClient.GetAsync($"{_redmineUrl}/forums.json");
+        if (response.IsSuccessStatusCode)
+        {
+            var content = await response.Content.ReadAsStringAsync();
+            // JSONパース処理
+        }
     }
     
     public async Task CreatePostAsync(string title, string body)
     {
         Console.WriteLine($"Creating post: {title}");
-        // 実際の投稿処理
+        // 認証付きで投稿処理
     }
 }
 
@@ -165,12 +206,14 @@ RedmineCLIは、拡張機能に以下の環境変数を自動的に設定しま�
 | 環境変数 | 説明 | 例 |
 |---------|------|-----|
 | `REDMINE_URL` | RedmineサーバーのURL | `https://redmine.example.com` |
-| `REDMINE_API_KEY` | API認証キー | `abc123...` |
+| `REDMINE_API_KEY` | API認証キー（設定されている場合のみ） | `abc123...` |
 | `REDMINE_USER` | 現在のユーザー名 | `john.doe` |
 | `REDMINE_PROJECT` | デフォルトプロジェクト | `my-project` |
 | `REDMINE_CONFIG_DIR` | 設定ディレクトリパス | `~/.config/redmine` |
 | `REDMINE_TIME_FORMAT` | 時間表示形式 | `relative` or `absolute` |
 | `REDMINE_OUTPUT_FORMAT` | 出力形式 | `table` or `json` |
+
+**注意**: パスワード認証が必要な場合、拡張機能はRedmineCLI.Commonライブラリを使用してOSキーチェーンから直接取得します（環境変数経由では渡されません）。
 
 ## ビルドと配布
 
@@ -241,8 +284,12 @@ RedmineCLIは以下の順序で拡張機能を検索します：
 ## セキュリティに関する考慮事項
 
 1. **プロセス分離**: 各拡張機能は独立したプロセスとして実行
-2. **環境変数の保護**: APIキーなどの機密情報は環境変数経由でのみ渡される
-3. **信頼できるソース**: 信頼できるソースからのみ拡張機能をインストール
+2. **環境変数の保護**: APIキーは環境変数経由で渡される（パスワードは渡さない）
+3. **OSキーチェーン統合**: パスワード認証が必要な場合、拡張機能はRedmineCLI.Commonを使用してOSキーチェーンから直接取得
+4. **認証情報の保護**: 
+   - パスワードは環境変数経由では渡されない
+   - 拡張機能がキーチェーンにアクセスする際は、サーバーURLごとにアクセス制限
+5. **信頼できるソース**: 信頼できるソースからのみ拡張機能をインストール
 
 ## AOT互換性のガイドライン
 
