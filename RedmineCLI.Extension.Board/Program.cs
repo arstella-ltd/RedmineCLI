@@ -291,7 +291,8 @@ public class Program
                 // Save boards to JSON for debugging
                 if (_logger?.IsEnabled(LogLevel.Debug) == true)
                 {
-                    var json = JsonSerializer.Serialize(allBoards, new JsonSerializerOptions { WriteIndented = true });
+                    var context = new BoardJsonContext();
+                    var json = JsonSerializer.Serialize(allBoards, typeof(List<Models.Board>), context);
                     _logger.LogDebug("Boards JSON: {Json}", json);
                 }
             }
