@@ -248,13 +248,26 @@ public class BoardService : IBoardService
 
     public async Task ViewTopicAsync(string boardIdString, string topicIdString, string? projectName, (string SessionCookie, string BaseUrl) auth)
     {
+        if (!int.TryParse(boardIdString, out var boardId))
+        {
+            AnsiConsole.MarkupLine("[red]Invalid board ID.[/]");
+            return;
+        }
+
         if (!int.TryParse(topicIdString, out var topicId))
         {
             AnsiConsole.MarkupLine("[red]Invalid topic ID.[/]");
             return;
         }
 
-        var topicUrl = $"{auth.BaseUrl}/messages/{topicId}";
+        // Build the URL for board topics (always use /boards/{boardId}/topics/{topicId} format)
+        var topicUrl = $"{auth.BaseUrl}/boards/{boardId}/topics/{topicId}";
+
+        _logger.LogDebug("Fetching topic from URL: {Url}", topicUrl);
+        if (!string.IsNullOrEmpty(projectName))
+        {
+            _logger.LogDebug("Project name '{Project}' was provided but not used in URL", projectName);
+        }
 
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Add("Cookie", auth.SessionCookie);
