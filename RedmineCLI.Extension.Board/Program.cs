@@ -21,10 +21,10 @@ public class Program
         ConfigureServices(services);
 
         var serviceProvider = services.BuildServiceProvider();
-        var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+        // var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
 
-        logger.LogDebug("Starting RedmineCLI Board Extension");
-        logger.LogDebug("Arguments: {Args}", string.Join(" ", args));
+        // logger.LogDebug("Starting RedmineCLI Board Extension");
+        // logger.LogDebug("Arguments: {Args}", string.Join(" ", args));
 
         // Create root command
         var rootCommand = new RootCommand("RedmineCLI Board Extension - Manage Redmine boards");
@@ -46,7 +46,7 @@ public class Program
         }
 
         var result = await rootCommand.InvokeAsync(args);
-        logger.LogDebug("Extension exiting with code: {ExitCode}", result);
+        // logger.LogDebug("Extension exiting with code: {ExitCode}", result);
         return result;
     }
 
@@ -57,7 +57,7 @@ public class Program
         {
             builder
                 .AddConsole()
-                .SetMinimumLevel(LogLevel.Debug);
+                .SetMinimumLevel(LogLevel.Warning);
         });
 
         // Common services

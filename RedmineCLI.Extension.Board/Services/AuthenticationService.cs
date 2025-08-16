@@ -105,7 +105,7 @@ public class AuthenticationService : IAuthenticationService
 
             if (!string.IsNullOrEmpty(sessionCookie))
             {
-                _logger.LogInformation("Successfully authenticated with Redmine");
+                // _logger.LogInformation("Successfully authenticated with Redmine");
 
                 // Update stored credential with new session if it changed
                 if (sessionCookie != credential.SessionCookie)
