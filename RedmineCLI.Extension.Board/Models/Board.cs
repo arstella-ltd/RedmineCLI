@@ -17,6 +17,32 @@ public class Board
     public int CardCount { get; set; }
 }
 
+public class Topic
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Author { get; set; } = string.Empty;
+    public int Replies { get; set; }
+    public DateTime? LastReply { get; set; }
+    public string Url { get; set; } = string.Empty;
+    public bool IsSticky { get; set; }
+    public bool IsLocked { get; set; }
+}
+
+public class TopicDetail : Topic
+{
+    public string Content { get; set; } = string.Empty;
+    public new List<TopicReply> Replies { get; set; } = new();
+}
+
+public class TopicReply
+{
+    public int Id { get; set; }
+    public string Author { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public string Content { get; set; } = string.Empty;
+}
+
 /// <summary>
 /// Represents a board column
 /// </summary>

@@ -6,6 +6,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
+using HtmlAgilityPack;
+
 using Microsoft.Extensions.Logging;
 
 using RedmineCLI.Common.Models;
@@ -41,8 +43,9 @@ public class Program
 
         var rootCommand = new RootCommand("RedmineCLI Board Extension - Manage Redmine boards");
 
-        // List command
+        // List command (with ls alias)
         var listCommand = new Command("list", "List all boards (requires 'redmine auth login' first)");
+        listCommand.AddAlias("ls");
         var projectOption = new Option<string>("--project", "Filter by project name or ID");
         var urlOption = new Option<string>("--url", "Redmine server URL (optional, uses stored credentials by default)");
         listCommand.Add(projectOption);
@@ -52,6 +55,39 @@ public class Program
             await ListBoardsAsync(project, url);
         }, projectOption, urlOption);
 
+        // Board-specific commands (e.g., board 21 topic list)
+        var boardCommand = new Command("board", "Board-specific operations");
+        var boardIdArgument = new Argument<string>("id", "Board ID");
+        boardCommand.Add(boardIdArgument);
+
+        // Topic subcommand
+        var topicCommand = new Command("topic", "Topic operations");
+
+        // Topic list subcommand (with ls alias)
+        var topicListCommand = new Command("list", "List topics in the board");
+        topicListCommand.AddAlias("ls");
+        var topicProjectOption = new Option<string>("--project", "Project name or ID");
+        topicListCommand.Add(topicProjectOption);
+        topicListCommand.SetHandler(async (string boardId, string? project) =>
+        {
+            var (url, sessionCookie) = await GetAuthenticationAsync(null);
+            if (string.IsNullOrEmpty(sessionCookie)) return;
+            await ListTopicsAsync(boardId, project, (sessionCookie, url));
+        }, boardIdArgument, topicProjectOption);
+
+        // Topic view subcommand
+        var topicIdArgument = new Argument<string>("topic-id", "Topic ID");
+        topicCommand.Add(topicIdArgument);
+        topicCommand.SetHandler(async (string boardId, string topicId, string? project) =>
+        {
+            var (url, sessionCookie) = await GetAuthenticationAsync(null);
+            if (string.IsNullOrEmpty(sessionCookie)) return;
+            await ViewTopicAsync(boardId, topicId, project, (sessionCookie, url));
+        }, boardIdArgument, topicIdArgument, topicProjectOption);
+
+        topicCommand.AddCommand(topicListCommand);
+        boardCommand.AddCommand(topicCommand);
+
         // Info command
         var infoCommand = new Command("info", "Display extension and environment information");
         infoCommand.SetHandler(() =>
@@ -60,6 +96,7 @@ public class Program
         });
 
         rootCommand.AddCommand(listCommand);
+        rootCommand.AddCommand(boardCommand);
         rootCommand.AddCommand(infoCommand);
 
         var result = await rootCommand.InvokeAsync(args);
@@ -459,6 +496,286 @@ public class Program
         if (int.TryParse(identifier, out var id))
             return id;
         return null;
+    }
+
+    private static async Task ListTopicsAsync(string boardIdString, string? projectName, (string SessionCookie, string BaseUrl) auth)
+    {
+        if (!int.TryParse(boardIdString, out var boardId))
+        {
+            AnsiConsole.MarkupLine("[red]Invalid board ID.[/]");
+            return;
+        }
+
+        var boardUrl = $"{auth.BaseUrl}/boards/{boardId}";
+        if (!string.IsNullOrEmpty(projectName))
+        {
+            boardUrl = $"{auth.BaseUrl}/projects/{projectName}/boards/{boardId}";
+        }
+
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Add("Cookie", auth.SessionCookie);
+
+        var response = await client.GetAsync(boardUrl);
+        if (!response.IsSuccessStatusCode)
+        {
+            AnsiConsole.MarkupLine($"[red]Failed to fetch board: {response.StatusCode}[/]");
+            return;
+        }
+
+        var html = await response.Content.ReadAsStringAsync();
+        var topics = ParseTopicsFromHtml(html);
+
+        if (topics.Count == 0)
+        {
+            AnsiConsole.MarkupLine("[yellow]No topics found.[/]");
+            return;
+        }
+
+        var table = new Table();
+        table.AddColumn("ID");
+        table.AddColumn("Title");
+        table.AddColumn("Author");
+        table.AddColumn("Replies");
+        table.AddColumn("Last Reply");
+        table.AddColumn("Status");
+
+        foreach (var topic in topics)
+        {
+            var status = "";
+            if (topic.IsSticky) status += "📌 ";
+            if (topic.IsLocked) status += "🔒";
+
+            table.AddRow(
+                topic.Id.ToString(),
+                Markup.Escape(topic.Title),
+                Markup.Escape(topic.Author),
+                topic.Replies.ToString(),
+                topic.LastReply?.ToString("yyyy-MM-dd HH:mm") ?? "-",
+                status
+            );
+        }
+
+        AnsiConsole.Write(table);
+    }
+
+    private static List<Topic> ParseTopicsFromHtml(string html)
+    {
+        var topics = new List<Topic>();
+        var doc = new HtmlDocument();
+        doc.LoadHtml(html);
+
+        // フォーラムのトピックテーブルを探す
+        var topicTable = doc.DocumentNode.SelectSingleNode("//table[@class='list messages']");
+        if (topicTable == null)
+        {
+            return topics;
+        }
+
+        var rows = topicTable.SelectNodes(".//tbody/tr");
+        if (rows == null)
+        {
+            return topics;
+        }
+
+        foreach (var row in rows)
+        {
+            var topic = ParseTopicFromRow(row);
+            if (topic != null)
+            {
+                topics.Add(topic);
+            }
+        }
+
+        return topics;
+    }
+
+    private static Topic? ParseTopicFromRow(HtmlNode row)
+    {
+        try
+        {
+            var topic = new Topic();
+
+            // タイトルとURL
+            var subjectCell = row.SelectSingleNode(".//td[@class='subject']");
+            if (subjectCell == null) return null;
+
+            var linkNode = subjectCell.SelectSingleNode(".//a");
+            if (linkNode == null) return null;
+
+            topic.Title = linkNode.InnerText.Trim();
+            var href = linkNode.GetAttributeValue("href", "");
+
+            // IDを抽出
+            var match = Regex.Match(href, @"/messages/(\d+)");
+            if (match.Success)
+            {
+                topic.Id = int.Parse(match.Groups[1].Value);
+            }
+
+            // 完全なURLを構築（相対URLの場合）
+            if (!href.StartsWith("http"))
+            {
+                // BaseUrlは既にauth内にあるので、それを使う必要がある
+                // ここでは相対URLをそのまま保存
+                topic.Url = href;
+            }
+            else
+            {
+                topic.Url = href;
+            }
+
+            // スティッキーとロックの状態
+            if (subjectCell.InnerHtml.Contains("sticky"))
+            {
+                topic.IsSticky = true;
+            }
+            if (subjectCell.InnerHtml.Contains("locked"))
+            {
+                topic.IsLocked = true;
+            }
+
+            // 作成者
+            var authorCell = row.SelectSingleNode(".//td[@class='author']");
+            if (authorCell != null)
+            {
+                topic.Author = authorCell.InnerText.Trim();
+            }
+
+            // 返信数
+            var repliesCell = row.SelectSingleNode(".//td[@class='replies']");
+            if (repliesCell != null && int.TryParse(repliesCell.InnerText.Trim(), out var replies))
+            {
+                topic.Replies = replies;
+            }
+
+            // 最終返信日時
+            var lastReplyCell = row.SelectSingleNode(".//td[@class='last-reply']");
+            if (lastReplyCell != null)
+            {
+                var dateText = lastReplyCell.InnerText.Trim();
+                if (DateTime.TryParse(dateText, out var lastReply))
+                {
+                    topic.LastReply = lastReply;
+                }
+            }
+
+            return topic;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static async Task ViewTopicAsync(string boardIdString, string topicIdString, string? projectName, (string SessionCookie, string BaseUrl) auth)
+    {
+        if (!int.TryParse(topicIdString, out var topicId))
+        {
+            AnsiConsole.MarkupLine("[red]Invalid topic ID.[/]");
+            return;
+        }
+
+        var topicUrl = $"{auth.BaseUrl}/messages/{topicId}";
+
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Add("Cookie", auth.SessionCookie);
+
+        var response = await client.GetAsync(topicUrl);
+        if (!response.IsSuccessStatusCode)
+        {
+            AnsiConsole.MarkupLine($"[red]Failed to fetch topic: {response.StatusCode}[/]");
+            return;
+        }
+
+        var html = await response.Content.ReadAsStringAsync();
+        var topicDetail = ParseTopicDetailFromHtml(html);
+
+        if (topicDetail == null)
+        {
+            AnsiConsole.MarkupLine("[red]Failed to parse topic details.[/]");
+            return;
+        }
+
+        // トピックの詳細を表示
+        var panel = new Panel($"[bold]{Markup.Escape(topicDetail.Title)}[/]\n\n" +
+                              $"Author: {Markup.Escape(topicDetail.Author)}\n" +
+                              $"Replies: {topicDetail.Replies.Count}\n\n" +
+                              $"{Markup.Escape(topicDetail.Content)}");
+        panel.Header = new PanelHeader($"Topic #{topicDetail.Id}");
+        AnsiConsole.Write(panel);
+
+        // 返信を表示
+        if (topicDetail.Replies.Count > 0)
+        {
+            AnsiConsole.MarkupLine("\n[bold]Replies:[/]");
+            foreach (var reply in topicDetail.Replies)
+            {
+                var replyPanel = new Panel($"{Markup.Escape(reply.Content)}");
+                replyPanel.Header = new PanelHeader($"{reply.Author} - {reply.CreatedAt:yyyy-MM-dd HH:mm}");
+                AnsiConsole.Write(replyPanel);
+            }
+        }
+    }
+
+    private static TopicDetail? ParseTopicDetailFromHtml(string html)
+    {
+        var doc = new HtmlDocument();
+        doc.LoadHtml(html);
+
+        var topicDetail = new TopicDetail();
+
+        // タイトル
+        var titleNode = doc.DocumentNode.SelectSingleNode("//h2") ??
+                       doc.DocumentNode.SelectSingleNode("//div[@class='subject']/h3");
+        if (titleNode != null)
+        {
+            topicDetail.Title = titleNode.InnerText.Trim();
+        }
+
+        // 作成者と内容
+        var messageNode = doc.DocumentNode.SelectSingleNode("//div[@id='content']//div[@class='message']");
+        if (messageNode != null)
+        {
+            var authorNode = messageNode.SelectSingleNode(".//p[@class='author']") ??
+                           messageNode.SelectSingleNode(".//span[@class='author']");
+            if (authorNode != null)
+            {
+                topicDetail.Author = authorNode.InnerText.Trim();
+            }
+
+            var contentNode = messageNode.SelectSingleNode(".//div[@class='wiki']");
+            if (contentNode != null)
+            {
+                topicDetail.Content = contentNode.InnerText.Trim();
+            }
+        }
+
+        // 返信を取得
+        var replyNodes = doc.DocumentNode.SelectNodes("//div[@id='replies']//div[@class='message reply']");
+        if (replyNodes != null)
+        {
+            foreach (var replyNode in replyNodes)
+            {
+                var reply = new TopicReply();
+
+                var replyAuthorNode = replyNode.SelectSingleNode(".//p[@class='author']") ??
+                                     replyNode.SelectSingleNode(".//span[@class='author']");
+                if (replyAuthorNode != null)
+                {
+                    reply.Author = replyAuthorNode.InnerText.Trim();
+                }
+
+                var replyContentNode = replyNode.SelectSingleNode(".//div[@class='wiki']");
+                if (replyContentNode != null)
+                {
+                    reply.Content = replyContentNode.InnerText.Trim();
+                }
+
+                topicDetail.Replies.Add(reply);
+            }
+        }
+
+        return topicDetail;
     }
 
     private static void DisplayInfo()
