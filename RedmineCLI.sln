@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedmineCLI.Common.Tests", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedmineCLI.Extension.Board", "RedmineCLI.Extension.Board\RedmineCLI.Extension.Board.csproj", "{195E7420-951D-4C7C-9416-096772916776}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedmineCLI.Extension.Board.Tests", "RedmineCLI.Extension.Board.Tests\RedmineCLI.Extension.Board.Tests.csproj", "{A5B7F6C8-D932-4E2F-9A43-108883957321}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -83,6 +85,18 @@ Global
 		{195E7420-951D-4C7C-9416-096772916776}.Release|x64.Build.0 = Release|Any CPU
 		{195E7420-951D-4C7C-9416-096772916776}.Release|x86.ActiveCfg = Release|Any CPU
 		{195E7420-951D-4C7C-9416-096772916776}.Release|x86.Build.0 = Release|Any CPU
+		{A5B7F6C8-D932-4E2F-9A43-108883957321}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5B7F6C8-D932-4E2F-9A43-108883957321}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5B7F6C8-D932-4E2F-9A43-108883957321}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A5B7F6C8-D932-4E2F-9A43-108883957321}.Debug|x64.Build.0 = Debug|Any CPU
+		{A5B7F6C8-D932-4E2F-9A43-108883957321}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A5B7F6C8-D932-4E2F-9A43-108883957321}.Debug|x86.Build.0 = Debug|Any CPU
+		{A5B7F6C8-D932-4E2F-9A43-108883957321}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5B7F6C8-D932-4E2F-9A43-108883957321}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5B7F6C8-D932-4E2F-9A43-108883957321}.Release|x64.ActiveCfg = Release|Any CPU
+		{A5B7F6C8-D932-4E2F-9A43-108883957321}.Release|x64.Build.0 = Release|Any CPU
+		{A5B7F6C8-D932-4E2F-9A43-108883957321}.Release|x86.ActiveCfg = Release|Any CPU
+		{A5B7F6C8-D932-4E2F-9A43-108883957321}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
