@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Globalization;
 using System.IO.Abstractions;
 using System.Linq;
 
@@ -22,6 +23,10 @@ public class Program
 {
     public static async Task<int> Main(string[] args)
     {
+        // Force English locale for System.CommandLine messages
+        CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+        CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
+
         // Create service collection and configure DI
         var services = new ServiceCollection();
         ConfigureServices(services);
