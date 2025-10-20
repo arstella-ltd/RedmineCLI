@@ -9,6 +9,7 @@ using NSubstitute;
 
 using RedmineCLI.Extension.Board.Models;
 using RedmineCLI.Extension.Board.Services;
+using Spectre.Console;
 
 using Xunit;
 
@@ -19,6 +20,7 @@ public class BoardServiceTests
     private readonly ILogger<BoardService> _mockLogger;
     private readonly IAuthenticationService _mockAuthService;
     private readonly IHtmlParsingService _mockHtmlParsingService;
+    private readonly IAnsiConsole _mockConsole;
     private readonly BoardService _boardService;
 
     public BoardServiceTests()
@@ -26,7 +28,8 @@ public class BoardServiceTests
         _mockLogger = Substitute.For<ILogger<BoardService>>();
         _mockAuthService = Substitute.For<IAuthenticationService>();
         _mockHtmlParsingService = Substitute.For<IHtmlParsingService>();
-        _boardService = new BoardService(_mockLogger, _mockAuthService, _mockHtmlParsingService);
+        _mockConsole = Substitute.For<IAnsiConsole>();
+        _boardService = new BoardService(_mockLogger, _mockAuthService, _mockHtmlParsingService, _mockConsole);
     }
 
     [Fact]
@@ -256,7 +259,8 @@ public class BoardServiceTests
         public BoardServiceTestWrapper() : base(
             Substitute.For<ILogger<BoardService>>(),
             Substitute.For<IAuthenticationService>(),
-            Substitute.For<IHtmlParsingService>())
+            Substitute.For<IHtmlParsingService>(),
+            Substitute.For<IAnsiConsole>())
         {
         }
 

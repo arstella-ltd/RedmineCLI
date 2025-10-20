@@ -7,6 +7,8 @@ using RedmineCLI.Common.Services;
 using RedmineCLI.Extension.Board.Commands;
 using RedmineCLI.Extension.Board.Services;
 
+using Spectre.Console;
+
 namespace RedmineCLI.Extension.Board;
 
 /// <summary>
@@ -68,6 +70,7 @@ public class Program
 
         // Common services
         services.AddSingleton<ICredentialStore>(provider => CredentialStore.Create());
+        services.AddSingleton<IAnsiConsole>(AnsiConsole.Console);
 
         // Services
         services.AddScoped<IAuthenticationService, AuthenticationService>();
