@@ -90,7 +90,8 @@ public class CommentCommandTests
 
         // Assert
         commentCommand.Handler.Should().NotBeNull();
-        commentCommand.Handler.GetType().Should().Be(replyCommand.Handler.GetType());
+        replyCommand.Handler.Should().NotBeNull();
+        commentCommand.Handler!.GetType().Should().Be(replyCommand.Handler!.GetType());
     }
 
     [Fact]

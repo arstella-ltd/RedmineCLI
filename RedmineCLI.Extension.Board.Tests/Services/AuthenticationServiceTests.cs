@@ -187,7 +187,6 @@ public class AuthenticationServiceTests : IDisposable
         // Arrange
         var url = "https://redmine.example.com";
         var oldSessionCookie = "old-session";
-        var newSessionCookie = "new-session";
 
         var credential = new StoredCredential
         {
@@ -200,12 +199,14 @@ public class AuthenticationServiceTests : IDisposable
         _mockCredentialStore.GetCredentialAsync(url)
             .Returns(Task.FromResult<StoredCredential?>(credential));
 
-        // Mock AuthenticationHelper to return new session
-        // Since we can't easily mock the static method, we'll test the logic after that point
-        // by verifying the SaveCredentialAsync call
+        // Act
+        var result = await _authService.GetAuthenticationAsync(url);
+
+        // Assert
+        result.sessionCookie.Should().Be(oldSessionCookie);
 
         // Note: In a real test scenario, we would need to refactor to make AuthenticationHelper
-        // injectable or use a wrapper pattern
+        // injectable or use a wrapper pattern to test session update logic
     }
 
     [Fact]

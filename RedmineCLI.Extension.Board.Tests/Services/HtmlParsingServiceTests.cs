@@ -247,7 +247,7 @@ public class HtmlParsingServiceTests
         // Assert
         result.Should().HaveCount(1);
         result[0].LastReply.Should().NotBeNull();
-        result[0].LastReply.Value.Should().BeCloseTo(DateTime.Now.AddDays(-5), TimeSpan.FromMinutes(1));
+        result[0].LastReply!.Value.Should().BeCloseTo(DateTime.Now.AddDays(-5), TimeSpan.FromMinutes(1));
     }
 
     [Fact]
