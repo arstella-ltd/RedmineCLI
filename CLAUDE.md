@@ -13,6 +13,30 @@ RedmineCLIは、Redmineチケットを管理するためのコマンドライン
 このリポジトリでは、**すべての会話は日本語で行ってください**。これにはGitHubのissue、pull request、コード内のコメント、コミットメッセージなどが含まれます。
 英語の技術用語（例：API、JSON、AOT など）はそのまま使用して構いませんが、説明や文章は日本語で記述してください。
 
+### エラーメッセージとログの言語
+
+**エラーメッセージ、例外メッセージ、ログメッセージは英語で記述してください。**
+
+理由：
+- エラーメッセージは検索性が重要であり、英語の方がStack OverflowやGitHub Issuesでの検索が容易
+- 国際的なユーザーベースを考慮
+- ログファイルの可搬性と標準化
+
+例：
+```csharp
+// ✅ 良い例：エラーメッセージは英語
+throw new ValidationException("Status 'resolved' not found");
+Console.WriteLine("Error: Invalid target format. Use 'board:topic' notation");
+
+// ❌ 悪い例：エラーメッセージを日本語にしない
+throw new ValidationException("ステータス 'resolved' が見つかりません");
+```
+
+注意：
+- ユーザー向けのヘルプテキストやドキュメントは日本語でも可
+- コード内のコメントは日本語
+- コミットメッセージは日本語
+
 ## ビルドコマンド
 
 ```bash
