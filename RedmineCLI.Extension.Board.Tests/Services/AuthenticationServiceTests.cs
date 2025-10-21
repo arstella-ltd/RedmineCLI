@@ -12,6 +12,7 @@ using Xunit;
 
 namespace RedmineCLI.Extension.Board.Tests.Services;
 
+[Collection("Sequential")]
 public class AuthenticationServiceTests : IDisposable
 {
     private readonly ILogger<AuthenticationService> _mockLogger;
@@ -48,7 +49,8 @@ public class AuthenticationServiceTests : IDisposable
             Username = "test",
             Password = "password",
             ApiKey = "api-key",
-            SessionCookie = "session-cookie"
+            SessionCookie = "session-cookie",
+            SessionExpiry = DateTime.UtcNow.AddHours(1)
         };
         _mockCredentialStore.GetCredentialAsync(urlOverride)
             .Returns(Task.FromResult<StoredCredential?>(credential));
@@ -72,7 +74,8 @@ public class AuthenticationServiceTests : IDisposable
             Username = "test",
             Password = "password",
             ApiKey = "api-key",
-            SessionCookie = "session-cookie"
+            SessionCookie = "session-cookie",
+            SessionExpiry = DateTime.UtcNow.AddHours(1) // Set valid session expiry
         };
         _mockCredentialStore.GetCredentialAsync("https://env.redmine.com")
             .Returns(Task.FromResult<StoredCredential?>(credential));
@@ -96,7 +99,8 @@ public class AuthenticationServiceTests : IDisposable
             Username = "test",
             Password = "password",
             ApiKey = "api-key",
-            SessionCookie = "session-cookie"
+            SessionCookie = "session-cookie",
+            SessionExpiry = DateTime.UtcNow.AddHours(1)
         };
         _mockCredentialStore.GetCredentialAsync(expectedUrl)
             .Returns(Task.FromResult<StoredCredential?>(credential));
@@ -120,7 +124,8 @@ public class AuthenticationServiceTests : IDisposable
             Username = "test",
             Password = "password",
             ApiKey = "api-key",
-            SessionCookie = "session-cookie"
+            SessionCookie = "session-cookie",
+            SessionExpiry = DateTime.UtcNow.AddHours(1)
         };
         _mockCredentialStore.GetCredentialAsync(expectedUrl)
             .Returns(Task.FromResult<StoredCredential?>(credential));

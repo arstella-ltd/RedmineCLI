@@ -9,6 +9,7 @@ using NSubstitute;
 
 using RedmineCLI.Extension.Board.Models;
 using RedmineCLI.Extension.Board.Services;
+
 using Spectre.Console;
 
 using Xunit;
