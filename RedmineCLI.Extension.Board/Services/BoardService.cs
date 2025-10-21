@@ -45,7 +45,7 @@ public class BoardService : IBoardService
             _logger.LogError("No session cookie available");
             _console.MarkupLine("[red]Error: Could not create session.[/]");
             _console.MarkupLine("Please ensure you have saved password credentials with [cyan]redmine auth login --save-password[/].");
-            Environment.Exit(1);
+            Environment.ExitCode = 1;
             return;
         }
 
@@ -63,7 +63,7 @@ public class BoardService : IBoardService
                 _logger.LogError("Project filter is required");
                 _console.MarkupLine("[red]Error: Project identifier is required.[/]");
                 _console.MarkupLine("Usage: [cyan]redmine-board list --project <project-identifier>[/]");
-                Environment.Exit(1);
+                Environment.ExitCode = 1;
                 return;
             }
 
@@ -124,7 +124,7 @@ public class BoardService : IBoardService
                     _logger.LogError("Session expired or invalid");
                     _console.MarkupLine("[red]Error: Session expired.[/]");
                     _console.MarkupLine("Please run [cyan]redmine auth login --save-password[/] again.");
-                    Environment.Exit(1);
+                    Environment.ExitCode = 1;
                     return;
                 }
             }
@@ -133,7 +133,7 @@ public class BoardService : IBoardService
                 _logger.LogError(ex, "Failed to fetch board URL");
                 _console.MarkupLine($"[red]Error: Failed to connect to Redmine server[/]");
                 _console.MarkupLine($"[dim]{ex.Message}[/]");
-                Environment.Exit(1);
+                Environment.ExitCode = 1;
                 return;
             }
 
@@ -186,7 +186,7 @@ public class BoardService : IBoardService
         {
             _logger.LogError(ex, "Error listing boards");
             Console.Error.WriteLine($"Error: {ex.Message}");
-            Environment.Exit(1);
+            Environment.ExitCode = 1;
         }
     }
 

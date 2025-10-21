@@ -19,6 +19,7 @@ public class AuthenticationServiceTests : IDisposable
     private readonly ICredentialStore _mockCredentialStore;
     private readonly AuthenticationService _authService;
     private readonly string _originalRedmineUrl;
+    private readonly string _originalConfigDir;
 
     public AuthenticationServiceTests()
     {
@@ -26,17 +27,23 @@ public class AuthenticationServiceTests : IDisposable
         _mockCredentialStore = Substitute.For<ICredentialStore>();
         _authService = new AuthenticationService(_mockLogger, _mockCredentialStore);
 
-        // Save original environment variable
+        // Save original environment variables
         _originalRedmineUrl = Environment.GetEnvironmentVariable("REDMINE_URL") ?? string.Empty;
+        _originalConfigDir = Environment.GetEnvironmentVariable("REDMINE_CONFIG_DIR") ?? string.Empty;
     }
 
     public void Dispose()
     {
-        // Restore original environment variable
+        // Restore original environment variables
         if (string.IsNullOrEmpty(_originalRedmineUrl))
             Environment.SetEnvironmentVariable("REDMINE_URL", null);
         else
             Environment.SetEnvironmentVariable("REDMINE_URL", _originalRedmineUrl);
+
+        if (string.IsNullOrEmpty(_originalConfigDir))
+            Environment.SetEnvironmentVariable("REDMINE_CONFIG_DIR", null);
+        else
+            Environment.SetEnvironmentVariable("REDMINE_CONFIG_DIR", _originalConfigDir);
     }
 
     [Fact]
@@ -168,6 +175,10 @@ public class AuthenticationServiceTests : IDisposable
     {
         // Arrange
         Environment.SetEnvironmentVariable("REDMINE_URL", null);
+        // Ensure no config file is picked up from host environment
+        var tempConfigDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempConfigDir);
+        Environment.SetEnvironmentVariable("REDMINE_CONFIG_DIR", tempConfigDir);
         var exitCode = 0;
         Environment.ExitCode = 0;
 

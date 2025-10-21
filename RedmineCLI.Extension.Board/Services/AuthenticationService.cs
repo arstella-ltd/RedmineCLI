@@ -69,7 +69,8 @@ public class AuthenticationService : IAuthenticationService
             _logger.LogError("No Redmine URL configured");
             AnsiConsole.MarkupLine("[red]Error: No Redmine URL found.[/]");
             AnsiConsole.MarkupLine("Please specify [cyan]--url[/] or run [cyan]redmine auth login[/] first.");
-            Environment.Exit(1);
+            Environment.ExitCode = 1;
+            return (string.Empty, null);
         }
 
         // Normalize URL - ensure it has a scheme
@@ -92,7 +93,8 @@ public class AuthenticationService : IAuthenticationService
                 _logger.LogError("No credentials found in keychain for {Url}", redmineUrl);
                 AnsiConsole.MarkupLine($"[red]Error: No credentials found for {redmineUrl}.[/]");
                 AnsiConsole.MarkupLine("Please run [cyan]redmine auth login --save-password[/] first.");
-                Environment.Exit(1);
+                Environment.ExitCode = 1;
+                return (redmineUrl, null);
             }
 
             // _logger.LogDebug("Found credentials for {Url}", redmineUrl);
@@ -119,6 +121,13 @@ public class AuthenticationService : IAuthenticationService
                 return (redmineUrl, sessionCookie);
             }
 
+            // Fallback: if no new session could be created, but an existing cookie is available,
+            // return it to allow callers to attempt with the stored session.
+            if (!string.IsNullOrEmpty(credential.SessionCookie))
+            {
+                return (redmineUrl, credential.SessionCookie);
+            }
+
             // If we have API key but no session, we can still try with API key
             if (!string.IsNullOrEmpty(credential.ApiKey))
             {
@@ -129,7 +138,7 @@ public class AuthenticationService : IAuthenticationService
             _logger.LogError("Failed to create session from stored credentials");
             AnsiConsole.MarkupLine("[red]Error: Failed to authenticate.[/]");
             AnsiConsole.MarkupLine("Please run [cyan]redmine auth login --save-password[/] again.");
-            Environment.Exit(1);
+            Environment.ExitCode = 1;
             return (redmineUrl, null);
         }
         catch (Exception ex)
@@ -137,8 +146,8 @@ public class AuthenticationService : IAuthenticationService
             _logger.LogError(ex, "Error accessing keychain");
             AnsiConsole.MarkupLine($"[red]Error accessing keychain: {ex.Message}[/]");
             AnsiConsole.MarkupLine("Please run [cyan]redmine auth login --save-password[/] first.");
-            Environment.Exit(1);
-            return (redmineUrl, null);
+            Environment.ExitCode = 1;
+            return (redmineUrl ?? string.Empty, null);
         }
     }
 }

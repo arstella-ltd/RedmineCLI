@@ -59,7 +59,8 @@ public class Program
             if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(apiKey))
             {
                 Console.Error.WriteLine("Error: REDMINE_URL and REDMINE_API_KEY must be configured");
-                Environment.Exit(1);
+                Environment.ExitCode = 1;
+                return;
             }
 
             Console.WriteLine($"Testing connection to {url}...");
@@ -78,13 +79,13 @@ public class Program
                 else
                 {
                     Console.Error.WriteLine($"✗ Failed to connect: {response.StatusCode}");
-                    Environment.Exit(1);
+                    Environment.ExitCode = 1;
                 }
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"✗ Connection error: {ex.Message}");
-                Environment.Exit(1);
+                Environment.ExitCode = 1;
             }
         });
 
