@@ -359,6 +359,62 @@ APIキーベースの認証により安全な通信を実現し、設定はYAML�
   - 単純な出力処理のため、基本的なエラーハンドリングのみ
   - ログ出力によるデバッグサポート
 
+### MCP Command Design
+- **責任**: Model Context Protocol（MCP）サーバーとして動作し、AIエージェントからのRedmine操作を可能にする
+- **主要コマンド**
+  - `mcp`: MCPサーバーを起動（stdio通信）
+  - `mcp --debug`: デバッグログ付きで起動
+- **プロトコル仕様**
+  - JSON-RPC 2.0ベースの通信
+  - stdio（標準入出力）による双方向通信
+  - リクエスト/レスポンス形式のメッセージ交換
+- **提供ツール（Tools）**
+  - `get_issues`: チケット一覧取得（assignee、status、project等でフィルタリング可能）
+  - `get_issue`: チケット詳細取得（ID指定）
+  - `create_issue`: 新規チケット作成（project、subject、description等を指定）
+  - `update_issue`: チケット更新（status、assignee、done_ratio等を変更）
+  - `add_comment`: コメント追加（チケットIDとメッセージを指定）
+  - `get_projects`: プロジェクト一覧取得
+  - `get_users`: ユーザー一覧取得
+  - `get_statuses`: ステータス一覧取得
+  - `search`: 全文検索（キーワード指定）
+- **提供リソース（Resources）**
+  - `issue://{id}`: 特定チケットの詳細情報
+  - `issues://`: 自分に割り当てられたチケット一覧
+  - `project://{id}/issues`: プロジェクトのチケット一覧
+- **認証処理**
+  - 起動時に設定ファイル（config.yml）から認証情報を読み込み
+  - 既存のIRedmineApiClientを使用してAPI通信を実行
+  - 認証情報が未設定の場合はエラーを返す
+- **実装アーキテクチャ**
+  ```
+  MCPコマンド起動
+    ↓
+  設定ファイル読み込み（ConfigService）
+    ↓
+  MCPサーバー初期化（stdio通信開始）
+    ↓
+  JSON-RPCメッセージループ
+    ├─ initialize: サーバー情報返却
+    ├─ tools/list: ツール一覧返却
+    ├─ tools/call: ツール実行（RedmineApiClient呼び出し）
+    ├─ resources/list: リソース一覧返却
+    └─ resources/read: リソース取得（RedmineApiClient呼び出し）
+  ```
+- **エラーハンドリング**
+  - JSON-RPC Error形式でエラーを返却
+  - エラーコード定義（-32700: Parse error、-32600: Invalid Request等）
+  - Redmine API エラーの適切なマッピング
+  - デバッグモード時は詳細なログを標準エラー出力に出力
+- **Native AOT対応**
+  - JSON-RPC メッセージの処理にSource Generatorを使用
+  - リフレクション不使用の実装
+  - 高速起動（< 100ms）を維持
+- **Claude Code統合**
+  - 設定ファイル形式: `{"command": "redmine", "args": ["mcp"]}`
+  - MCPサーバー名: `redmine`
+  - MCPサーバー説明: `Redmine ticket management via MCP`
+
 ### List Commands Design (User/Project/Status)
 - **責任**: Redmineに登録されているマスターデータの一覧表示
 - **主要コマンド**
