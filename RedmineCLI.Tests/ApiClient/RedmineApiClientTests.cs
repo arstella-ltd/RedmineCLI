@@ -446,7 +446,8 @@ public class RedmineApiClientTests : IDisposable
     public async Task TestConnectionAsync_Should_ReturnFalse_When_NetworkError()
     {
         // Arrange
-        var invalidUrl = "https://invalid-url-that-does-not-exist.com";
+        // Use an IP address that will refuse connections (port 1 is typically closed)
+        var invalidUrl = "http://0.0.0.0:1";
         var testApiKey = "test-key";
 
         // Act

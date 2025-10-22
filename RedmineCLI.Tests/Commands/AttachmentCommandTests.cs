@@ -20,6 +20,7 @@ using Xunit;
 
 namespace RedmineCLI.Tests.Commands;
 
+[Collection("Sequential")]
 public class AttachmentCommandTests
 {
     private readonly MockFileSystem _fileSystem;

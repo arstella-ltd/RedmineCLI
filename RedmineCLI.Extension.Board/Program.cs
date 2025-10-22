@@ -7,6 +7,8 @@ using RedmineCLI.Common.Services;
 using RedmineCLI.Extension.Board.Commands;
 using RedmineCLI.Extension.Board.Services;
 
+using Spectre.Console;
+
 namespace RedmineCLI.Extension.Board;
 
 /// <summary>
@@ -33,12 +35,18 @@ public class Program
         var boardListCommand = serviceProvider.GetRequiredService<BoardListCommand>();
         var infoCommand = serviceProvider.GetRequiredService<InfoCommand>();
         var boardTopicCommand = serviceProvider.GetRequiredService<BoardTopicCommand>();
+        var viewCommand = serviceProvider.GetRequiredService<ViewCommand>();
+        var replyCommand = serviceProvider.GetRequiredService<ReplyCommand>();
+        var commentCommand = serviceProvider.GetRequiredService<CommentCommand>();
 
-        // Add commands
+        // Add new commands
         rootCommand.AddCommand(boardListCommand.Create());
+        rootCommand.AddCommand(viewCommand.Create());
+        rootCommand.AddCommand(replyCommand.Create());
+        rootCommand.AddCommand(commentCommand.Create());
         rootCommand.AddCommand(infoCommand.Create());
 
-        // Handle dynamic board ID commands (e.g., "redmine-board 21 topic list")
+        // Handle dynamic board ID commands for backward compatibility (e.g., "redmine-board 21 topic list")
         var dynamicBoardCommand = boardTopicCommand.CreateDynamicBoardCommand(args);
         if (dynamicBoardCommand != null)
         {
@@ -62,6 +70,7 @@ public class Program
 
         // Common services
         services.AddSingleton<ICredentialStore>(provider => CredentialStore.Create());
+        services.AddSingleton<IAnsiConsole>(AnsiConsole.Console);
 
         // Services
         services.AddScoped<IAuthenticationService, AuthenticationService>();
@@ -72,5 +81,8 @@ public class Program
         services.AddScoped<BoardListCommand>();
         services.AddScoped<InfoCommand>();
         services.AddScoped<BoardTopicCommand>();
+        services.AddScoped<ViewCommand>();
+        services.AddScoped<ReplyCommand>();
+        services.AddScoped<CommentCommand>();
     }
 }

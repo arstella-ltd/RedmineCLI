@@ -18,15 +18,18 @@ public class BoardService : IBoardService
     private readonly ILogger<BoardService> _logger;
     private readonly IAuthenticationService _authenticationService;
     private readonly IHtmlParsingService _htmlParsingService;
+    private readonly IAnsiConsole _console;
 
     public BoardService(
         ILogger<BoardService> logger,
         IAuthenticationService authenticationService,
-        IHtmlParsingService htmlParsingService)
+        IHtmlParsingService htmlParsingService,
+        IAnsiConsole console)
     {
         _logger = logger;
         _authenticationService = authenticationService;
         _htmlParsingService = htmlParsingService;
+        _console = console;
     }
 
     public async Task ListBoardsAsync(string? projectFilter, string? urlOverride)
@@ -40,9 +43,9 @@ public class BoardService : IBoardService
         if (string.IsNullOrEmpty(sessionCookie))
         {
             _logger.LogError("No session cookie available");
-            AnsiConsole.MarkupLine("[red]Error: Could not create session.[/]");
-            AnsiConsole.MarkupLine("Please ensure you have saved password credentials with [cyan]redmine auth login --save-password[/].");
-            Environment.Exit(1);
+            _console.MarkupLine("[red]Error: Could not create session.[/]");
+            _console.MarkupLine("Please ensure you have saved password credentials with [cyan]redmine auth login --save-password[/].");
+            Environment.ExitCode = 1;
             return;
         }
 
@@ -58,9 +61,9 @@ public class BoardService : IBoardService
             if (string.IsNullOrEmpty(projectFilter))
             {
                 _logger.LogError("Project filter is required");
-                AnsiConsole.MarkupLine("[red]Error: Project identifier is required.[/]");
-                AnsiConsole.MarkupLine("Usage: [cyan]redmine-board list --project <project-identifier>[/]");
-                Environment.Exit(1);
+                _console.MarkupLine("[red]Error: Project identifier is required.[/]");
+                _console.MarkupLine("Usage: [cyan]redmine-board list --project <project-identifier>[/]");
+                Environment.ExitCode = 1;
                 return;
             }
 
@@ -113,32 +116,32 @@ public class BoardService : IBoardService
                 else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
                     // _logger.LogDebug("Boards not available for project {Project}", projectFilter);
-                    AnsiConsole.MarkupLine($"[yellow]No boards found for project '[cyan]{projectFilter}[/]'.[/]");
-                    AnsiConsole.MarkupLine("[dim]Note: Board functionality requires a board plugin to be installed on the Redmine server.[/]");
+                    _console.MarkupLine($"[yellow]No boards found for project '[cyan]{projectFilter}[/]'.[/]");
+                    _console.MarkupLine("[dim]Note: Board functionality requires a board plugin to be installed on the Redmine server.[/]");
                 }
                 else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
                     _logger.LogError("Session expired or invalid");
-                    AnsiConsole.MarkupLine("[red]Error: Session expired.[/]");
-                    AnsiConsole.MarkupLine("Please run [cyan]redmine auth login --save-password[/] again.");
-                    Environment.Exit(1);
+                    _console.MarkupLine("[red]Error: Session expired.[/]");
+                    _console.MarkupLine("Please run [cyan]redmine auth login --save-password[/] again.");
+                    Environment.ExitCode = 1;
                     return;
                 }
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, "Failed to fetch board URL");
-                AnsiConsole.MarkupLine($"[red]Error: Failed to connect to Redmine server[/]");
-                AnsiConsole.MarkupLine($"[dim]{ex.Message}[/]");
-                Environment.Exit(1);
+                _console.MarkupLine($"[red]Error: Failed to connect to Redmine server[/]");
+                _console.MarkupLine($"[dim]{ex.Message}[/]");
+                Environment.ExitCode = 1;
                 return;
             }
 
             // Display results
             if (allBoards.Any())
             {
-                AnsiConsole.MarkupLine($"[bold]Found {allBoards.Count} board(s) for project '[cyan]{projectFilter}[/]'[/]");
-                AnsiConsole.WriteLine();
+                _console.MarkupLine($"[bold]Found {allBoards.Count} board(s) for project '[cyan]{projectFilter}[/]'[/]");
+                _console.WriteLine();
 
                 // Create table
                 var table = new Table();
@@ -161,7 +164,7 @@ public class BoardService : IBoardService
                 }
 
                 // Display table
-                AnsiConsole.Write(table);
+                _console.Write(table);
 
                 // // Save boards to JSON for debugging
                 // if (_logger.IsEnabled(LogLevel.Debug))
@@ -173,17 +176,17 @@ public class BoardService : IBoardService
             }
             else
             {
-                AnsiConsole.MarkupLine("[yellow]No boards found.[/]");
-                AnsiConsole.WriteLine();
-                AnsiConsole.MarkupLine("[dim]Note: Board functionality usually requires a plugin to be installed on the Redmine server.[/]");
-                AnsiConsole.MarkupLine("[dim]Common plugins: Redmine Agile, Backlogs, or custom board plugins.[/]");
+                _console.MarkupLine("[yellow]No boards found.[/]");
+                _console.WriteLine();
+                _console.MarkupLine("[dim]Note: Board functionality usually requires a plugin to be installed on the Redmine server.[/]");
+                _console.MarkupLine("[dim]Common plugins: Redmine Agile, Backlogs, or custom board plugins.[/]");
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error listing boards");
             Console.Error.WriteLine($"Error: {ex.Message}");
-            Environment.Exit(1);
+            Environment.ExitCode = 1;
         }
     }
 
@@ -191,7 +194,7 @@ public class BoardService : IBoardService
     {
         if (!int.TryParse(boardIdString, out var boardId))
         {
-            AnsiConsole.MarkupLine("[red]Invalid board ID.[/]");
+            _console.MarkupLine("[red]Invalid board ID.[/]");
             return;
         }
 
@@ -208,7 +211,7 @@ public class BoardService : IBoardService
         var response = await client.GetAsync(boardUrl);
         if (!response.IsSuccessStatusCode)
         {
-            AnsiConsole.MarkupLine($"[red]Failed to fetch board: {response.StatusCode}[/]");
+            _console.MarkupLine($"[red]Failed to fetch board: {response.StatusCode}[/]");
             return;
         }
 
@@ -217,7 +220,7 @@ public class BoardService : IBoardService
 
         if (topics.Count == 0)
         {
-            AnsiConsole.MarkupLine("[yellow]No topics found.[/]");
+            _console.MarkupLine("[yellow]No topics found.[/]");
             return;
         }
 
@@ -245,20 +248,20 @@ public class BoardService : IBoardService
             );
         }
 
-        AnsiConsole.Write(table);
+        _console.Write(table);
     }
 
     public async Task ViewTopicAsync(string boardIdString, string topicIdString, string? projectName, (string SessionCookie, string BaseUrl) auth)
     {
         if (!int.TryParse(boardIdString, out var boardId))
         {
-            AnsiConsole.MarkupLine("[red]Invalid board ID.[/]");
+            _console.MarkupLine("[red]Invalid board ID.[/]");
             return;
         }
 
         if (!int.TryParse(topicIdString, out var topicId))
         {
-            AnsiConsole.MarkupLine("[red]Invalid topic ID.[/]");
+            _console.MarkupLine("[red]Invalid topic ID.[/]");
             return;
         }
 
@@ -278,7 +281,7 @@ public class BoardService : IBoardService
         var response = await client.GetAsync(topicUrl);
         if (!response.IsSuccessStatusCode)
         {
-            AnsiConsole.MarkupLine($"[red]Failed to fetch topic: {response.StatusCode}[/]");
+            _console.MarkupLine($"[red]Failed to fetch topic: {response.StatusCode}[/]");
             return;
         }
 
@@ -287,19 +290,19 @@ public class BoardService : IBoardService
 
         if (topicDetail == null)
         {
-            AnsiConsole.MarkupLine("[red]Failed to parse topic details.[/]");
+            _console.MarkupLine("[red]Failed to parse topic details.[/]");
             return;
         }
 
         // トピックのタイトルを表示
-        AnsiConsole.MarkupLine($"[bold]{Markup.Escape(topicDetail.Title)}[/]");
-        AnsiConsole.WriteLine();
+        _console.MarkupLine($"[bold]{Markup.Escape(topicDetail.Title)}[/]");
+        _console.WriteLine();
 
         // 最初の投稿を表示
         var createdAt = topicDetail.CreatedAt != default ? FormatRelativeTime(topicDetail.CreatedAt) : "unknown";
-        AnsiConsole.MarkupLine($"[dim]#{topicDetail.Id} - {Markup.Escape(topicDetail.Author)} - {createdAt}[/]");
-        AnsiConsole.MarkupLine($"  {Markup.Escape(topicDetail.Content)}");
-        AnsiConsole.WriteLine();
+        _console.MarkupLine($"[dim]#{topicDetail.Id} - {Markup.Escape(topicDetail.Author)} - {createdAt}[/]");
+        _console.MarkupLine($"  {Markup.Escape(topicDetail.Content)}");
+        _console.WriteLine();
 
         // 返信を表示
         if (topicDetail.Replies.Count > 0)
@@ -312,9 +315,9 @@ public class BoardService : IBoardService
             {
                 var replyTime = FormatRelativeTime(reply.CreatedAt);
                 var newestLabel = reply == newestReply ? " - Newest post" : "";
-                AnsiConsole.MarkupLine($"[dim]#{reply.Id} - {Markup.Escape(reply.Author)} - {replyTime}{newestLabel}[/]");
-                AnsiConsole.MarkupLine($"  {Markup.Escape(reply.Content)}");
-                AnsiConsole.WriteLine();
+                _console.MarkupLine($"[dim]#{reply.Id} - {Markup.Escape(reply.Author)} - {replyTime}{newestLabel}[/]");
+                _console.MarkupLine($"  {Markup.Escape(reply.Content)}");
+                _console.WriteLine();
             }
         }
     }
