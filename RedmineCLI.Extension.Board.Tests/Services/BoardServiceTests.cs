@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 
@@ -11,8 +12,15 @@ using RedmineCLI.Extension.Board.Models;
 using RedmineCLI.Extension.Board.Services;
 
 using Spectre.Console;
+using Spectre.Console.Testing;
+
+using WireMock.RequestBuilders;
+using WireMock.ResponseBuilders;
+using WireMock.Server;
 
 using Xunit;
+
+using BoardModel = RedmineCLI.Extension.Board.Models.Board;
 
 namespace RedmineCLI.Extension.Board.Tests.Services;
 
@@ -56,6 +64,102 @@ public class BoardServiceTests
 
         // Assert
         await _mockAuthService.Received(1).GetAuthenticationAsync(null);
+    }
+
+    [Fact]
+    public async Task ListBoardsAsync_Should_DisplayBoardTable_When_ResponseIsSuccessful()
+    {
+        using var server = WireMockServer.Start();
+        const string project = "demo";
+        const string boardHtml = "<html><body>boards</body></html>";
+
+        server
+            .Given(Request.Create().WithPath($"/projects/{project}/boards").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(200).WithBody(boardHtml));
+
+        var boards = new List<BoardModel>
+        {
+            new BoardModel()
+            {
+                Id = 10,
+                Name = "General",
+                ColumnCount = 2,
+                CardCount = 5
+            }
+        };
+
+        _mockAuthService.GetAuthenticationAsync(Arg.Any<string?>())
+            .Returns(Task.FromResult<(string, string?)>((server.Url!, "session-cookie")));
+
+        _mockHtmlParsingService
+            .ParseBoardsFromHtml(boardHtml, server.Url!)
+            .Returns(boards);
+
+        Environment.ExitCode = 0;
+
+        var console = new TestConsole();
+        var service = new BoardService(_mockLogger, _mockAuthService, _mockHtmlParsingService, console);
+
+        await service.ListBoardsAsync(project, null);
+
+        await _mockAuthService.Received(1).GetAuthenticationAsync(null);
+        _mockHtmlParsingService.Received(1).ParseBoardsFromHtml(boardHtml, server.Url!);
+
+        var output = console.Output.ToString();
+        output.Should().Contain("Found 1 board(s)");
+        output.Should().Contain("General");
+
+        Environment.ExitCode.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ListBoardsAsync_Should_SetExitCode_When_SessionExpired()
+    {
+        using var server = WireMockServer.Start();
+        const string project = "demo";
+
+        server
+            .Given(Request.Create().WithPath($"/projects/{project}/boards").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(401));
+
+        _mockAuthService.GetAuthenticationAsync(Arg.Any<string?>())
+            .Returns(Task.FromResult<(string, string?)>((server.Url!, "session-cookie")));
+
+        Environment.ExitCode = 0;
+
+        var console = new TestConsole();
+        var service = new BoardService(_mockLogger, _mockAuthService, _mockHtmlParsingService, console);
+
+        await service.ListBoardsAsync(project, null);
+
+        _mockHtmlParsingService.DidNotReceiveWithAnyArgs().ParseBoardsFromHtml(default!, default!);
+
+        console.Output.ToString().Should().Contain("Error: Session expired.");
+
+        Environment.ExitCode.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ListBoardsAsync_Should_HandleHttpRequestException()
+    {
+        const string project = "demo";
+        var unreachableUrl = "http://127.0.0.1:1";
+
+        _mockAuthService.GetAuthenticationAsync(Arg.Any<string?>())
+            .Returns(Task.FromResult<(string, string?)>((unreachableUrl, "session-cookie")));
+
+        Environment.ExitCode = 0;
+
+        var console = new TestConsole();
+        var service = new BoardService(_mockLogger, _mockAuthService, _mockHtmlParsingService, console);
+
+        await service.ListBoardsAsync(project, null);
+
+        _mockHtmlParsingService.DidNotReceiveWithAnyArgs().ParseBoardsFromHtml(default!, default!);
+
+        console.Output.ToString().Should().Contain("Error: Failed to connect to Redmine server");
+
+        Environment.ExitCode.Should().Be(1);
     }
 
     [Fact]
