@@ -118,7 +118,8 @@ public class McpServer
                     Type = "object",
                     Properties = new Dictionary<string, SchemaProperty>
                     {
-                        ["issueId"] = new() { Type = "integer", Description = "Issue ID" }
+                        ["issueId"] = new() { Type = "integer", Description = "Issue ID" },
+                        ["includeJournals"] = new() { Type = "boolean", Description = "Include comments/journals (default: false)" }
                     },
                     Required = new[] { "issueId" }
                 }
