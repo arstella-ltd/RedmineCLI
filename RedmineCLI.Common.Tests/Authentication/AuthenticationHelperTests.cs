@@ -9,11 +9,11 @@ using NSubstitute;
 using RedmineCLI.Common.Authentication;
 using RedmineCLI.Common.Models;
 
-using Xunit;
-
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
+
+using Xunit;
 
 namespace RedmineCLI.Common.Tests.Authentication;
 
