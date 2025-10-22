@@ -163,6 +163,59 @@ public class BoardServiceTests
     }
 
     [Fact]
+    public async Task ListBoardsAsync_Should_ShowNoBoardsMessage_When_ProjectHasNoBoards()
+    {
+        using var server = WireMockServer.Start();
+        const string project = "demo";
+        const string boardHtml = "<html><body>empty</body></html>";
+
+        server
+            .Given(Request.Create().WithPath($"/projects/{project}/boards").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(200).WithBody(boardHtml));
+
+        _mockAuthService.GetAuthenticationAsync(Arg.Any<string?>())
+            .Returns(Task.FromResult<(string, string?)>((server.Url!, "session-cookie")));
+        _mockHtmlParsingService
+            .ParseBoardsFromHtml(boardHtml, server.Url!)
+            .Returns(new List<BoardModel>());
+
+        Environment.ExitCode = 0;
+        var console = new TestConsole();
+        var service = new BoardService(_mockLogger, _mockAuthService, _mockHtmlParsingService, console);
+
+        await service.ListBoardsAsync(project, null);
+
+        _mockHtmlParsingService.Received(1).ParseBoardsFromHtml(boardHtml, server.Url!);
+        console.Output.ToString().Should().Contain("No boards found.");
+        Environment.ExitCode.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ListBoardsAsync_Should_ShowNotFoundNotice_When_ProjectBoardsMissing()
+    {
+        using var server = WireMockServer.Start();
+        const string project = "demo";
+
+        server
+            .Given(Request.Create().WithPath($"/projects/{project}/boards").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(404));
+
+        _mockAuthService.GetAuthenticationAsync(Arg.Any<string?>())
+            .Returns(Task.FromResult<(string, string?)>((server.Url!, "session-cookie")));
+
+        Environment.ExitCode = 0;
+        var console = new TestConsole();
+        var service = new BoardService(_mockLogger, _mockAuthService, _mockHtmlParsingService, console);
+
+        await service.ListBoardsAsync(project, null);
+
+        _mockHtmlParsingService.DidNotReceiveWithAnyArgs().ParseBoardsFromHtml(default!, default!);
+        var output = console.Output.ToString();
+        output.Should().Contain("No boards found for project");
+        Environment.ExitCode.Should().Be(0);
+    }
+
+    [Fact]
     public async Task ListBoardsAsync_Should_ExitWithError_When_ProjectFilterIsNull()
     {
         // Arrange

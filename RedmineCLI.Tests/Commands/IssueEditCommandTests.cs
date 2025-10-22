@@ -17,6 +17,7 @@ using Xunit;
 
 namespace RedmineCLI.Tests.Commands;
 
+[Collection("Sequential")]
 public class IssueEditCommandTests
 {
     private readonly IRedmineService _redmineService;
