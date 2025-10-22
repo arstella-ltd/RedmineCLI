@@ -5,6 +5,7 @@ using System.Text.Json.Serialization.Metadata;
 
 using Microsoft.Extensions.Logging;
 
+using RedmineCLI.Exceptions;
 using RedmineCLI.Models;
 using RedmineCLI.Models.Mcp;
 
@@ -398,7 +399,13 @@ public class McpServer
         {
             filter.AssignedToId = arguments["assignedTo"]?.GetValue<string>();
             filter.StatusId = arguments["status"]?.GetValue<string>();
-            filter.ProjectId = arguments["project"]?.GetValue<string>();
+
+            // Resolve project name to identifier
+            var projectParam = arguments["project"]?.GetValue<string>();
+            if (!string.IsNullOrEmpty(projectParam))
+            {
+                filter.ProjectId = await ResolveProjectAsync(projectParam, cancellationToken);
+            }
 
             if (arguments["limit"] != null)
             {
@@ -407,6 +414,51 @@ public class McpServer
         }
 
         return await _redmineService.GetIssuesAsync(filter, cancellationToken);
+    }
+
+    /// <summary>
+    /// Resolves a project name or identifier to a project identifier
+    /// </summary>
+    private async Task<string?> ResolveProjectAsync(string? project, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(project))
+            return null;
+
+        // 数値の場合はそのままIDとして返す
+        if (int.TryParse(project, out _))
+        {
+            return project;
+        }
+
+        // 文字列の場合はプロジェクト名として扱い、プロジェクト識別子を検索する
+        try
+        {
+            var projects = await _redmineService.GetProjectsAsync(cancellationToken);
+            var matchedProject = projects.FirstOrDefault(p =>
+                p.Name.Equals(project, StringComparison.OrdinalIgnoreCase) ||
+                p.Identifier?.Equals(project, StringComparison.OrdinalIgnoreCase) == true);
+
+            if (matchedProject != null)
+            {
+                _logger.LogDebug("Resolved project '{Project}' to identifier '{Identifier}'", project, matchedProject.Identifier);
+                // プロジェクトの場合は識別子を返す（IDではなく）
+                return matchedProject.Identifier ?? matchedProject.Id.ToString();
+            }
+
+            // プロジェクトが見つからない場合はエラーをスロー
+            _logger.LogError("Could not find project with name '{Project}'", project);
+            throw new ValidationException($"Project '{project}' not found.");
+        }
+        catch (ValidationException)
+        {
+            // ValidationExceptionはそのまま再スロー
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to resolve project '{Project}'", project);
+            throw new ValidationException($"Failed to resolve project '{project}': {ex.Message}", ex);
+        }
     }
 
     private async Task<object> ExecuteGetIssueAsync(JsonNode? arguments, CancellationToken cancellationToken)

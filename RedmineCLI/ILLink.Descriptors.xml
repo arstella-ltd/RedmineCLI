@@ -4,7 +4,8 @@
     <type fullname="RedmineCLI.Models.Config" preserve="all" />
     <type fullname="RedmineCLI.Models.Profile" preserve="all" />
     <type fullname="RedmineCLI.Models.Preferences" preserve="all" />
-    
+    <type fullname="RedmineCLI.Models.TimeFormat" preserve="all" />
+
     <!-- Preserve generated formatters if they exist -->
     <type fullname="RedmineCLI.Models.Config*" preserve="all" />
     <type fullname="RedmineCLI.Models.Profile*" preserve="all" />
@@ -17,6 +18,7 @@
     <type fullname="VYaml.Serialization.BuiltinResolver*" preserve="all" />
     <type fullname="VYaml.Serialization.StandardResolver*" preserve="all" />
     <type fullname="VYaml.Serialization.DictionaryFormatter*" preserve="all" />
+    <type fullname="VYaml.Serialization.EnumAsStringFormatter`1" preserve="all" />
   </assembly>
   
   <assembly fullname="System.Collections">
