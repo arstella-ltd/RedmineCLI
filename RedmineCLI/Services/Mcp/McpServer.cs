@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 
 using Microsoft.Extensions.Logging;
 
@@ -17,6 +18,12 @@ public class McpServer
 {
     private readonly IRedmineService _redmineService;
     private readonly ILogger<McpServer> _logger;
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        TypeInfoResolver = JsonTypeInfoResolver.Combine(
+            McpJsonContext.Default,
+            new DefaultJsonTypeInfoResolver())
+    };
 
     public McpServer(IRedmineService redmineService, ILogger<McpServer> logger)
     {
@@ -55,18 +62,18 @@ public class McpServer
 
     private JsonRpcResponse HandleInitialize(JsonRpcRequest request)
     {
-        var result = new
+        var result = new InitializeResult
         {
-            protocolVersion = "2024-11-05",
-            capabilities = new
+            ProtocolVersion = "2024-11-05",
+            Capabilities = new Capabilities
             {
-                tools = new { },
-                resources = new { }
+                Tools = new ToolsCapability(),
+                Resources = new ResourcesCapability()
             },
-            serverInfo = new
+            ServerInfo = new ServerInfo
             {
-                name = "redmine",
-                version = "1.0.0"
+                Name = "redmine",
+                Version = "1.0.0"
             }
         };
 
@@ -83,134 +90,134 @@ public class McpServer
 
     private JsonRpcResponse HandleToolsList(JsonRpcRequest request)
     {
-        var tools = new object[]
+        var tools = new Tool[]
         {
-            new
+            new()
             {
-                name = "get_issues",
-                description = "Get a list of Redmine issues with optional filters",
-                inputSchema = new
+                Name = "get_issues",
+                Description = "Get a list of Redmine issues with optional filters",
+                InputSchema = new InputSchema
                 {
-                    type = "object",
-                    properties = new
+                    Type = "object",
+                    Properties = new Dictionary<string, SchemaProperty>
                     {
-                        assignedTo = new { type = "string", description = "Filter by assigned user (use '@me' for current user)" },
-                        status = new { type = "string", description = "Filter by status (e.g., 'open', 'closed', or specific status name)" },
-                        project = new { type = "string", description = "Filter by project identifier" },
-                        limit = new { type = "integer", description = "Maximum number of issues to return" }
+                        ["assignedTo"] = new() { Type = "string", Description = "Filter by assigned user (use '@me' for current user)" },
+                        ["status"] = new() { Type = "string", Description = "Filter by status (e.g., 'open', 'closed', or specific status name)" },
+                        ["project"] = new() { Type = "string", Description = "Filter by project identifier" },
+                        ["limit"] = new() { Type = "integer", Description = "Maximum number of issues to return" }
                     }
                 }
             },
-            new
+            new()
             {
-                name = "get_issue",
-                description = "Get details of a specific Redmine issue by ID",
-                inputSchema = new
+                Name = "get_issue",
+                Description = "Get details of a specific Redmine issue by ID",
+                InputSchema = new InputSchema
                 {
-                    type = "object",
-                    properties = new
+                    Type = "object",
+                    Properties = new Dictionary<string, SchemaProperty>
                     {
-                        issueId = new { type = "integer", description = "Issue ID" }
+                        ["issueId"] = new() { Type = "integer", Description = "Issue ID" }
                     },
-                    required = new[] { "issueId" }
+                    Required = new[] { "issueId" }
                 }
             },
-            new
+            new()
             {
-                name = "create_issue",
-                description = "Create a new Redmine issue",
-                inputSchema = new
+                Name = "create_issue",
+                Description = "Create a new Redmine issue",
+                InputSchema = new InputSchema
                 {
-                    type = "object",
-                    properties = new
+                    Type = "object",
+                    Properties = new Dictionary<string, SchemaProperty>
                     {
-                        project = new { type = "string", description = "Project identifier" },
-                        subject = new { type = "string", description = "Issue subject/title" },
-                        description = new { type = "string", description = "Issue description" },
-                        priority = new { type = "string", description = "Priority name" },
-                        assignedTo = new { type = "string", description = "Assigned user login name" }
+                        ["project"] = new() { Type = "string", Description = "Project identifier" },
+                        ["subject"] = new() { Type = "string", Description = "Issue subject/title" },
+                        ["description"] = new() { Type = "string", Description = "Issue description" },
+                        ["priority"] = new() { Type = "string", Description = "Priority name" },
+                        ["assignedTo"] = new() { Type = "string", Description = "Assigned user login name" }
                     },
-                    required = new[] { "project", "subject" }
+                    Required = new[] { "project", "subject" }
                 }
             },
-            new
+            new()
             {
-                name = "update_issue",
-                description = "Update an existing Redmine issue",
-                inputSchema = new
+                Name = "update_issue",
+                Description = "Update an existing Redmine issue",
+                InputSchema = new InputSchema
                 {
-                    type = "object",
-                    properties = new
+                    Type = "object",
+                    Properties = new Dictionary<string, SchemaProperty>
                     {
-                        issueId = new { type = "integer", description = "Issue ID" },
-                        status = new { type = "string", description = "New status" },
-                        assignedTo = new { type = "string", description = "New assigned user" },
-                        doneRatio = new { type = "integer", description = "Done ratio (0-100)" },
-                        notes = new { type = "string", description = "Update notes" }
+                        ["issueId"] = new() { Type = "integer", Description = "Issue ID" },
+                        ["status"] = new() { Type = "string", Description = "New status" },
+                        ["assignedTo"] = new() { Type = "string", Description = "New assigned user" },
+                        ["doneRatio"] = new() { Type = "integer", Description = "Done ratio (0-100)" },
+                        ["notes"] = new() { Type = "string", Description = "Update notes" }
                     },
-                    required = new[] { "issueId" }
+                    Required = new[] { "issueId" }
                 }
             },
-            new
+            new()
             {
-                name = "add_comment",
-                description = "Add a comment to a Redmine issue",
-                inputSchema = new
+                Name = "add_comment",
+                Description = "Add a comment to a Redmine issue",
+                InputSchema = new InputSchema
                 {
-                    type = "object",
-                    properties = new
+                    Type = "object",
+                    Properties = new Dictionary<string, SchemaProperty>
                     {
-                        issueId = new { type = "integer", description = "Issue ID" },
-                        comment = new { type = "string", description = "Comment text" }
+                        ["issueId"] = new() { Type = "integer", Description = "Issue ID" },
+                        ["comment"] = new() { Type = "string", Description = "Comment text" }
                     },
-                    required = new[] { "issueId", "comment" }
+                    Required = new[] { "issueId", "comment" }
                 }
             },
-            new
+            new()
             {
-                name = "get_projects",
-                description = "Get a list of Redmine projects",
-                inputSchema = new
+                Name = "get_projects",
+                Description = "Get a list of Redmine projects",
+                InputSchema = new InputSchema
                 {
-                    type = "object",
-                    properties = new { }
+                    Type = "object",
+                    Properties = new Dictionary<string, SchemaProperty>()
                 }
             },
-            new
+            new()
             {
-                name = "get_users",
-                description = "Get a list of Redmine users",
-                inputSchema = new
+                Name = "get_users",
+                Description = "Get a list of Redmine users",
+                InputSchema = new InputSchema
                 {
-                    type = "object",
-                    properties = new
+                    Type = "object",
+                    Properties = new Dictionary<string, SchemaProperty>
                     {
-                        limit = new { type = "integer", description = "Maximum number of users to return" }
+                        ["limit"] = new() { Type = "integer", Description = "Maximum number of users to return" }
                     }
                 }
             },
-            new
+            new()
             {
-                name = "get_statuses",
-                description = "Get a list of issue statuses",
-                inputSchema = new
+                Name = "get_statuses",
+                Description = "Get a list of issue statuses",
+                InputSchema = new InputSchema
                 {
-                    type = "object",
-                    properties = new { }
+                    Type = "object",
+                    Properties = new Dictionary<string, SchemaProperty>()
                 }
             },
-            new
+            new()
             {
-                name = "search",
-                description = "Search for issues by keyword",
-                inputSchema = new
+                Name = "search",
+                Description = "Search for issues by keyword",
+                InputSchema = new InputSchema
                 {
-                    type = "object",
-                    properties = new
+                    Type = "object",
+                    Properties = new Dictionary<string, SchemaProperty>
                     {
-                        query = new { type = "string", description = "Search query" }
+                        ["query"] = new() { Type = "string", Description = "Search query" }
                     },
-                    required = new[] { "query" }
+                    Required = new[] { "query" }
                 }
             }
         };
@@ -218,7 +225,7 @@ public class McpServer
         return new JsonRpcResponse
         {
             Id = request.Id,
-            Result = new { tools }
+            Result = new ToolsListResult { Tools = tools }
         };
     }
 
@@ -226,7 +233,7 @@ public class McpServer
     private async Task<JsonRpcResponse> HandleToolsCallAsync(JsonRpcRequest request, CancellationToken cancellationToken)
     {
         // Parse params
-        var paramsJson = JsonSerializer.Serialize(request.Params);
+        var paramsJson = JsonSerializer.Serialize(request.Params, JsonOptions);
         var paramsNode = JsonNode.Parse(paramsJson);
         var toolName = paramsNode?["name"]?.GetValue<string>();
         var argumentsNode = paramsNode?["arguments"];
@@ -255,7 +262,17 @@ public class McpServer
             return new JsonRpcResponse
             {
                 Id = request.Id,
-                Result = new { content = new[] { new { type = "text", text = JsonSerializer.Serialize(result) } } }
+                Result = new ToolCallResult
+                {
+                    Content = new[]
+                    {
+                        new TextContent
+                        {
+                            Type = "text",
+                            Text = JsonSerializer.Serialize(result, JsonOptions)
+                        }
+                    }
+                }
             };
         }
         catch (InvalidOperationException ex) when (ex.Message.StartsWith("Unknown tool"))
@@ -275,35 +292,35 @@ public class McpServer
 
     private JsonRpcResponse HandleResourcesList(JsonRpcRequest request)
     {
-        var resources = new[]
+        var resources = new Resource[]
         {
-            new
+            new()
             {
-                uri = "issue://{id}",
-                name = "Redmine Issue",
-                description = "Get details of a specific issue by ID",
-                mimeType = "application/json"
+                Uri = "issue://{id}",
+                Name = "Redmine Issue",
+                Description = "Get details of a specific issue by ID",
+                MimeType = "application/json"
             },
-            new
+            new()
             {
-                uri = "issues://",
-                name = "My Issues",
-                description = "List of issues assigned to the current user",
-                mimeType = "application/json"
+                Uri = "issues://",
+                Name = "My Issues",
+                Description = "List of issues assigned to the current user",
+                MimeType = "application/json"
             },
-            new
+            new()
             {
-                uri = "project://{id}/issues",
-                name = "Project Issues",
-                description = "List of issues in a specific project",
-                mimeType = "application/json"
+                Uri = "project://{id}/issues",
+                Name = "Project Issues",
+                Description = "List of issues in a specific project",
+                MimeType = "application/json"
             }
         };
 
         return new JsonRpcResponse
         {
             Id = request.Id,
-            Result = new { resources }
+            Result = new ResourcesListResult { Resources = resources }
         };
     }
 
@@ -311,7 +328,7 @@ public class McpServer
     private async Task<JsonRpcResponse> HandleResourcesReadAsync(JsonRpcRequest request, CancellationToken cancellationToken)
     {
         // Parse params
-        var paramsJson = JsonSerializer.Serialize(request.Params);
+        var paramsJson = JsonSerializer.Serialize(request.Params, JsonOptions);
         var paramsNode = JsonNode.Parse(paramsJson);
         var uri = paramsNode?["uri"]?.GetValue<string>();
 
@@ -348,15 +365,15 @@ public class McpServer
             return new JsonRpcResponse
             {
                 Id = request.Id,
-                Result = new
+                Result = new ResourceReadResult
                 {
-                    contents = new[]
+                    Contents = new[]
                     {
-                        new
+                        new ResourceContent
                         {
-                            uri,
-                            mimeType = "application/json",
-                            text = JsonSerializer.Serialize(content)
+                            Uri = uri,
+                            MimeType = "application/json",
+                            Text = JsonSerializer.Serialize(content, JsonOptions)
                         }
                     }
                 }

@@ -88,7 +88,7 @@ public class McpCommand
                 try
                 {
                     // JSON-RPCリクエストをパース
-                    var request = JsonSerializer.Deserialize<JsonRpcRequest>(line);
+                    var request = JsonSerializer.Deserialize(line, McpJsonContext.Default.JsonRpcRequest);
                     if (request == null)
                     {
                         var errorResponse = new JsonRpcResponse
@@ -96,7 +96,7 @@ public class McpCommand
                             Id = null,
                             Error = JsonRpcError.CreateParseError("Failed to parse request")
                         };
-                        var errorJson = JsonSerializer.Serialize(errorResponse);
+                        var errorJson = JsonSerializer.Serialize(errorResponse, McpJsonContext.Default.JsonRpcResponse);
                         await Console.Out.WriteLineAsync(errorJson);
                         continue;
                     }
@@ -105,7 +105,7 @@ public class McpCommand
                     var response = await server.HandleRequestAsync(request);
 
                     // レスポンスを返す
-                    var responseJson = JsonSerializer.Serialize(response);
+                    var responseJson = JsonSerializer.Serialize(response, McpJsonContext.Default.JsonRpcResponse);
                     await Console.Out.WriteLineAsync(responseJson);
 
                     if (debug)
@@ -125,7 +125,7 @@ public class McpCommand
                         Id = null,
                         Error = JsonRpcError.CreateParseError(ex.Message)
                     };
-                    var errorJson = JsonSerializer.Serialize(errorResponse);
+                    var errorJson = JsonSerializer.Serialize(errorResponse, McpJsonContext.Default.JsonRpcResponse);
                     await Console.Out.WriteLineAsync(errorJson);
                 }
                 catch (Exception ex)
@@ -141,7 +141,7 @@ public class McpCommand
                         Id = null,
                         Error = JsonRpcError.CreateInternalError(ex.Message)
                     };
-                    var errorJson = JsonSerializer.Serialize(errorResponse);
+                    var errorJson = JsonSerializer.Serialize(errorResponse, McpJsonContext.Default.JsonRpcResponse);
                     await Console.Out.WriteLineAsync(errorJson);
                 }
             }
