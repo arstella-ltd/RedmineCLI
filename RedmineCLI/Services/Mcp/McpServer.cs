@@ -105,7 +105,11 @@ public class McpServer
                         ["assignedTo"] = new() { Type = "string", Description = "Filter by assigned user (use '@me' for current user)" },
                         ["status"] = new() { Type = "string", Description = "Filter by status (e.g., 'open', 'closed', or specific status name)" },
                         ["project"] = new() { Type = "string", Description = "Filter by project name or identifier" },
-                        ["limit"] = new() { Type = "integer", Description = "Maximum number of issues to return" }
+                        ["priority"] = new() { Type = "string", Description = "Filter by priority name" },
+                        ["author"] = new() { Type = "string", Description = "Filter by author/creator login name" },
+                        ["limit"] = new() { Type = "integer", Description = "Maximum number of issues to return" },
+                        ["offset"] = new() { Type = "integer", Description = "Pagination offset" },
+                        ["sort"] = new() { Type = "string", Description = "Sort order (e.g., 'updated_on:desc')" }
                     }
                 }
             },
@@ -404,6 +408,8 @@ public class McpServer
         {
             filter.AssignedToId = arguments["assignedTo"]?.GetValue<string>();
             filter.StatusId = arguments["status"]?.GetValue<string>();
+            filter.PriorityId = arguments["priority"]?.GetValue<string>();
+            filter.AuthorId = arguments["author"]?.GetValue<string>();
 
             // Resolve project name to identifier
             var projectParam = arguments["project"]?.GetValue<string>();
@@ -416,6 +422,13 @@ public class McpServer
             {
                 filter.Limit = arguments["limit"]!.GetValue<int>();
             }
+
+            if (arguments["offset"] != null)
+            {
+                filter.Offset = arguments["offset"]!.GetValue<int>();
+            }
+
+            filter.Sort = arguments["sort"]?.GetValue<string>();
         }
 
         return await _redmineService.GetIssuesAsync(filter, cancellationToken);
