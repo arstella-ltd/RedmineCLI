@@ -534,7 +534,7 @@ public class McpServer
             doneRatio,
             cancellationToken);
 
-        return new { success = true, issueId };
+        return new ToolOperationResult { Success = true, IssueId = issueId };
     }
 
     private async Task<object> ExecuteAddCommentAsync(JsonNode? arguments, CancellationToken cancellationToken)
@@ -548,7 +548,7 @@ public class McpServer
         var comment = arguments["comment"]!.GetValue<string>()!;
 
         await _redmineService.AddCommentAsync(issueId, comment, cancellationToken);
-        return new { success = true, issueId };
+        return new ToolOperationResult { Success = true, IssueId = issueId };
     }
 
     private async Task<object> ExecuteGetProjectsAsync(CancellationToken cancellationToken)

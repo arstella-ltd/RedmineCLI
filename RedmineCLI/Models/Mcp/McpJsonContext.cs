@@ -40,6 +40,7 @@ namespace RedmineCLI.Models.Mcp;
 [JsonSerializable(typeof(string))]
 [JsonSerializable(typeof(int))]
 [JsonSerializable(typeof(bool))]
+[JsonSerializable(typeof(ToolOperationResult))]
 public partial class McpJsonContext : JsonSerializerContext
 {
 }
