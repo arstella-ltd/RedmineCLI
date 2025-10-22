@@ -806,6 +806,52 @@
     - 拡張機能用のベースクラス
   - _要求: 10, 15_
 
+- [ ] 22. MCPサーバー機能の実装（TDD）
+  - **Red（〜1時間）**: MCPサーバーのテストを先に作成
+    - JSON-RPC メッセージパースのテスト
+      - ParseRequest_Should_ParseValidJsonRpc_When_ValidMessage
+      - ParseRequest_Should_ReturnError_When_MalformedJson
+      - ParseRequest_Should_HandleBatchRequest_When_Array
+    - ツール実行のテスト
+      - CallTool_Should_ExecuteGetIssues_When_ValidParameters
+      - CallTool_Should_ReturnError_When_InvalidToolName
+      - CallTool_Should_ReturnError_When_MissingParameters
+    - リソース取得のテスト
+      - ReadResource_Should_ReturnIssue_When_ValidUri
+      - ReadResource_Should_ReturnError_When_InvalidUri
+      - ReadResource_Should_ReturnIssuesList_When_IssuesUri
+  - **Green（〜2.5時間）**: テストを通すための実装
+    - JSON-RPC メッセージモデルの作成（Source Generator対応）
+      - JsonRpcRequest、JsonRpcResponse、JsonRpcError
+    - MCPServerクラスの実装
+      - stdio通信ループの実装（Console.ReadLine/WriteLine）
+      - メッセージルーティング（initialize、tools/list、tools/call、resources/list、resources/read）
+      - IRedmineApiClientを使用したツール実装
+      - リソースURIのパース処理
+    - McpCommandクラスの実装
+      - MCPサーバーの起動処理
+      - --debugオプションの処理
+      - 設定ファイルからの認証情報読み込み
+    - エラーハンドリングの実装
+      - JSON-RPC Error形式でのエラー返却
+      - Redmine APIエラーのマッピング
+  - **Refactor（〜1時間）**: コードの最適化
+    - ツール実装の共通化
+    - エラーハンドリングの改善
+    - ログ出力の整理
+  - _要求: 16_
+
+- [ ] 23. MCP統合テストとドキュメント作成
+  - **統合テスト（〜1.5時間）**
+    - Claude Code連携テスト
+    - 実際のJSON-RPCメッセージでの動作確認
+    - パフォーマンステスト（起動時間 < 100ms確認）
+  - **ドキュメント作成（〜1時間）**
+    - MCPサーバー設定ガイドの作成（Claude Code用）
+    - 提供ツールとリソースのリファレンス
+    - 使用例の追加
+  - _要求: 16_
+
 ## 実装メモ
 
 ### タスク18完了（2025-08-16）

@@ -220,3 +220,30 @@ RedmineCLIは、Redmineのチケット管理をコマンドラインから効率
 10. WHEN キーチェーンアクセスでエラーが発生 THEN 適切なエラーメッセージが表示される SHALL
 11. WHEN RedmineCLI.Commonライブラリをビルド THEN Native AOT互換（IsAotCompatible: true）として設定される SHALL
 12. WHEN 複数のRedmineサーバーを使用 THEN サーバーURLごとに異なる認証情報をキーチェーンに保存できる SHALL
+
+### 要求 16
+**ユーザーストーリー:** AIエージェント開発者として、Claude CodeからRedmineチケットを操作したいので、Model Context Protocol（MCP）サーバーとして動作する機能がほしい
+
+#### 受け入れ基準
+1. WHEN `redmine mcp` コマンドを実行 THEN MCPサーバーがstdio通信で起動する SHALL
+2. WHEN MCPクライアントが接続 THEN サーバー情報（名前、バージョン）を返す SHALL
+3. WHEN MCPクライアントがツール一覧を要求 THEN 利用可能なRedmine操作ツール一覧を返す SHALL
+4. WHEN `get_issues` ツールを呼び出す THEN フィルタ条件に応じたチケット一覧を返す SHALL
+5. WHEN `get_issue` ツールを呼び出す THEN 指定IDのチケット詳細を返す SHALL
+6. WHEN `create_issue` ツールを呼び出す THEN 新規チケットを作成してIDを返す SHALL
+7. WHEN `update_issue` ツールを呼び出す THEN チケットを更新して結果を返す SHALL
+8. WHEN `add_comment` ツールを呼び出す THEN チケットにコメントを追加する SHALL
+9. WHEN `get_projects` ツールを呼び出す THEN プロジェクト一覧を返す SHALL
+10. WHEN `get_users` ツールを呼び出す THEN ユーザー一覧を返す SHALL
+11. WHEN `get_statuses` ツールを呼び出す THEN ステータス一覧を返す SHALL
+12. WHEN `search` ツールを呼び出す THEN 全文検索結果を返す SHALL
+13. WHEN MCPクライアントがリソース一覧を要求 THEN 利用可能なRedmineリソース一覧を返す SHALL
+14. WHEN `issue://{id}` リソースを要求 THEN 指定チケットの詳細を返す SHALL
+15. WHEN `issues://` リソースを要求 THEN 自分に割り当てられたチケット一覧を返す SHALL
+16. WHEN `project://{id}/issues` リソースを要求 THEN プロジェクトのチケット一覧を返す SHALL
+17. WHEN 認証情報が設定されていない THEN MCPサーバーはエラーメッセージを返す SHALL
+18. WHEN MCPサーバー起動時 THEN 既存の設定ファイルから認証情報を読み込む SHALL
+19. WHEN ツール呼び出しでエラーが発生 THEN JSON-RPC Error形式でエラーを返す SHALL
+20. WHEN `--debug` オプションを指定 THEN デバッグログが標準エラー出力に出力される SHALL
+21. WHEN Claude Code設定ファイルに登録 THEN `{"command": "redmine", "args": ["mcp"]}` で起動できる SHALL
+22. WHEN MCPサーバーが動作中 THEN Native AOTの高速起動（< 100ms）を維持する SHALL
