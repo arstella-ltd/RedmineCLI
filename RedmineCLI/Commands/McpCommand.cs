@@ -13,6 +13,7 @@ namespace RedmineCLI.Commands;
 /// <summary>
 /// MCPサーバーコマンド
 /// </summary>
+[ExcludeFromCodeCoverage] // stdio通信を行うため、ユニットテストでのカバレッジ計測が困難
 public class McpCommand
 {
     private readonly IRedmineService _redmineService;

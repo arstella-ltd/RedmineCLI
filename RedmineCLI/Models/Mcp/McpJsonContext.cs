@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -7,6 +8,7 @@ namespace RedmineCLI.Models.Mcp;
 /// MCP用のJSON Source Generator Context
 /// Native AOT互換性のため
 /// </summary>
+[ExcludeFromCodeCoverage] // Source Generator生成コードのため除外
 [JsonSourceGenerationOptions(
     WriteIndented = false,
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
