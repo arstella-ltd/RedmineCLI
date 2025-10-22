@@ -29,7 +29,6 @@ public class McpCommand
     /// <summary>
     /// MCPコマンドを作成
     /// </summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Trimming", "IL2026", Justification = "MCP server requires dynamic JSON serialization")]
     public static Command Create(IRedmineService redmineService, ILogger<McpCommand> logger, ILogger<McpServer> mcpServerLogger)
     {
         var mcpCommand = new McpCommand(redmineService, logger, mcpServerLogger);
@@ -39,11 +38,13 @@ public class McpCommand
         var debugOption = new Option<bool>("--debug") { Description = "Enable debug logging" };
         command.Add(debugOption);
 
+#pragma warning disable IL2026 // MCP server requires dynamic JSON serialization
         command.SetAction(async (parseResult) =>
         {
             var debug = parseResult.GetValue(debugOption);
             Environment.ExitCode = await mcpCommand.StartServerAsync(debug);
         });
+#pragma warning restore IL2026
 
         return command;
     }
