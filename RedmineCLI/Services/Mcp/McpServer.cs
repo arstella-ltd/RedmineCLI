@@ -104,7 +104,7 @@ public class McpServer
                     {
                         ["assignedTo"] = new() { Type = "string", Description = "Filter by assigned user (use '@me' for current user)" },
                         ["status"] = new() { Type = "string", Description = "Filter by status (e.g., 'open', 'closed', or specific status name)" },
-                        ["project"] = new() { Type = "string", Description = "Filter by project identifier" },
+                        ["project"] = new() { Type = "string", Description = "Filter by project name or identifier" },
                         ["limit"] = new() { Type = "integer", Description = "Maximum number of issues to return" }
                     }
                 }
@@ -136,7 +136,6 @@ public class McpServer
                         ["project"] = new() { Type = "string", Description = "Project identifier" },
                         ["subject"] = new() { Type = "string", Description = "Issue subject/title" },
                         ["description"] = new() { Type = "string", Description = "Issue description" },
-                        ["priority"] = new() { Type = "string", Description = "Priority name" },
                         ["assignedTo"] = new() { Type = "string", Description = "Assigned user login name" }
                     },
                     Required = new[] { "project", "subject" }
@@ -152,10 +151,11 @@ public class McpServer
                     Properties = new Dictionary<string, SchemaProperty>
                     {
                         ["issueId"] = new() { Type = "integer", Description = "Issue ID" },
-                        ["status"] = new() { Type = "string", Description = "New status" },
-                        ["assignedTo"] = new() { Type = "string", Description = "New assigned user" },
-                        ["doneRatio"] = new() { Type = "integer", Description = "Done ratio (0-100)" },
-                        ["notes"] = new() { Type = "string", Description = "Update notes" }
+                        ["subject"] = new() { Type = "string", Description = "New subject/title" },
+                        ["description"] = new() { Type = "string", Description = "New description" },
+                        ["status"] = new() { Type = "string", Description = "New status name" },
+                        ["assignedTo"] = new() { Type = "string", Description = "New assigned user login name" },
+                        ["doneRatio"] = new() { Type = "integer", Description = "Done ratio (0-100)" }
                     },
                     Required = new[] { "issueId" }
                 }
@@ -217,7 +217,11 @@ public class McpServer
                     Type = "object",
                     Properties = new Dictionary<string, SchemaProperty>
                     {
-                        ["query"] = new() { Type = "string", Description = "Search query" }
+                        ["query"] = new() { Type = "string", Description = "Search query" },
+                        ["assignedTo"] = new() { Type = "string", Description = "Filter by assigned user" },
+                        ["status"] = new() { Type = "string", Description = "Filter by status" },
+                        ["project"] = new() { Type = "string", Description = "Filter by project name or identifier" },
+                        ["limit"] = new() { Type = "integer", Description = "Maximum number of results to return" }
                     },
                     Required = new[] { "query" }
                 }
