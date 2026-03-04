@@ -30,6 +30,9 @@ public class Issue : IEquatable<Issue>
     [JsonPropertyName("author")]
     public User? Author { get; set; }
 
+    [JsonPropertyName("fixed_version")]
+    public TargetVersion? FixedVersion { get; set; }
+
     [JsonPropertyName("created_on")]
     public DateTime CreatedOn { get; set; }
 
