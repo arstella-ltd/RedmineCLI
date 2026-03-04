@@ -112,6 +112,7 @@ public class TableFormatter : ITableFormatter
         grid.AddRow("[bold]Priority:[/]", Markup.Escape(issue.Priority?.Name ?? "Normal"));
         grid.AddRow("[bold]Assignee:[/]", Markup.Escape(issue.AssignedTo?.DisplayName ?? "Unassigned"));
         grid.AddRow("[bold]Project:[/]", Markup.Escape(issue.Project?.Name ?? "No Project"));
+        grid.AddRow("[bold]Version:[/]", Markup.Escape(issue.FixedVersion?.Name ?? "Not set"));
         grid.AddRow("[bold]Progress:[/]", $"{issue.DoneRatio ?? 0}%");
         grid.AddRow("[bold]Due Date:[/]", issue.DueDate.HasValue ? _timeHelper.GetLocalTime(issue.DueDate.Value, "yyyy-MM-dd") : "Not set");
         grid.AddRow("[bold]Created:[/]", _timeHelper.FormatTime(issue.CreatedOn, _timeFormat));

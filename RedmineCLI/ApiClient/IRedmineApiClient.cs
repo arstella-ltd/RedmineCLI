@@ -44,6 +44,8 @@ public interface IRedmineApiClient
 
     Task<Stream> DownloadAttachmentAsync(string contentUrl, CancellationToken cancellationToken = default);
 
+    Task<List<TargetVersion>> GetVersionsAsync(string projectId, CancellationToken cancellationToken = default);
+
     Task<List<Issue>> SearchIssuesAsync(
         string searchQuery,
         string? assignedToId = null,

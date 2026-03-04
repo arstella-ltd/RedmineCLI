@@ -64,4 +64,9 @@ public class IssueListOptions
     /// 作成者フィルター（ユーザー名、ID、または @me）
     /// </summary>
     public string? Author { get; set; }
+
+    /// <summary>
+    /// 対象バージョンフィルター（名前またはID）
+    /// </summary>
+    public string? TargetVersion { get; set; }
 }

@@ -25,6 +25,7 @@ public class RedmineService : IRedmineService
     private DateTime _projectsCacheTime = DateTime.MinValue;
     private List<Priority>? _prioritiesCache;
     private DateTime _prioritiesCacheTime = DateTime.MinValue;
+    private readonly Dictionary<string, (List<TargetVersion> Versions, DateTime CacheTime)> _versionsCache = new();
     private readonly TimeSpan _cacheExpiration = TimeSpan.FromMinutes(5);
 
     public RedmineService(IRedmineApiClient apiClient, ILogger<RedmineService> logger)
@@ -296,6 +297,12 @@ public class RedmineService : IRedmineService
     }
 
     /// <inheritdoc/>
+    public async Task<List<TargetVersion>> GetVersionsAsync(string projectId, CancellationToken cancellationToken = default)
+    {
+        return await GetCachedVersionsAsync(projectId, cancellationToken);
+    }
+
+    /// <inheritdoc/>
     public async Task<List<Project>> GetProjectsAsync(CancellationToken cancellationToken = default)
     {
         return await GetCachedProjectsAsync(cancellationToken);
@@ -408,6 +415,27 @@ public class RedmineService : IRedmineService
         _projectsCacheTime = DateTime.UtcNow;
 
         return projects;
+    }
+
+    /// <summary>
+    /// キャッシュされたバージョン一覧を取得する（プロジェクト別）
+    /// </summary>
+    private async Task<List<TargetVersion>> GetCachedVersionsAsync(string projectId, CancellationToken cancellationToken)
+    {
+        // キャッシュが有効な場合は返す
+        if (_versionsCache.TryGetValue(projectId, out var cached) &&
+            DateTime.UtcNow - cached.CacheTime < _cacheExpiration)
+        {
+            return cached.Versions;
+        }
+
+        _logger.LogDebug("Fetching versions for project {ProjectId} from API", projectId);
+        var versions = await _apiClient.GetVersionsAsync(projectId, cancellationToken);
+
+        // キャッシュに保存
+        _versionsCache[projectId] = (versions, DateTime.UtcNow);
+
+        return versions;
     }
 
     /// <summary>

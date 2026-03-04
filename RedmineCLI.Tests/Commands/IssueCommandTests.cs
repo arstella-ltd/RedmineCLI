@@ -1192,6 +1192,158 @@ public class IssueCommandTests
     }
 
     [Fact]
+    public async Task List_Should_FilterByTargetVersion_When_VersionIdAndProjectSpecified()
+    {
+        // Arrange
+        var versionId = "964";
+        var projectId = "test-project";
+        var versions = new List<TargetVersion>
+        {
+            new TargetVersion { Id = 963, Name = "Ver.4.8.2", Status = "closed" },
+            new TargetVersion { Id = 964, Name = "Ver.4.8.3", Status = "open" },
+            new TargetVersion { Id = 965, Name = "Ver.4.9.0", Status = "open" }
+        };
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "Version filtered issue",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                Project = new Project { Id = 1, Name = "Test Project", Identifier = "test-project" },
+                FixedVersion = new TargetVersion { Id = 964, Name = "Ver.4.8.3" }
+            }
+        };
+
+        var projects = new List<Project>
+        {
+            new Project { Id = 1, Name = "Test Project", Identifier = "test-project" }
+        };
+        _redmineService.GetProjectsAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(projects));
+        _redmineService.GetVersionsAsync(projectId, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(versions));
+        _redmineService.GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            TargetVersion = versionId,
+            Project = projectId
+        }, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).GetVersionsAsync(projectId, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.FixedVersionId == versionId && f.ProjectId == projectId),
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
+    }
+
+    [Fact]
+    public async Task List_Should_ResolveVersionNameToId_When_VersionNameAndProjectSpecified()
+    {
+        // Arrange
+        var versionName = "Ver.4.8.3";
+        var expectedVersionId = "964";
+        var projectId = "test-project";
+        var versions = new List<TargetVersion>
+        {
+            new TargetVersion { Id = 963, Name = "Ver.4.8.2", Status = "closed" },
+            new TargetVersion { Id = 964, Name = "Ver.4.8.3", Status = "open" },
+            new TargetVersion { Id = 965, Name = "Ver.4.9.0", Status = "open" }
+        };
+        var issues = new List<Issue>
+        {
+            new Issue
+            {
+                Id = 1,
+                Subject = "Version filtered issue",
+                Status = new IssueStatus { Id = 1, Name = "New" },
+                Project = new Project { Id = 1, Name = "Test Project", Identifier = "test-project" },
+                FixedVersion = new TargetVersion { Id = 964, Name = "Ver.4.8.3" }
+            }
+        };
+
+        var projects = new List<Project>
+        {
+            new Project { Id = 1, Name = "Test Project", Identifier = "test-project" }
+        };
+        _redmineService.GetProjectsAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(projects));
+        _redmineService.GetVersionsAsync(projectId, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(versions));
+        _redmineService.GetIssuesAsync(Arg.Is<IssueFilter>(f => f.FixedVersionId == expectedVersionId), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(issues));
+
+        // Act
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            TargetVersion = versionName,
+            Project = projectId
+        }, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(0);
+        await _redmineService.Received(1).GetVersionsAsync(projectId, Arg.Any<CancellationToken>());
+        await _redmineService.Received(1).GetIssuesAsync(
+            Arg.Is<IssueFilter>(f => f.FixedVersionId == expectedVersionId),
+            Arg.Any<CancellationToken>());
+        _tableFormatter.Received(1).FormatIssues(issues);
+    }
+
+    [Fact]
+    public async Task List_Should_ReturnError_When_TargetVersionSpecifiedWithoutProject()
+    {
+        // Arrange & Act
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            TargetVersion = "Ver.4.8.3"
+        }, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(1);
+        await _redmineService.DidNotReceive().GetVersionsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task List_Should_ReturnError_When_UnknownVersionNameProvided()
+    {
+        // Arrange
+        var unknownVersion = "NonExistent Version";
+        var projectId = "test-project";
+        var versions = new List<TargetVersion>
+        {
+            new TargetVersion { Id = 963, Name = "Ver.4.8.2", Status = "closed" },
+            new TargetVersion { Id = 964, Name = "Ver.4.8.3", Status = "open" }
+        };
+
+        var projects = new List<Project>
+        {
+            new Project { Id = 1, Name = "Test Project", Identifier = "test-project" }
+        };
+        _redmineService.GetProjectsAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(projects));
+        _redmineService.GetVersionsAsync(projectId, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(versions));
+
+        // Act
+        var result = await _issueCommand.ListAsync(new IssueListOptions
+        {
+            TargetVersion = unknownVersion,
+            Project = projectId
+        }, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(1);
+        await _redmineService.Received(1).GetVersionsAsync(projectId, Arg.Any<CancellationToken>());
+        await _redmineService.DidNotReceive().GetIssuesAsync(Arg.Any<IssueFilter>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task List_Should_FilterByMultipleParameters_When_PriorityAndOtherFiltersSpecified()
     {
         // Arrange

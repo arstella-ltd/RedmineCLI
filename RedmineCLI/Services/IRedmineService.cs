@@ -78,6 +78,11 @@ public interface IRedmineService
     Task<int> ResolveProjectIdAsync(string projectIdOrIdentifier, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// プロジェクトのバージョン一覧を取得する
+    /// </summary>
+    Task<List<TargetVersion>> GetVersionsAsync(string projectId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// プロジェクト一覧を取得する
     /// </summary>
     Task<List<Project>> GetProjectsAsync(CancellationToken cancellationToken = default);
