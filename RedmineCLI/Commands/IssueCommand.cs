@@ -432,7 +432,7 @@ public class IssueCommand
         string? sort,
         string? priority,
         string? author,
-        string? targetVersionFilter,
+        string? targetVersion,
         CancellationToken cancellationToken)
     {
         try
@@ -454,6 +454,9 @@ public class IssueCommand
 
             // Handle priority resolution
             string? priorityFilter = await ResolvePriorityAsync(priority, cancellationToken);
+
+            // Handle target version resolution
+            string? targetVersionFilter = await ResolveTargetVersionAsync(targetVersion, project, cancellationToken);
 
             // Validate sort parameter if provided
             if (!string.IsNullOrEmpty(sort))
@@ -586,22 +589,7 @@ public class IssueCommand
     /// <returns>終了コード</returns>
     public async Task<int> ListAsync(IssueListOptions options, CancellationToken cancellationToken)
     {
-        // --target-version が指定された場合、--project が必須
-        string? targetVersionFilter = null;
-        if (!string.IsNullOrEmpty(options.TargetVersion))
-        {
-            if (string.IsNullOrEmpty(options.Project))
-            {
-                _logger.LogError("--target-version requires --project option");
-                throw new ValidationException("--target-version requires --project option");
-            }
-
-            targetVersionFilter = await ResolveTargetVersionAsync(options.TargetVersion, options.Project, cancellationToken);
-        }
-
-        // 既存のListAsyncメソッドを呼び出す
-        // TargetVersion のフィルタは戻り値の前にフィルターに追加する
-        var result = await ListAsyncCore(
+        return await ListAsyncCore(
             options.Assignee,
             options.Status,
             options.Project,
@@ -614,10 +602,8 @@ public class IssueCommand
             options.Sort,
             options.Priority,
             options.Author,
-            targetVersionFilter,
+            options.TargetVersion,
             cancellationToken);
-
-        return result;
     }
 
     private static string BuildIssuesUrl(string baseUrl, IssueFilter filter)
