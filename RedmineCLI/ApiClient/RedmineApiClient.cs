@@ -271,6 +271,13 @@ public class RedmineApiClient : IRedmineApiClient
         return prioritiesResponse?.Priorities ?? new List<Priority>();
     }
 
+    public async Task<List<TargetVersion>> GetVersionsAsync(string projectId, CancellationToken cancellationToken = default)
+    {
+        var path = $"/projects/{Uri.EscapeDataString(projectId)}/versions.json";
+        var versionsResponse = await GetAsync(path, RedmineJsonContext.Default.VersionsResponse, "versions", cancellationToken);
+        return versionsResponse?.Versions ?? new List<TargetVersion>();
+    }
+
     public async Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -336,6 +343,7 @@ public class RedmineApiClient : IRedmineApiClient
             ["status_id"] = filter.StatusId,
             ["priority_id"] = filter.PriorityId,
             ["author_id"] = filter.AuthorId,
+            ["fixed_version_id"] = filter.FixedVersionId,
             ["limit"] = filter.Limit?.ToString(),
             ["offset"] = filter.Offset?.ToString(),
             ["sort"] = filter.Sort,

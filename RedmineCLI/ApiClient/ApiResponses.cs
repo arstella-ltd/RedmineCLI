@@ -67,6 +67,12 @@ public class PrioritiesResponse
     public List<Priority> Priorities { get; set; } = new();
 }
 
+public class VersionsResponse
+{
+    [JsonPropertyName("versions")]
+    public List<TargetVersion> Versions { get; set; } = new();
+}
+
 public class ErrorResponse
 {
     [JsonPropertyName("errors")]
