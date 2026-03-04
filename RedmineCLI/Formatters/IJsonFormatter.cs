@@ -13,4 +13,5 @@ public interface IJsonFormatter
     void FormatProjects(List<Project> projects);
     void FormatIssueStatuses(List<IssueStatus> statuses);
     void FormatPriorities(List<Priority> priorities);
+    void FormatVersions(List<TargetVersion> versions);
 }

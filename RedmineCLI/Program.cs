@@ -57,6 +57,7 @@ public class Program
         var projectLogger = serviceProvider.GetRequiredService<ILogger<ProjectCommand>>();
         var statusLogger = serviceProvider.GetRequiredService<ILogger<StatusCommand>>();
         var priorityLogger = serviceProvider.GetRequiredService<ILogger<PriorityCommand>>();
+        var versionLogger = serviceProvider.GetRequiredService<ILogger<VersionCommand>>();
         var mcpLogger = serviceProvider.GetRequiredService<ILogger<McpCommand>>();
         var mcpServerLogger = serviceProvider.GetRequiredService<ILogger<Services.Mcp.McpServer>>();
 
@@ -64,6 +65,7 @@ public class Program
         var projectCommand = ProjectCommand.Create(redmineService, configService, tableFormatter, jsonFormatter, projectLogger);
         var statusCommand = StatusCommand.Create(redmineService, configService, tableFormatter, jsonFormatter, statusLogger);
         var priorityCommand = PriorityCommand.Create(redmineService, configService, tableFormatter, jsonFormatter, priorityLogger);
+        var versionCommand = VersionCommand.Create(redmineService, configService, tableFormatter, jsonFormatter, versionLogger);
         var mcpCommand = McpCommand.Create(redmineService, mcpLogger, mcpServerLogger);
 
         rootCommand.Add(authCommand);
@@ -74,6 +76,7 @@ public class Program
         rootCommand.Add(projectCommand);
         rootCommand.Add(statusCommand);
         rootCommand.Add(priorityCommand);
+        rootCommand.Add(versionCommand);
         rootCommand.Add(mcpCommand);
 
         // Add llms command after all other commands are added so it can access them

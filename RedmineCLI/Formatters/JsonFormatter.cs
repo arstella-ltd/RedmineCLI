@@ -82,4 +82,10 @@ public class JsonFormatter : IJsonFormatter
         var json = JsonSerializer.Serialize(priorities, RedmineJsonContext.Default.ListPriority);
         AnsiConsole.WriteLine(json);
     }
+
+    public void FormatVersions(List<TargetVersion> versions)
+    {
+        var json = JsonSerializer.Serialize(versions, RedmineJsonContext.Default.ListTargetVersion);
+        AnsiConsole.WriteLine(json);
+    }
 }
