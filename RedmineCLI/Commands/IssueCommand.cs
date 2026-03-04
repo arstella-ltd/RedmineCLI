@@ -69,6 +69,7 @@ public class IssueCommand
         searchOption.Aliases.Add("-q");
         var sortOption = new Option<string?>("--sort") { Description = "Sort by field (e.g., updated_on:desc, priority:desc,id)" };
         var authorOption = new Option<string?>("--author") { Description = "Filter by author (username, ID, or @me)" };
+        var targetVersionOption = new Option<string?>("--target-version") { Description = "Filter by target version (name or ID, requires --project)" };
 
         listCommand.Add(assigneeOption);
         listCommand.Add(statusOption);
@@ -82,6 +83,7 @@ public class IssueCommand
         listCommand.Add(searchOption);
         listCommand.Add(sortOption);
         listCommand.Add(authorOption);
+        listCommand.Add(targetVersionOption);
 
         listCommand.SetAction(async (parseResult) =>
         {
@@ -97,6 +99,7 @@ public class IssueCommand
             var search = parseResult.GetValue(searchOption);
             var sort = parseResult.GetValue(sortOption);
             var author = parseResult.GetValue(authorOption);
+            var targetVersion = parseResult.GetValue(targetVersionOption);
 
             var options = new IssueListOptions
             {
@@ -111,7 +114,8 @@ public class IssueCommand
                 Search = search,
                 Sort = sort,
                 Priority = priority,
-                Author = author
+                Author = author,
+                TargetVersion = targetVersion
             };
 
             Environment.ExitCode = await issueCommand.ListAsync(options, CancellationToken.None);
@@ -412,6 +416,25 @@ public class IssueCommand
         string? author,
         CancellationToken cancellationToken)
     {
+        return await ListAsyncCore(assignee, status, project, limit, offset, json, web, absoluteTime, search, sort, priority, author, null, cancellationToken);
+    }
+
+    private async Task<int> ListAsyncCore(
+        string? assignee,
+        string? status,
+        string? project,
+        int? limit,
+        int? offset,
+        bool json,
+        bool web,
+        bool absoluteTime,
+        string? search,
+        string? sort,
+        string? priority,
+        string? author,
+        string? targetVersionFilter,
+        CancellationToken cancellationToken)
+    {
         try
         {
             _logger.LogDebug("Listing issues with filters - Assignee: {Assignee}, Status: {Status}, Project: {Project}, Priority: {Priority}, Author: {Author}, Search: {Search}, Sort: {Sort}",
@@ -477,6 +500,7 @@ public class IssueCommand
                     ProjectId = project,
                     PriorityId = priorityFilter,
                     AuthorId = author,
+                    FixedVersionId = targetVersionFilter,
                     Limit = limit ?? 30, // Default limit to 30
                     Offset = offset,
                     Sort = sort
@@ -562,8 +586,22 @@ public class IssueCommand
     /// <returns>終了コード</returns>
     public async Task<int> ListAsync(IssueListOptions options, CancellationToken cancellationToken)
     {
+        // --target-version が指定された場合、--project が必須
+        string? targetVersionFilter = null;
+        if (!string.IsNullOrEmpty(options.TargetVersion))
+        {
+            if (string.IsNullOrEmpty(options.Project))
+            {
+                _logger.LogError("--target-version requires --project option");
+                throw new ValidationException("--target-version requires --project option");
+            }
+
+            targetVersionFilter = await ResolveTargetVersionAsync(options.TargetVersion, options.Project, cancellationToken);
+        }
+
         // 既存のListAsyncメソッドを呼び出す
-        return await ListAsync(
+        // TargetVersion のフィルタは戻り値の前にフィルターに追加する
+        var result = await ListAsyncCore(
             options.Assignee,
             options.Status,
             options.Project,
@@ -576,7 +614,10 @@ public class IssueCommand
             options.Sort,
             options.Priority,
             options.Author,
+            targetVersionFilter,
             cancellationToken);
+
+        return result;
     }
 
     private static string BuildIssuesUrl(string baseUrl, IssueFilter filter)
@@ -1261,6 +1302,72 @@ public class IssueCommand
         {
             _logger.LogError(ex, "Failed to resolve priority '{Priority}'", priority);
             throw new ValidationException($"Failed to resolve priority '{priority}': {ex.Message}", ex);
+        }
+    }
+
+    private async Task<string?> ResolveTargetVersionAsync(string? targetVersion, string? project, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(targetVersion))
+            return null;
+
+        if (string.IsNullOrEmpty(project))
+        {
+            throw new ValidationException("--target-version requires --project option");
+        }
+
+        // プロジェクト識別子を解決
+        var resolvedProject = await ResolveProjectAsync(project, cancellationToken) ?? project;
+
+        // 数値の場合はバージョンIDとして検証
+        if (int.TryParse(targetVersion, out var versionId))
+        {
+            try
+            {
+                var versions = await _redmineService.GetVersionsAsync(resolvedProject, cancellationToken);
+                if (versions.Any(v => v.Id == versionId))
+                {
+                    return targetVersion;
+                }
+                else
+                {
+                    throw new ValidationException($"Target version ID '{targetVersion}' not found in project '{project}'.");
+                }
+            }
+            catch (ValidationException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to validate target version ID '{VersionId}'", targetVersion);
+                throw new ValidationException($"Failed to validate target version ID '{targetVersion}': {ex.Message}", ex);
+            }
+        }
+
+        // バージョン名からIDに変換
+        try
+        {
+            var versions = await _redmineService.GetVersionsAsync(resolvedProject, cancellationToken);
+            var matchedVersion = versions.FirstOrDefault(v =>
+                v.Name.Equals(targetVersion, StringComparison.OrdinalIgnoreCase));
+
+            if (matchedVersion != null)
+            {
+                _logger.LogDebug("Resolved target version '{Version}' to ID {VersionId}", targetVersion, matchedVersion.Id);
+                return matchedVersion.Id.ToString();
+            }
+
+            _logger.LogError("Could not find target version with name '{Version}' in project '{Project}'", targetVersion, project);
+            throw new ValidationException($"Target version '{targetVersion}' not found in project '{project}'.");
+        }
+        catch (ValidationException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to resolve target version '{Version}'", targetVersion);
+            throw new ValidationException($"Failed to resolve target version '{targetVersion}': {ex.Message}", ex);
         }
     }
 
