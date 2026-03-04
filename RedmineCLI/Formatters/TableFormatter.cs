@@ -603,4 +603,23 @@ public class TableFormatter : ITableFormatter
 
         AnsiConsole.Write(table);
     }
+
+    public void FormatVersions(List<TargetVersion> versions)
+    {
+        var table = new Table();
+        table.AddColumn("ID");
+        table.AddColumn("NAME");
+        table.AddColumn("STATUS");
+
+        foreach (var version in versions)
+        {
+            table.AddRow(
+                version.Id.ToString(),
+                Markup.Escape(version.Name),
+                Markup.Escape(version.Status ?? "")
+            );
+        }
+
+        AnsiConsole.Write(table);
+    }
 }
